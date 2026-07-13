@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useFinance } from "../store";
 import { API, sendJSON, fmt } from "@/lib/client";
+import { useSort, useSorted, SortHeader } from "@/lib/sort";
 
 export default function BudgetsPage() {
   const {
@@ -40,6 +41,11 @@ export default function BudgetsPage() {
   };
 
   const visibleBudgets = budgets.filter((b) => b.amount > 0);
+  const sort = useSort<"scope" | "budget">(null);
+  const sortedBudgets = useSorted(visibleBudgets, sort, {
+    scope: (b) => (b.category_id == null ? "Overall" : (b.category_name || "")),
+    budget: (b) => b.amount,
+  });
 
   return (
     <div className="panel">
@@ -63,9 +69,13 @@ export default function BudgetsPage() {
       {visibleBudgets.length === 0 && <div className="empty">No budgets for {month}.</div>}
       {visibleBudgets.length > 0 && (
         <table>
-          <thead><tr><th>Scope</th><th className="right">Budget</th><th></th></tr></thead>
+          <thead><tr>
+            <SortHeader sort={sort} k="scope">Scope</SortHeader>
+            <SortHeader sort={sort} k="budget" className="right">Budget</SortHeader>
+            <th></th>
+          </tr></thead>
           <tbody>
-            {visibleBudgets.map((b) => (
+            {sortedBudgets.map((b) => (
               <tr key={b.id}>
                 <td>{b.category_id == null ? "Overall" : (b.category_name || "—")}</td>
                 <td className="right">{fmt(b.amount, sym)}</td>

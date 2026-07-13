@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useFinance } from "../store";
 import { API, sendJSON, fmtCur, catName, catColor, CURRENCIES } from "@/lib/client";
+import { useSort, useSorted, SortHeader } from "@/lib/sort";
 
 export default function TransactionsPage() {
   const {
@@ -15,6 +16,14 @@ export default function TransactionsPage() {
   const [tCur, setTCur] = useState<string>(settings.currency || "ILS");
   const [tDate, setTDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [tNote, setTNote] = useState("");
+
+  const sort = useSort<"date" | "category" | "note" | "amount">("date", "desc");
+  const sortedTx = useSorted(transactions, sort, {
+    date: (t) => t.date,
+    category: (t) => catName(categories, t.category_id, t.direction) || "",
+    note: (t) => t.note || "",
+    amount: (t) => (t.direction === "expense" ? -t.amount : t.amount),
+  });
 
   const addTransaction = async () => {
     const amount = parseFloat(tAmount);
@@ -81,9 +90,15 @@ export default function TransactionsPage() {
       {transactions.length === 0 && <div className="empty">Nothing logged yet.</div>}
       {transactions.length > 0 && (
         <table>
-          <thead><tr><th>Date</th><th>Category</th><th>Note</th><th className="right">Amount</th><th></th></tr></thead>
+          <thead><tr>
+            <SortHeader sort={sort} k="date">Date</SortHeader>
+            <SortHeader sort={sort} k="category">Category</SortHeader>
+            <SortHeader sort={sort} k="note">Note</SortHeader>
+            <SortHeader sort={sort} k="amount" className="right">Amount</SortHeader>
+            <th></th>
+          </tr></thead>
           <tbody>
-            {transactions.map((t) => (
+            {sortedTx.map((t) => (
               <tr key={t.id}>
                 <td>{t.date}</td>
                 <td>

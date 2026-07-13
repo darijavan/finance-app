@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useFinance } from "../store";
 import { API, sendJSON, fmt, fmtCur, CURRENCIES } from "@/lib/client";
+import { useSort, useSorted, SortHeader } from "@/lib/sort";
 
 export default function SubscriptionsPage() {
   const {
@@ -17,6 +18,15 @@ export default function SubscriptionsPage() {
   const [sCur, setSCur] = useState<string>(settings.currency || "ILS");
   const [sDay, setSDay] = useState("1");
   const [sMonth, setSMonth] = useState("1");
+
+  const sort = useSort<"name" | "amount" | "freq" | "monthly" | "cat">(null);
+  const sortedSubs = useSorted(subscriptions, sort, {
+    name: (s) => s.name,
+    amount: (s) => s.amount,
+    freq: (s) => s.frequency,
+    monthly: (s) => s.monthly_equivalent || 0,
+    cat: (s) => s.category_name || "",
+  });
 
   const addSubscription = async () => {
     const amount = parseFloat(sAmount);
@@ -109,9 +119,16 @@ export default function SubscriptionsPage() {
       {subscriptions.length === 0 && <div className="empty">No subscriptions yet.</div>}
       {subscriptions.length > 0 && (
         <table>
-          <thead><tr><th>Name</th><th>Amount</th><th>Freq</th><th>~/mo</th><th>Cat</th><th></th></tr></thead>
+          <thead><tr>
+            <SortHeader sort={sort} k="name">Name</SortHeader>
+            <SortHeader sort={sort} k="amount">Amount</SortHeader>
+            <SortHeader sort={sort} k="freq">Freq</SortHeader>
+            <SortHeader sort={sort} k="monthly">~/mo</SortHeader>
+            <SortHeader sort={sort} k="cat">Cat</SortHeader>
+            <th></th>
+          </tr></thead>
           <tbody>
-            {subscriptions.map((s) => (
+            {sortedSubs.map((s) => (
               <tr key={s.id} style={{ opacity: s.active ? 1 : 0.5 }}>
                 <td>{s.name}</td>
                 <td className={s.direction === "expense" ? "amount-expense" : "amount-income"}>
