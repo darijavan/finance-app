@@ -31,9 +31,10 @@ export async function POST(req: NextRequest) {
   const date = body.date || new Date().toISOString().slice(0, 10);
   const note = body.note || "";
   const category_id = body.category_id != null ? Number(body.category_id) : null;
+  const currency = (body.currency || "ILS").toString().toUpperCase();
   const info = db.prepare(
-    "INSERT INTO transactions(amount,direction,category_id,date,note,created_at) VALUES(?,?,?,?,?,?)"
-  ).run(amount, direction, category_id, date, note, new Date().toISOString());
+    "INSERT INTO transactions(amount,currency,direction,category_id,date,note,created_at) VALUES(?,?,?,?,?,?,?)"
+  ).run(amount, currency, direction, category_id, date, note, new Date().toISOString());
   const row = db.prepare("SELECT * FROM transactions WHERE id=?").get(info.lastInsertRowid);
   return NextResponse.json(row, { status: 201 });
 }

@@ -2,16 +2,17 @@
 
 import { useState } from "react";
 import { useFinance } from "../store";
-import { API, sendJSON, fmt, catName, catColor } from "@/lib/client";
+import { API, sendJSON, fmtCur, catName, catColor, CURRENCIES } from "@/lib/client";
 
 export default function TransactionsPage() {
   const {
-    month, sym, categories, transactions, expenseCats, incomeCats, reload, notify,
+    month, settings, categories, transactions, expenseCats, incomeCats, reload, notify,
   } = useFinance();
 
   const [tAmount, setTAmount] = useState("");
   const [tDir, setTDir] = useState<"expense" | "income">("expense");
   const [tCat, setTCat] = useState<string>("");
+  const [tCur, setTCur] = useState<string>(settings.currency || "ILS");
   const [tDate, setTDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [tNote, setTNote] = useState("");
 
@@ -20,7 +21,7 @@ export default function TransactionsPage() {
     if (!Number.isFinite(amount) || amount <= 0) return notify("Enter a valid amount");
     const cid = tCat ? Number(tCat) : null;
     await sendJSON(`${API}/transactions`, "POST", {
-      amount, direction: tDir, category_id: cid, date: tDate, note: tNote,
+      amount, direction: tDir, category_id: cid, date: tDate, note: tNote, currency: tCur,
     });
     setTAmount(""); setTNote(""); setTCat("");
     notify("Saved");
@@ -45,8 +46,16 @@ export default function TransactionsPage() {
           </select>
         </div>
         <div className="field">
-          <label>Amount ({sym})</label>
+          <label>Amount</label>
           <input type="number" step="0.01" value={tAmount} onChange={(e) => setTAmount(e.target.value)} placeholder="0.00" />
+        </div>
+        <div className="field">
+          <label>Currency</label>
+          <select value={tCur} onChange={(e) => setTCur(e.target.value)} style={{ width: 90 }}>
+            {CURRENCIES.map((c) => (
+              <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>
+            ))}
+          </select>
         </div>
         <div className="field">
           <label>Category</label>
@@ -84,7 +93,7 @@ export default function TransactionsPage() {
                 </td>
                 <td className="muted">{t.note}</td>
                 <td className={`right ${t.direction === "expense" ? "amount-expense" : "amount-income"}`}>
-                  {t.direction === "expense" ? "-" : "+"}{fmt(t.amount, sym)}
+                  {t.direction === "expense" ? "-" : "+"}{fmtCur(t.amount, t.currency || settings.currency)}
                 </td>
                 <td className="right"><button className="btn danger small" onClick={() => deleteTransaction(t.id)}>✕</button></td>
               </tr>

@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { useFinance } from "../store";
-import { API, sendJSON, fmt } from "@/lib/client";
+import { API, sendJSON, fmt, fmtCur, CURRENCIES } from "@/lib/client";
 
 export default function SubscriptionsPage() {
   const {
-    month, sym, subscriptions, expenseCats, incomeCats, reload, notify,
+    month, sym, settings, subscriptions, summary, expenseCats, incomeCats, reload, notify,
   } = useFinance();
 
   const [sName, setSName] = useState("");
@@ -14,6 +14,7 @@ export default function SubscriptionsPage() {
   const [sDir, setSDir] = useState<"expense" | "income">("expense");
   const [sFreq, setSFreq] = useState<"monthly" | "yearly">("monthly");
   const [sCat, setSCat] = useState<string>("");
+  const [sCur, setSCur] = useState<string>(settings.currency || "ILS");
   const [sDay, setSDay] = useState("1");
   const [sMonth, setSMonth] = useState("1");
 
@@ -21,7 +22,7 @@ export default function SubscriptionsPage() {
     const amount = parseFloat(sAmount);
     if (!sName.trim() || !Number.isFinite(amount) || amount <= 0) return notify("Enter name + amount");
     await sendJSON(`${API}/subscriptions`, "POST", {
-      name: sName.trim(), amount, direction: sDir, frequency: sFreq,
+      name: sName.trim(), amount, direction: sDir, frequency: sFreq, currency: sCur,
       category_id: sCat ? Number(sCat) : null,
       day_of_month: Number(sDay), month_of_year: sFreq === "yearly" ? Number(sMonth) : null,
     });
@@ -51,8 +52,16 @@ export default function SubscriptionsPage() {
           <input value={sName} onChange={(e) => setSName(e.target.value)} placeholder="Netflix, Rent, Allowance…" />
         </div>
         <div className="field">
-          <label>Amount ({sym})</label>
+          <label>Amount</label>
           <input type="number" step="0.01" value={sAmount} onChange={(e) => setSAmount(e.target.value)} />
+        </div>
+        <div className="field">
+          <label>Currency</label>
+          <select value={sCur} onChange={(e) => setSCur(e.target.value)} style={{ width: 90 }}>
+            {CURRENCIES.map((c) => (
+              <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>
+            ))}
+          </select>
         </div>
         <div className="field">
           <label>Type</label>
@@ -106,10 +115,10 @@ export default function SubscriptionsPage() {
               <tr key={s.id} style={{ opacity: s.active ? 1 : 0.5 }}>
                 <td>{s.name}</td>
                 <td className={s.direction === "expense" ? "amount-expense" : "amount-income"}>
-                  {s.direction === "expense" ? "-" : "+"}{fmt(s.amount, sym)}
+                  {s.direction === "expense" ? "-" : "+"}{fmtCur(s.amount, s.currency || settings.currency)}
                 </td>
                 <td className="muted">{s.frequency}{s.frequency === "yearly" ? ` (m${s.month_of_year})` : ""}</td>
-                <td className="muted">{fmt(s.monthly_equivalent || 0, sym)}</td>
+                <td className="muted">{fmtCur(s.monthly_equivalent || 0, s.currency || settings.currency)}</td>
                 <td><span className="tag" style={{ background: s.category_color || "#888" }}>{s.category_name || "—"}</span></td>
                 <td className="right"><button className="btn danger small" onClick={() => deleteSubscription(s.id)}>✕</button></td>
               </tr>
@@ -118,10 +127,8 @@ export default function SubscriptionsPage() {
         </table>
       )}
       <p className="muted" style={{ fontSize: 12, marginTop: 12 }}>
-        Total recurring ≈ {fmt(
-          subscriptions.filter((s) => s.active).reduce((a, s) => a + (s.frequency === "yearly" ? s.amount / 12 : s.amount), 0),
-          sym
-        )} / month
+        Total recurring ≈ {fmt(summary?.recurring_monthly ?? 0, sym)} / month
+        <span style={{ marginLeft: 6 }}>(converted to {settings.currency})</span>
       </p>
     </div>
   );

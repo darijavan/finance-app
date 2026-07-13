@@ -14,6 +14,7 @@ export function getDb(): DatabaseSync {
   db.exec("PRAGMA journal_mode = WAL");
   db.exec("PRAGMA foreign_keys = ON");
   initSchema(db);
+  migrate(db);
   seedDefaults(db);
   _db = db;
   return db;
@@ -38,6 +39,7 @@ function initSchema(db: DatabaseSync) {
     CREATE TABLE IF NOT EXISTS transactions (
       id          INTEGER PRIMARY KEY AUTOINCREMENT,
       amount      REAL NOT NULL,
+      currency    TEXT NOT NULL DEFAULT 'ILS',
       direction   TEXT NOT NULL,
       category_id INTEGER,
       date        TEXT NOT NULL,
@@ -49,6 +51,7 @@ function initSchema(db: DatabaseSync) {
       id            INTEGER PRIMARY KEY AUTOINCREMENT,
       name          TEXT NOT NULL,
       amount        REAL NOT NULL,
+      currency      TEXT NOT NULL DEFAULT 'ILS',
       direction     TEXT NOT NULL DEFAULT 'expense',
       category_id   INTEGER,
       frequency     TEXT NOT NULL DEFAULT 'monthly',
@@ -66,8 +69,25 @@ function initSchema(db: DatabaseSync) {
       UNIQUE(category_id, month),
       FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
     );
+    CREATE TABLE IF NOT EXISTS fx_rates (
+      code       TEXT PRIMARY KEY,
+      rate       REAL NOT NULL,
+      updated_at TEXT NOT NULL
+    );
     CREATE INDEX IF NOT EXISTS idx_tx_date ON transactions(date);
   `);
+}
+
+// Additive column migrations for pre-existing databases.
+function migrate(db: DatabaseSync) {
+  const cols = (table: string): string[] =>
+    (db.prepare(`PRAGMA table_info(${table})`).all() as any[]).map((r) => r.name);
+  if (!cols("transactions").includes("currency")) {
+    db.exec("ALTER TABLE transactions ADD COLUMN currency TEXT NOT NULL DEFAULT 'ILS'");
+  }
+  if (!cols("subscriptions").includes("currency")) {
+    db.exec("ALTER TABLE subscriptions ADD COLUMN currency TEXT NOT NULL DEFAULT 'ILS'");
+  }
 }
 
 function seedDefaults(db: DatabaseSync) {

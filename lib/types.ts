@@ -8,6 +8,7 @@ export interface Category {
 export interface Transaction {
   id: number;
   amount: number;
+  currency: string;
   direction: "expense" | "income";
   category_id: number | null;
   date: string; // YYYY-MM-DD
@@ -23,6 +24,7 @@ export interface Subscription {
   id: number;
   name: string;
   amount: number;
+  currency: string;
   direction: "expense" | "income";
   category_id: number | null;
   frequency: Frequency;
@@ -46,6 +48,7 @@ export interface Budget {
 
 export interface Summary {
   month: string;
+  base?: string;
   spent: number;
   earned: number;
   net: number;

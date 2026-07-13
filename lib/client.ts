@@ -21,6 +21,16 @@ export function fmt(n: number, sym: string) {
   return `${sym}${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
 
+export function symbolOf(code: string): string {
+  const c = CURRENCIES.find((x) => x.code === code);
+  return c ? c.symbol : code + " ";
+}
+
+// Format an amount using the symbol for its own currency code.
+export function fmtCur(n: number, code: string) {
+  return fmt(n, symbolOf(code));
+}
+
 const MONTHS_BACK = 12;
 export function monthList(): string[] {
   const out: string[] = [];

@@ -28,11 +28,12 @@ export async function POST(req: NextRequest) {
   const frequency = b.frequency === "yearly" ? "yearly" : "monthly";
   const day_of_month = Math.min(Math.max(Number(b.day_of_month) || 1, 1), 28);
   const month_of_year = b.month_of_year != null ? Number(b.month_of_year) : null;
+  const currency = (b.currency || "ILS").toString().toUpperCase();
   const info = db.prepare(
-    `INSERT INTO subscriptions(name,amount,direction,category_id,frequency,day_of_month,month_of_year,active,note)
-     VALUES(?,?,?,?,?,?,?,?,?)`
+    `INSERT INTO subscriptions(name,amount,currency,direction,category_id,frequency,day_of_month,month_of_year,active,note)
+     VALUES(?,?,?,?,?,?,?,?,?,?)`
   ).run(
-    name, amount,
+    name, amount, currency,
     b.direction === "income" ? "income" : "expense",
     b.category_id != null ? Number(b.category_id) : null,
     frequency, day_of_month, month_of_year,
