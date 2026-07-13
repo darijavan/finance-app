@@ -1,0 +1,128 @@
+"use client";
+
+import { useState } from "react";
+import { useFinance } from "../store";
+import { API, sendJSON, fmt } from "@/lib/client";
+
+export default function SubscriptionsPage() {
+  const {
+    month, sym, subscriptions, expenseCats, incomeCats, reload, notify,
+  } = useFinance();
+
+  const [sName, setSName] = useState("");
+  const [sAmount, setSAmount] = useState("");
+  const [sDir, setSDir] = useState<"expense" | "income">("expense");
+  const [sFreq, setSFreq] = useState<"monthly" | "yearly">("monthly");
+  const [sCat, setSCat] = useState<string>("");
+  const [sDay, setSDay] = useState("1");
+  const [sMonth, setSMonth] = useState("1");
+
+  const addSubscription = async () => {
+    const amount = parseFloat(sAmount);
+    if (!sName.trim() || !Number.isFinite(amount) || amount <= 0) return notify("Enter name + amount");
+    await sendJSON(`${API}/subscriptions`, "POST", {
+      name: sName.trim(), amount, direction: sDir, frequency: sFreq,
+      category_id: sCat ? Number(sCat) : null,
+      day_of_month: Number(sDay), month_of_year: sFreq === "yearly" ? Number(sMonth) : null,
+    });
+    setSName(""); setSAmount(""); setSCat("");
+    notify("Subscription added");
+    reload();
+  };
+
+  const deleteSubscription = async (id: number) => {
+    await sendJSON(`${API}/subscriptions/${id}`, "DELETE");
+    notify("Removed");
+    reload();
+  };
+
+  const chargeSubscriptions = async () => {
+    const r = await sendJSON<{ created: number }>(`${API}/subscriptions/charge?month=${month}`, "POST");
+    notify(`Charged ${r.created} subscription(s)`);
+    reload();
+  };
+
+  return (
+    <div className="panel">
+      <h2>Add subscription</h2>
+      <div className="row">
+        <div className="field">
+          <label>Name</label>
+          <input value={sName} onChange={(e) => setSName(e.target.value)} placeholder="Netflix, Rent, Allowance…" />
+        </div>
+        <div className="field">
+          <label>Amount ({sym})</label>
+          <input type="number" step="0.01" value={sAmount} onChange={(e) => setSAmount(e.target.value)} />
+        </div>
+        <div className="field">
+          <label>Type</label>
+          <select value={sDir} onChange={(e) => setSDir(e.target.value as any)}>
+            <option value="expense">Expense</option>
+            <option value="income">Income</option>
+          </select>
+        </div>
+        <div className="field">
+          <label>Frequency</label>
+          <select value={sFreq} onChange={(e) => setSFreq(e.target.value as any)}>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
+        <div className="field">
+          <label>Category</label>
+          <select value={sCat} onChange={(e) => setSCat(e.target.value)}>
+            <option value="">— none —</option>
+            {(sDir === "expense" ? expenseCats : incomeCats).map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label>Day of month</label>
+          <input type="number" min="1" max="28" value={sDay} onChange={(e) => setSDay(e.target.value)} style={{ width: 70 }} />
+        </div>
+        {sFreq === "yearly" && (
+          <div className="field">
+            <label>Month (1-12)</label>
+            <input type="number" min="1" max="12" value={sMonth} onChange={(e) => setSMonth(e.target.value)} style={{ width: 70 }} />
+          </div>
+        )}
+        <button className="btn" onClick={addSubscription}>Add</button>
+      </div>
+
+      <h2 style={{ marginTop: 22 }}>Subscriptions</h2>
+      <div className="row" style={{ marginBottom: 12 }}>
+        <button className="btn secondary small" onClick={chargeSubscriptions}>
+          ⚡ Charge this month ({month})
+        </button>
+        <span className="muted">Converts active subs into transactions for the month.</span>
+      </div>
+      {subscriptions.length === 0 && <div className="empty">No subscriptions yet.</div>}
+      {subscriptions.length > 0 && (
+        <table>
+          <thead><tr><th>Name</th><th>Amount</th><th>Freq</th><th>~/mo</th><th>Cat</th><th></th></tr></thead>
+          <tbody>
+            {subscriptions.map((s) => (
+              <tr key={s.id} style={{ opacity: s.active ? 1 : 0.5 }}>
+                <td>{s.name}</td>
+                <td className={s.direction === "expense" ? "amount-expense" : "amount-income"}>
+                  {s.direction === "expense" ? "-" : "+"}{fmt(s.amount, sym)}
+                </td>
+                <td className="muted">{s.frequency}{s.frequency === "yearly" ? ` (m${s.month_of_year})` : ""}</td>
+                <td className="muted">{fmt(s.monthly_equivalent || 0, sym)}</td>
+                <td><span className="tag" style={{ background: s.category_color || "#888" }}>{s.category_name || "—"}</span></td>
+                <td className="right"><button className="btn danger small" onClick={() => deleteSubscription(s.id)}>✕</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <p className="muted" style={{ fontSize: 12, marginTop: 12 }}>
+        Total recurring ≈ {fmt(
+          subscriptions.filter((s) => s.active).reduce((a, s) => a + (s.frequency === "yearly" ? s.amount / 12 : s.amount), 0),
+          sym
+        )} / month
+      </p>
+    </div>
+  );
+}

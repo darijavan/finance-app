@@ -61,8 +61,10 @@ th { color: var(--muted); font-weight: 600; font-size: 12px; }
 .budget-row .top { display: flex; justify-content: space-between; font-size: 13px; }
 
 .nav { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
-.nav button { background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); padding: 7px 12px; border-radius: 8px; }
-.nav button.active { background: var(--accent); color: #0b0d12; border-color: var(--accent); font-weight: 600; }
+.nav a { background: var(--panel-2); border: 1px solid var(--border); color: var(--muted);
+  padding: 7px 12px; border-radius: 8px; text-decoration: none; font-size: 14px; }
+.nav a:hover { color: var(--text); }
+.nav a.active { background: var(--accent); color: #0b0d12; border-color: var(--accent); font-weight: 600; }
 
 .empty { color: var(--muted); text-align: center; padding: 18px; }
 .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--panel-2);
