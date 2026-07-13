@@ -158,6 +158,25 @@ export default function Home() {
     loadMonth(month);
   };
 
+  const deleteBudget = async (id: number) => {
+    await sendJSON(`${API}/budgets/${id}`, "DELETE");
+    notify("Budget removed");
+    loadMonth(month);
+  };
+
+  // ---- currency ----
+  const CURRENCIES = [
+    { code: "ILS", symbol: "₪" }, { code: "USD", symbol: "$" },
+    { code: "EUR", symbol: "€" }, { code: "GBP", symbol: "£" },
+    { code: "JPY", symbol: "¥" }, { code: "MGA", symbol: "Ar" },
+  ];
+  const setCurrency = async (code: string) => {
+    const cur = CURRENCIES.find((c) => c.code === code) || CURRENCIES[0];
+    await sendJSON(`${API}/settings`, "PUT", { currency: cur.code, currency_symbol: cur.symbol });
+    setSettings((s) => ({ ...s, currency: cur.code, currency_symbol: cur.symbol }));
+    notify(`Currency set to ${cur.code}`);
+  };
+
   // ---- category add ----
   const [cName, setCName] = useState("");
   const [cDir, setCDir] = useState<"expense" | "income">("expense");
@@ -186,6 +205,12 @@ export default function Home() {
       <div className="topbar">
         <h1>💰 Finance</h1>
         <div className="month-picker">
+          <label className="muted">Currency</label>
+          <select value={settings.currency} onChange={(e) => setCurrency(e.target.value)}>
+            {CURRENCIES.map((c) => (
+              <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>
+            ))}
+          </select>
           <label className="muted">Month</label>
           <select value={month} onChange={(e) => changeMonth(e.target.value)}>
             {monthList().map((m) => (
@@ -431,16 +456,16 @@ export default function Home() {
           </div>
 
           <h2 style={{ marginTop: 22 }}>Current budgets</h2>
-          {budgets.length === 0 && <div className="empty">No budgets for {month}.</div>}
-          {budgets.length > 0 && (
+          {budgets.filter((b) => b.amount > 0).length === 0 && <div className="empty">No budgets for {month}.</div>}
+          {budgets.filter((b) => b.amount > 0).length > 0 && (
             <table>
               <thead><tr><th>Scope</th><th className="right">Budget</th><th></th></tr></thead>
               <tbody>
-                {budgets.map((b) => (
+                {budgets.filter((b) => b.amount > 0).map((b) => (
                   <tr key={b.id}>
                     <td>{b.category_id == null ? "Overall" : (b.category_name || "—")}</td>
                     <td className="right">{fmt(b.amount, sym)}</td>
-                    <td className="right"><button className="btn danger small" onClick={async () => { await sendJSON(`${API}/budgets`, "PUT", { month, category_id: b.category_id, amount: 0 }); notify("Cleared"); loadMonth(month); }}>✕</button></td>
+                    <td className="right"><button className="btn danger small" onClick={() => deleteBudget(b.id)}>✕</button></td>
                   </tr>
                 ))}
               </tbody>
