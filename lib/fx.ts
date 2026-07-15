@@ -37,9 +37,13 @@ export async function refreshRates(force = false): Promise<Record<string, number
   const base = getBaseCurrency();
   const db = getDb();
   const existing = readRates();
-  // If existing rates were stored against a different base, force a refresh.
+  // Force a refresh when we have no rates for the current base, or when the
+  // cached base currency isn't rate 1 (i.e. the cache was built for a
+  // different base). This is what makes switching the display currency
+  // actually re-fetch rates for the new base instead of reusing stale 1:1
+  // numbers — without it, ILS kept showing as 1:1 with USD.
   const baseRow = existing[base];
-  const baseMismatch = baseRow != null && Math.abs(baseRow.rate - 1) > 1e-9;
+  const baseMismatch = baseRow == null || Math.abs(baseRow.rate - 1) > 1e-9;
 
   if (!force && !baseMismatch && !ratesAreStale(existing)) {
     const out: Record<string, number> = {};

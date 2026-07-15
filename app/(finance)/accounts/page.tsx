@@ -91,7 +91,7 @@ export default function AccountsPage() {
         {accounts.map((a) => (
           <div className="card" key={a.id} style={{ position: "relative" }}>
             <div className="label">{a.name} <span className="muted">({a.type})</span></div>
-            <div className={`value ${a.balance! >= 0 ? "green" : "red"}`}>{fmtCur(a.balance || 0, a.currency)}</div>
+            <div className={`value ${a.balance! >= 0 ? "green" : "red"}`}>{fmt(a.balance || 0, settings.currency_symbol || "₪")}</div>
             <button
               className="btn danger small"
               style={{ position: "absolute", top: 8, right: 8 }}

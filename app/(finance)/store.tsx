@@ -179,7 +179,8 @@ function Chrome({ children }: { children: ReactNode }) {
     await sendJSON(`${API}/settings`, "PUT", { currency: cur.code, currency_symbol: cur.symbol });
     setSettings((s) => ({ ...s, currency: cur.code, currency_symbol: cur.symbol }));
     notify(`Currency set to ${cur.code}`);
-  }, [notify]);
+    reload(); // refetch summary/accounts so amounts convert to the new base
+  }, [notify, reload]);
 
   const expenseCats = useMemo(() => categories.filter((c) => c.direction === "expense"), [categories]);
   const incomeCats = useMemo(() => categories.filter((c) => c.direction === "income"), [categories]);
