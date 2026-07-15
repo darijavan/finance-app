@@ -177,10 +177,13 @@ function Chrome({ children }: { children: ReactNode }) {
   const setCurrency = useCallback(async (code: string) => {
     const cur = CURRENCIES.find((c) => c.code === code) || CURRENCIES[0];
     await sendJSON(`${API}/settings`, "PUT", { currency: cur.code, currency_symbol: cur.symbol });
-    setSettings((s) => ({ ...s, currency: cur.code, currency_symbol: cur.symbol }));
     notify(`Currency set to ${cur.code}`);
-    reload(); // refetch summary/accounts so amounts convert to the new base
-  }, [notify, reload]);
+    // Refetch amounts in the new base FIRST, then flip the symbol — so the
+    // converted numbers and the (new) symbol land together and the user never
+    // sees a new symbol paired with old-base numbers.
+    await loadMonth();
+    setSettings((s) => ({ ...s, currency: cur.code, currency_symbol: cur.symbol }));
+  }, [notify, loadMonth]);
 
   const expenseCats = useMemo(() => categories.filter((c) => c.direction === "expense"), [categories]);
   const incomeCats = useMemo(() => categories.filter((c) => c.direction === "income"), [categories]);

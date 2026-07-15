@@ -155,6 +155,12 @@ export default function AccountsPage() {
           <label>Note</label>
           <input value={tNote} onChange={(e) => setTNote(e.target.value)} placeholder="optional" />
         </div>
+        <div className="field">
+          <label>Currency</label>
+          <select value={tCur} onChange={(e) => setTCur(e.target.value)} style={{ width: 90 }}>
+            {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>)}
+          </select>
+        </div>
         <button className="btn" onClick={saveTransfer}>Transfer</button>
       </div>
 
