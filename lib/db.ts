@@ -75,7 +75,64 @@ function initSchema(db: DatabaseSync) {
       updated_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_tx_date ON transactions(date);
+    CREATE TABLE IF NOT EXISTS activity_log (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      entity      TEXT NOT NULL,              -- 'transaction' | 'subscription' | 'budget' | 'category'
+      action      TEXT NOT NULL,              -- 'create' | 'update' | 'delete'
+      entity_id   INTEGER,                    -- id of the affected row (null after delete)
+      summary     TEXT NOT NULL DEFAULT '',   -- human-readable one-liner for the UI
+      payload     TEXT,                       -- JSON snapshot needed to undo a delete
+      created_at  TEXT NOT NULL
+    );
   `);
+}
+
+// Append an entry to the activity log. Returns the new row id.
+// `payload` is an optional JSON string; for deletes it should hold a snapshot
+// of the deleted row so the action can be reversed via undoActivity().
+export function logActivity(
+  db: DatabaseSync,
+  entity: string,
+  action: "create" | "update" | "delete",
+  entity_id: number | null,
+  summary: string,
+  payload?: unknown,
+): number {
+  const info = db.prepare(
+    `INSERT INTO activity_log(entity, action, entity_id, summary, payload, created_at)
+     VALUES(?,?,?,?,?,?)`,
+  ).run(
+    entity,
+    action,
+    entity_id,
+    summary,
+    payload === undefined ? null : JSON.stringify(payload),
+    new Date().toISOString(),
+  );
+  return Number(info.lastInsertRowid);
+}
+
+// Reverse a logged action. Only deletions are reversible (they carry a
+// snapshot payload). Returns the restored row id, or null if not undoable.
+export function undoActivity(
+  db: DatabaseSync,
+  logId: number,
+): number | null {
+  const row = db.prepare("SELECT * FROM activity_log WHERE id=?").get(logId) as any;
+  if (!row || row.action !== "delete" || !row.payload) return null;
+  const data = JSON.parse(row.payload);
+  if (!data || typeof data !== "object" || !data.table) return null;
+
+  const cols = Object.keys(data).filter((k) => k !== "table");
+  const placeholders = cols.map(() => "?").join(", ");
+  const values = cols.map((k) => data[k]);
+  db.prepare(
+    `INSERT INTO ${data.table} (${cols.join(", ")}) VALUES (${placeholders})`,
+  ).run(...values);
+
+  // Mark the log entry as undone so it can't be re-applied.
+  db.prepare("UPDATE activity_log SET action='delete-undone' WHERE id=?").run(logId);
+  return Number((db.prepare("SELECT last_insert_rowid() AS id").get() as any).id);
 }
 
 // Additive column migrations for pre-existing databases.

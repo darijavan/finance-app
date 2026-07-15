@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getDb, logActivity } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +33,10 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     db.exec("ROLLBACK");
     return NextResponse.json({ error: String(e) }, { status: 500 });
+  }
+  if (created > 0) {
+    logActivity(db, "transaction", "create", null,
+      `Charged ${created} subscription(s) for ${month}`);
   }
   return NextResponse.json({ created });
 }

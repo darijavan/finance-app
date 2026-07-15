@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getDb, logActivity } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const db = getDb();
   const id = Number(params.id);
+  const before = db.prepare("SELECT * FROM transactions WHERE id=?").get(id) as any;
   const body = await req.json();
   const fields: string[] = [];
   const args: any[] = [];
@@ -19,11 +20,21 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   args.push(id);
   db.prepare(`UPDATE transactions SET ${fields.join(", ")} WHERE id=?`).run(...args);
   const row = db.prepare("SELECT * FROM transactions WHERE id=?").get(id);
+  const changed = fields.join(", ") || "(no fields)";
+  logActivity(db, "transaction", "update", id,
+    `Updated transaction #${id} (${changed})${before ? ` — was ${before.direction} ${before.amount}` : ""}`);
   return NextResponse.json(row);
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   const db = getDb();
-  db.prepare("DELETE FROM transactions WHERE id=?").run(Number(params.id));
-  return NextResponse.json({ ok: true });
+  const id = Number(params.id);
+  const row = db.prepare("SELECT * FROM transactions WHERE id=?").get(id) as any;
+  if (!row) return NextResponse.json({ ok: true, log_id: null });
+  db.prepare("DELETE FROM transactions WHERE id=?").run(id);
+  const logId = logActivity(db, "transaction", "delete", id,
+    `Deleted transaction #${id} (${row.direction} ${row.amount} ${row.currency || ""}, ${row.date})`,
+    { table: "transactions", ...row });
+  return NextResponse.json({ ok: true, log_id: logId });
 }
+

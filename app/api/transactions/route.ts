@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getDb, logActivity } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -36,5 +36,7 @@ export async function POST(req: NextRequest) {
     "INSERT INTO transactions(amount,currency,direction,category_id,date,note,created_at) VALUES(?,?,?,?,?,?,?)"
   ).run(amount, currency, direction, category_id, date, note, new Date().toISOString());
   const row = db.prepare("SELECT * FROM transactions WHERE id=?").get(info.lastInsertRowid);
+  logActivity(db, "transaction", "create", Number(info.lastInsertRowid),
+    `Added ${direction} ${amount} ${currency}${note ? ` (${note})` : ""} for ${date}`);
   return NextResponse.json(row, { status: 201 });
 }

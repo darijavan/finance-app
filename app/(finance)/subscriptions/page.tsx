@@ -7,7 +7,7 @@ import { useSort, useSorted, SortHeader } from "@/lib/sort";
 
 export default function SubscriptionsPage() {
   const {
-    month, sym, settings, subscriptions, summary, expenseCats, incomeCats, reload, notify,
+    month, sym, settings, subscriptions, summary, expenseCats, incomeCats, reload, notify, confirm, undo,
   } = useFinance();
 
   const [sName, setSName] = useState("");
@@ -42,9 +42,17 @@ export default function SubscriptionsPage() {
   };
 
   const deleteSubscription = async (id: number) => {
-    await sendJSON(`${API}/subscriptions/${id}`, "DELETE");
+    const ok = await confirm({
+      title: "Delete subscription?",
+      message: "This permanently removes the subscription. You can undo it from the bottom bar right after.",
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
+    const r = await sendJSON<{ ok: boolean; log_id: number | null }>(`${API}/subscriptions/${id}`, "DELETE");
     notify("Removed");
     reload();
+    if (r.log_id != null) undo({ message: "Subscription deleted.", logId: r.log_id });
   };
 
   const chargeSubscriptions = async () => {

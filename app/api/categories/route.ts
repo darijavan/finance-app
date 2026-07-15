@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getDb, logActivity } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -21,5 +21,6 @@ export async function POST(req: NextRequest) {
   const direction = body.direction === "income" ? "income" : "expense";
   const info = db.prepare("INSERT INTO categories(name,color,direction) VALUES(?,?,?)").run(name, color, direction);
   const row = db.prepare("SELECT * FROM categories WHERE id=?").get(info.lastInsertRowid);
+  logActivity(db, "category", "create", Number(info.lastInsertRowid), `Added category "${name}" (${direction})`);
   return NextResponse.json(row, { status: 201 });
 }

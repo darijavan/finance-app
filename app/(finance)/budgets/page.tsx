@@ -7,7 +7,7 @@ import { useSort, useSorted, SortHeader } from "@/lib/sort";
 
 export default function BudgetsPage() {
   const {
-    month, sym, categories, budgets, expenseCats, reload, notify,
+    month, sym, categories, budgets, expenseCats, reload, notify, confirm, undo,
   } = useFinance();
 
   const [bCat, setBCat] = useState<string>(""); // "" = overall
@@ -27,9 +27,17 @@ export default function BudgetsPage() {
   };
 
   const deleteBudget = async (id: number) => {
-    await sendJSON(`${API}/budgets/${id}`, "DELETE");
+    const ok = await confirm({
+      title: "Delete budget?",
+      message: "This permanently removes the budget. You can undo it from the bottom bar right after.",
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
+    const r = await sendJSON<{ ok: boolean; log_id: number | null }>(`${API}/budgets/${id}`, "DELETE");
     notify("Budget removed");
     reload();
+    if (r.log_id != null) undo({ message: "Budget deleted.", logId: r.log_id });
   };
 
   const addCategory = async () => {

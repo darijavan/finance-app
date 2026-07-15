@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getDb, logActivity } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -39,5 +39,7 @@ export async function POST(req: NextRequest) {
     frequency, day_of_month, month_of_year,
     b.active === false ? 0 : 1, b.note || ""
   );
+  logActivity(db, "subscription", "create", Number(info.lastInsertRowid),
+    `Added subscription "${name}" (${amount} ${currency}, ${frequency})`);
   return NextResponse.json({ ok: true, id: info.lastInsertRowid }, { status: 201 });
 }

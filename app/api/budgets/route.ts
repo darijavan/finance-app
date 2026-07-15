@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getDb, logActivity } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -29,5 +29,8 @@ export async function PUT(req: NextRequest) {
   db.prepare("DELETE FROM budgets WHERE month=? AND (category_id IS ? OR (category_id IS NULL AND ? IS NULL))")
     .run(month, category_id, category_id);
   db.prepare("INSERT INTO budgets(category_id,month,amount) VALUES(?,?,?)").run(category_id, month, amount);
+  const newId = Number((db.prepare("SELECT last_insert_rowid() AS id").get() as any).id);
+  const scope = category_id == null ? "overall" : `category #${category_id}`;
+  logActivity(db, "budget", "create", newId, `Set ${scope} budget for ${month} = ${amount}`);
   return NextResponse.json({ ok: true });
 }

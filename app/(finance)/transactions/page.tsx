@@ -7,7 +7,7 @@ import { useSort, useSorted, SortHeader } from "@/lib/sort";
 
 export default function TransactionsPage() {
   const {
-    month, settings, categories, transactions, expenseCats, incomeCats, reload, notify,
+    month, settings, categories, transactions, expenseCats, incomeCats, reload, notify, confirm, undo,
   } = useFinance();
 
   const [tAmount, setTAmount] = useState("");
@@ -38,9 +38,17 @@ export default function TransactionsPage() {
   };
 
   const deleteTransaction = async (id: number) => {
-    await sendJSON(`${API}/transactions/${id}`, "DELETE");
+    const ok = await confirm({
+      title: "Delete transaction?",
+      message: "This permanently removes the transaction. You can undo it from the bottom bar right after.",
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
+    const r = await sendJSON<{ ok: boolean; log_id: number | null }>(`${API}/transactions/${id}`, "DELETE");
     notify("Deleted");
     reload();
+    if (r.log_id != null) undo({ message: "Transaction deleted.", logId: r.log_id });
   };
 
   return (
