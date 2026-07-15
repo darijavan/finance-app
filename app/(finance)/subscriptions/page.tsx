@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useFinance } from "../store";
 import { API, sendJSON, fmt, fmtCur, CURRENCIES } from "@/lib/client";
+import type { Subscription } from "@/lib/types";
 import { useSort, useSorted, SortHeader } from "@/lib/sort";
 
 export default function SubscriptionsPage() {
@@ -18,6 +19,7 @@ export default function SubscriptionsPage() {
   const [sCur, setSCur] = useState<string>(settings.currency || "ILS");
   const [sDay, setSDay] = useState("1");
   const [sMonth, setSMonth] = useState("1");
+  const [sEditId, setSEditId] = useState<number | null>(null);
 
   const sort = useSort<"name" | "amount" | "freq" | "monthly" | "cat">(null);
   const sortedSubs = useSorted(subscriptions, sort, {
@@ -28,16 +30,41 @@ export default function SubscriptionsPage() {
     cat: (s) => s.category_name || "",
   });
 
-  const addSubscription = async () => {
+  const startEditSub = (s: Subscription) => {
+    setSEditId(s.id);
+    setSName(s.name);
+    setSAmount(String(s.amount));
+    setSDir(s.direction);
+    setSFreq(s.frequency);
+    setSCat(s.category_id != null ? String(s.category_id) : "");
+    setSCur(s.currency || settings.currency || "ILS");
+    setSDay(String(s.day_of_month));
+    setSMonth(s.month_of_year != null ? String(s.month_of_year) : "1");
+  };
+
+  const cancelEditSub = () => {
+    setSEditId(null);
+    setSName(""); setSAmount(""); setSCat("");
+    setSDir("expense"); setSFreq("monthly"); setSDay("1"); setSMonth("1");
+  };
+
+  const saveSubscription = async () => {
     const amount = parseFloat(sAmount);
     if (!sName.trim() || !Number.isFinite(amount) || amount <= 0) return notify("Enter name + amount");
-    await sendJSON(`${API}/subscriptions`, "POST", {
+    const payload: Record<string, unknown> = {
       name: sName.trim(), amount, direction: sDir, frequency: sFreq, currency: sCur,
       category_id: sCat ? Number(sCat) : null,
       day_of_month: Number(sDay), month_of_year: sFreq === "yearly" ? Number(sMonth) : null,
-    });
-    setSName(""); setSAmount(""); setSCat("");
-    notify("Subscription added");
+    };
+    if (sEditId != null) payload.subscription_id = sEditId;
+    if (sEditId != null) {
+      await sendJSON(`${API}/subscriptions/${sEditId}`, "PUT", payload);
+      notify("Updated");
+    } else {
+      await sendJSON(`${API}/subscriptions`, "POST", payload);
+      notify("Subscription added");
+    }
+    cancelEditSub();
     reload();
   };
 
@@ -63,7 +90,7 @@ export default function SubscriptionsPage() {
 
   return (
     <div className="panel">
-      <h2>Add subscription</h2>
+      <h2>{sEditId != null ? "Edit subscription" : "Add subscription"}</h2>
       <div className="row">
         <div className="field">
           <label>Name</label>
@@ -114,7 +141,8 @@ export default function SubscriptionsPage() {
             <input type="number" min="1" max="12" value={sMonth} onChange={(e) => setSMonth(e.target.value)} style={{ width: 70 }} />
           </div>
         )}
-        <button className="btn" onClick={addSubscription}>Add</button>
+        {sEditId != null && <button className="btn secondary" onClick={cancelEditSub}>Cancel</button>}
+        <button className="btn" onClick={saveSubscription}>{sEditId != null ? "Update" : "Add"}</button>
       </div>
 
       <h2 style={{ marginTop: 22 }}>Subscriptions</h2>
@@ -145,7 +173,10 @@ export default function SubscriptionsPage() {
                 <td className="muted">{s.frequency}{s.frequency === "yearly" ? ` (m${s.month_of_year})` : ""}</td>
                 <td className="muted">{fmtCur(s.monthly_equivalent || 0, s.currency || settings.currency)}</td>
                 <td><span className="tag" style={{ background: s.category_color || "#888" }}>{s.category_name || "—"}</span></td>
-                <td className="right"><button className="btn danger small" onClick={() => deleteSubscription(s.id)}>✕</button></td>
+                <td className="right">
+                  <button className="btn secondary small" title="Edit" onClick={() => startEditSub(s)}>✎</button>{" "}
+                  <button className="btn danger small" title="Delete" onClick={() => deleteSubscription(s.id)}>✕</button>
+                </td>
               </tr>
             ))}
           </tbody>

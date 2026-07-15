@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useFinance } from "../store";
 import { API, sendJSON, fmtCur, catName, catColor, CURRENCIES } from "@/lib/client";
+import type { Transaction } from "@/lib/types";
 import { useSort, useSorted, SortHeader } from "@/lib/sort";
 
 export default function TransactionsPage() {
@@ -16,6 +17,7 @@ export default function TransactionsPage() {
   const [tCur, setTCur] = useState<string>(settings.currency || "ILS");
   const [tDate, setTDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [tNote, setTNote] = useState("");
+  const [editId, setEditId] = useState<number | null>(null);
 
   const sort = useSort<"date" | "category" | "note" | "amount">("date", "desc");
   const sortedTx = useSorted(transactions, sort, {
@@ -25,15 +27,39 @@ export default function TransactionsPage() {
     amount: (t) => (t.direction === "expense" ? -t.amount : t.amount),
   });
 
-  const addTransaction = async () => {
+  const startEditTx = (t: Transaction) => {
+    setEditId(t.id);
+    setTDir(t.direction);
+    setTAmount(String(t.amount));
+    setTCat(t.category_id != null ? String(t.category_id) : "");
+    setTDate(t.date);
+    setTNote(t.note || "");
+    setTCur(t.currency || settings.currency || "ILS");
+  };
+
+  const cancelEdit = () => {
+    setEditId(null);
+    setTAmount(""); setTNote(""); setTCat("");
+    setTDir("expense");
+    setTDate(new Date().toISOString().slice(0, 10));
+    setTCur(settings.currency || "ILS");
+  };
+
+  const saveTransaction = async () => {
     const amount = parseFloat(tAmount);
     if (!Number.isFinite(amount) || amount <= 0) return notify("Enter a valid amount");
     const cid = tCat ? Number(tCat) : null;
-    await sendJSON(`${API}/transactions`, "POST", {
+    const payload = {
       amount, direction: tDir, category_id: cid, date: tDate, note: tNote, currency: tCur,
-    });
-    setTAmount(""); setTNote(""); setTCat("");
-    notify("Saved");
+    };
+    if (editId != null) {
+      await sendJSON(`${API}/transactions/${editId}`, "PUT", payload);
+      notify("Updated");
+    } else {
+      await sendJSON(`${API}/transactions`, "POST", payload);
+      notify("Saved");
+    }
+    cancelEdit();
     reload();
   };
 
@@ -53,7 +79,7 @@ export default function TransactionsPage() {
 
   return (
     <div className="panel">
-      <h2>Add {tDir}</h2>
+      <h2>{editId != null ? "Edit transaction" : `Add ${tDir}`}</h2>
       <div className="row">
         <div className="field">
           <label>Type</label>
@@ -91,7 +117,8 @@ export default function TransactionsPage() {
           <label>Note</label>
           <input value={tNote} onChange={(e) => setTNote(e.target.value)} placeholder="optional" />
         </div>
-        <button className="btn" onClick={addTransaction}>Add</button>
+        {editId != null && <button className="btn secondary" onClick={cancelEdit}>Cancel</button>}
+        <button className="btn" onClick={saveTransaction}>{editId != null ? "Update" : "Add"}</button>
       </div>
 
       <h2 style={{ marginTop: 22 }}>This month</h2>
@@ -118,7 +145,10 @@ export default function TransactionsPage() {
                 <td className={`right ${t.direction === "expense" ? "amount-expense" : "amount-income"}`}>
                   {t.direction === "expense" ? "-" : "+"}{fmtCur(t.amount, t.currency || settings.currency)}
                 </td>
-                <td className="right"><button className="btn danger small" onClick={() => deleteTransaction(t.id)}>✕</button></td>
+                <td className="right">
+                  <button className="btn secondary small" title="Edit" onClick={() => startEditTx(t)}>✎</button>{" "}
+                  <button className="btn danger small" title="Delete" onClick={() => deleteTransaction(t.id)}>✕</button>
+                </td>
               </tr>
             ))}
           </tbody>
