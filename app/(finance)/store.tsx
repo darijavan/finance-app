@@ -10,7 +10,7 @@ import {
   API, getJSON, sendJSON, monthList, CURRENCIES, currentMonth,
 } from "@/lib/client";
 import type {
-  Category, Transaction, Subscription, Budget, Summary, Settings,
+  Category, Transaction, Subscription, Budget, Summary, Settings, Account, Transfer,
 } from "@/lib/types";
 
 interface ConfirmOpts {
@@ -41,6 +41,8 @@ interface FinanceCtx {
   sym: string;
   expenseCats: Category[];
   incomeCats: Category[];
+  accounts: Account[];
+  transfers: Transfer[];
   reload: () => void;
   reloadCategories: () => void;
   notify: (m: string) => void;
@@ -60,6 +62,7 @@ const TABS = [
   { key: "", label: "Dashboard", href: "/" },
   { key: "transactions", label: "Transactions", href: "/transactions" },
   { key: "subscriptions", label: "Subscriptions", href: "/subscriptions" },
+  { key: "accounts", label: "Accounts", href: "/accounts" },
   { key: "budgets", label: "Budgets", href: "/budgets" },
 ];
 
@@ -74,6 +77,8 @@ function Chrome({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -143,16 +148,20 @@ function Chrome({ children }: { children: ReactNode }) {
 
   const loadMonth = useCallback(async () => {
     try {
-      const [tx, subs, b, sum] = await Promise.all([
+      const [tx, subs, b, sum, accs, xf] = await Promise.all([
         getJSON<Transaction[]>(`${API}/transactions?month=${month}`),
         getJSON<Subscription[]>(`${API}/subscriptions`),
         getJSON<Budget[]>(`${API}/budgets?month=${month}`),
         getJSON<Summary>(`${API}/summary?month=${month}`),
+        getJSON<Account[]>(`${API}/accounts`),
+        getJSON<Transfer[]>(`${API}/transfers?limit=50`),
       ]);
       setTransactions(tx);
       setSubscriptions(subs);
       setBudgets(b);
       setSummary(sum);
+      setAccounts(accs);
+      setTransfers(xf);
     } catch (e) { notify("Load failed: " + String(e)); }
   }, [month, notify]);
 
@@ -177,7 +186,7 @@ function Chrome({ children }: { children: ReactNode }) {
 
   const ctx: FinanceCtx = {
     month, setMonth, categories, settings, transactions, subscriptions,
-    budgets, summary, sym, expenseCats, incomeCats, reload, reloadCategories, notify, toast, confirm, undo,
+    budgets, summary, sym, expenseCats, incomeCats, accounts, transfers, reload, reloadCategories, notify, toast, confirm, undo,
   };
 
   return (

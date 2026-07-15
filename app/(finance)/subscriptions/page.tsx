@@ -8,7 +8,7 @@ import { useSort, useSorted, SortHeader } from "@/lib/sort";
 
 export default function SubscriptionsPage() {
   const {
-    month, sym, settings, subscriptions, summary, expenseCats, incomeCats, reload, notify, confirm, undo,
+    month, sym, settings, subscriptions, summary, expenseCats, incomeCats, accounts, reload, notify, confirm, undo,
   } = useFinance();
 
   const [sName, setSName] = useState("");
@@ -19,6 +19,7 @@ export default function SubscriptionsPage() {
   const [sCur, setSCur] = useState<string>(settings.currency || "ILS");
   const [sDay, setSDay] = useState("1");
   const [sMonth, setSMonth] = useState("1");
+  const [sAccount, setSAccount] = useState<string>("");
   const [sEditId, setSEditId] = useState<number | null>(null);
 
   const sort = useSort<"name" | "amount" | "freq" | "monthly" | "cat">(null);
@@ -40,12 +41,13 @@ export default function SubscriptionsPage() {
     setSCur(s.currency || settings.currency || "ILS");
     setSDay(String(s.day_of_month));
     setSMonth(s.month_of_year != null ? String(s.month_of_year) : "1");
+    setSAccount(s.account_id != null ? String(s.account_id) : "");
   };
 
   const cancelEditSub = () => {
     setSEditId(null);
     setSName(""); setSAmount(""); setSCat("");
-    setSDir("expense"); setSFreq("monthly"); setSDay("1"); setSMonth("1");
+    setSDir("expense"); setSFreq("monthly"); setSDay("1"); setSMonth("1"); setSAccount("");
   };
 
   const saveSubscription = async () => {
@@ -55,6 +57,7 @@ export default function SubscriptionsPage() {
       name: sName.trim(), amount, direction: sDir, frequency: sFreq, currency: sCur,
       category_id: sCat ? Number(sCat) : null,
       day_of_month: Number(sDay), month_of_year: sFreq === "yearly" ? Number(sMonth) : null,
+      account_id: sAccount ? Number(sAccount) : null,
     };
     if (sEditId != null) payload.subscription_id = sEditId;
     if (sEditId != null) {
@@ -132,6 +135,15 @@ export default function SubscriptionsPage() {
           </select>
         </div>
         <div className="field">
+          <label>Paid from</label>
+          <select value={sAccount} onChange={(e) => setSAccount(e.target.value)}>
+            <option value="">— none —</option>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>{a.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
           <label>Day of month</label>
           <input type="number" min="1" max="28" value={sDay} onChange={(e) => setSDay(e.target.value)} style={{ width: 70 }} />
         </div>
@@ -161,6 +173,8 @@ export default function SubscriptionsPage() {
             <SortHeader sort={sort} k="freq">Freq</SortHeader>
             <SortHeader sort={sort} k="monthly">~/mo</SortHeader>
             <SortHeader sort={sort} k="cat">Cat</SortHeader>
+            <th>Paid from</th>
+            <th>Started</th>
             <th></th>
           </tr></thead>
           <tbody>
@@ -173,6 +187,7 @@ export default function SubscriptionsPage() {
                 <td className="muted">{s.frequency}{s.frequency === "yearly" ? ` (m${s.month_of_year})` : ""}</td>
                 <td className="muted">{fmtCur(s.monthly_equivalent || 0, s.currency || settings.currency)}</td>
                 <td><span className="tag" style={{ background: s.category_color || "#888" }}>{s.category_name || "—"}</span></td>
+                <td className="muted">{s.account_name || "—"}</td>
                 <td className="right">
                   <button className="btn secondary small" title="Edit" onClick={() => startEditSub(s)}>✎</button>{" "}
                   <button className="btn danger small" title="Delete" onClick={() => deleteSubscription(s.id)}>✕</button>

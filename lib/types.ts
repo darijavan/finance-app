@@ -13,9 +13,36 @@ export interface Transaction {
   category_id: number | null;
   date: string; // YYYY-MM-DD
   note: string;
+  account_id: number | null;
   created_at: string;
   category_name?: string;
   category_color?: string;
+  account_name?: string;
+}
+
+export type AccountType = "bank" | "cash" | "card" | "other";
+
+export interface Account {
+  id: number;
+  name: string;
+  type: AccountType;
+  currency: string;
+  active: boolean;
+  note: string;
+  balance?: number; // base-currency balance, populated by the API
+}
+
+export interface Transfer {
+  id: number;
+  amount: number;
+  currency: string;
+  from_account: number;
+  to_account: number;
+  date: string;
+  note: string;
+  created_at: string;
+  from_name?: string;
+  to_name?: string;
 }
 
 export type Frequency = "monthly" | "yearly";
@@ -32,8 +59,10 @@ export interface Subscription {
   month_of_year: number | null; // 1-12 for yearly
   active: boolean;
   note: string;
+  account_id: number | null; // which account it's charged from
   category_name?: string;
   category_color?: string;
+  account_name?: string;
   monthly_equivalent?: number;
 }
 

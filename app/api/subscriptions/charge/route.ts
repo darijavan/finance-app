@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   const [y, m] = month.split("-").map(Number);
   const subs = db.prepare("SELECT * FROM subscriptions WHERE active=1").all() as any[];
   const insert = db.prepare(
-    "INSERT INTO transactions(amount,currency,direction,category_id,date,note,created_at) VALUES(?,?,?,?,?,?,?)"
+    "INSERT INTO transactions(amount,currency,direction,category_id,date,note,account_id,created_at) VALUES(?,?,?,?,?,?,?,?)"
   );
   db.exec("BEGIN");
   let created = 0;
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       if (due) {
         const day = Math.min(s.day_of_month || 1, 28);
         const date = `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-        insert.run(s.amount, s.currency || "ILS", s.direction, s.category_id, date, `[auto] ${s.name} (${s.frequency})`, new Date().toISOString());
+        insert.run(s.amount, s.currency || "ILS", s.direction, s.category_id, date, `[auto] ${s.name} (${s.frequency})`, s.account_id ?? null, new Date().toISOString());
         created++;
       }
     }

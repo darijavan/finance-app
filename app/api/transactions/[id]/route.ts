@@ -15,6 +15,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if ("amount" in body) { args.push(Math.abs(Number(body.amount))); fields.push("amount=?"); }
   if ("direction" in body) { args.push(body.direction); fields.push("direction=?"); }
   if ("category_id" in body) { args.push(body.category_id != null ? Number(body.category_id) : null); fields.push("category_id=?"); }
+  if ("account_id" in body) { args.push(body.account_id != null ? Number(body.account_id) : null); fields.push("account_id=?"); }
   if ("date" in body) { args.push(body.date); fields.push("date=?"); }
   if ("note" in body) { args.push(body.note); fields.push("note=?"); }
   args.push(id);

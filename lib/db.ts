@@ -44,8 +44,10 @@ function initSchema(db: DatabaseSync) {
       category_id INTEGER,
       date        TEXT NOT NULL,
       note        TEXT DEFAULT '',
+      account_id  INTEGER,
       created_at  TEXT NOT NULL,
-      FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+      FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+      FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL
     );
     CREATE TABLE IF NOT EXISTS subscriptions (
       id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -59,7 +61,29 @@ function initSchema(db: DatabaseSync) {
       month_of_year INTEGER,
       active        INTEGER NOT NULL DEFAULT 1,
       note          TEXT DEFAULT '',
-      FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+      account_id    INTEGER,                  -- which account it's charged from
+      FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+      FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL
+    );
+    CREATE TABLE IF NOT EXISTS accounts (
+      id        INTEGER PRIMARY KEY AUTOINCREMENT,
+      name      TEXT NOT NULL,
+      type      TEXT NOT NULL DEFAULT 'bank',   -- 'bank' | 'cash' | 'card' | 'other'
+      currency  TEXT NOT NULL DEFAULT 'ILS',
+      active    INTEGER NOT NULL DEFAULT 1,
+      note      TEXT DEFAULT ''
+    );
+    CREATE TABLE IF NOT EXISTS transfers (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      amount        REAL NOT NULL,
+      currency      TEXT NOT NULL DEFAULT 'ILS',
+      from_account  INTEGER NOT NULL,
+      to_account    INTEGER NOT NULL,
+      date          TEXT NOT NULL,
+      note          TEXT DEFAULT '',
+      created_at    TEXT NOT NULL,
+      FOREIGN KEY (from_account) REFERENCES accounts(id) ON DELETE RESTRICT,
+      FOREIGN KEY (to_account) REFERENCES accounts(id) ON DELETE RESTRICT
     );
     CREATE TABLE IF NOT EXISTS budgets (
       id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -145,6 +169,12 @@ function migrate(db: DatabaseSync) {
   if (!cols("subscriptions").includes("currency")) {
     db.exec("ALTER TABLE subscriptions ADD COLUMN currency TEXT NOT NULL DEFAULT 'ILS'");
   }
+  if (!cols("transactions").includes("account_id")) {
+    db.exec("ALTER TABLE transactions ADD COLUMN account_id INTEGER");
+  }
+  if (!cols("subscriptions").includes("account_id")) {
+    db.exec("ALTER TABLE subscriptions ADD COLUMN account_id INTEGER");
+  }
 }
 
 function seedDefaults(db: DatabaseSync) {
@@ -166,5 +196,10 @@ function seedDefaults(db: DatabaseSync) {
   if (setCount === 0) {
     run(db, "INSERT INTO settings(key,value) VALUES(?,?)", ["currency", "ILS"]);
     run(db, "INSERT INTO settings(key,value) VALUES(?,?)", ["currency_symbol", "₪"]);
+  }
+  // Seed a default "Bank" account on first run so transfers/balances have somewhere to start.
+  const accCount = (db.prepare("SELECT COUNT(*) AS c FROM accounts").get() as any).c;
+  if (accCount === 0) {
+    run(db, "INSERT INTO accounts(name,type,currency) VALUES(?,?,?)", ["Bank", "bank", "ILS"]);
   }
 }

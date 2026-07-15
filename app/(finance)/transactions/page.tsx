@@ -8,7 +8,7 @@ import { useSort, useSorted, SortHeader } from "@/lib/sort";
 
 export default function TransactionsPage() {
   const {
-    month, settings, categories, transactions, expenseCats, incomeCats, reload, notify, confirm, undo,
+    month, settings, categories, accounts, transactions, expenseCats, incomeCats, reload, notify, confirm, undo,
   } = useFinance();
 
   const [tAmount, setTAmount] = useState("");
@@ -17,6 +17,7 @@ export default function TransactionsPage() {
   const [tCur, setTCur] = useState<string>(settings.currency || "ILS");
   const [tDate, setTDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [tNote, setTNote] = useState("");
+  const [tAccount, setTAccount] = useState<string>("");
   const [editId, setEditId] = useState<number | null>(null);
 
   const sort = useSort<"date" | "category" | "note" | "amount">("date", "desc");
@@ -35,6 +36,7 @@ export default function TransactionsPage() {
     setTDate(t.date);
     setTNote(t.note || "");
     setTCur(t.currency || settings.currency || "ILS");
+    setTAccount(t.account_id != null ? String(t.account_id) : "");
   };
 
   const cancelEdit = () => {
@@ -43,6 +45,7 @@ export default function TransactionsPage() {
     setTDir("expense");
     setTDate(new Date().toISOString().slice(0, 10));
     setTCur(settings.currency || "ILS");
+    setTAccount("");
   };
 
   const saveTransaction = async () => {
@@ -51,6 +54,7 @@ export default function TransactionsPage() {
     const cid = tCat ? Number(tCat) : null;
     const payload = {
       amount, direction: tDir, category_id: cid, date: tDate, note: tNote, currency: tCur,
+      account_id: tAccount ? Number(tAccount) : null,
     };
     if (editId != null) {
       await sendJSON(`${API}/transactions/${editId}`, "PUT", payload);
@@ -110,6 +114,15 @@ export default function TransactionsPage() {
           </select>
         </div>
         <div className="field">
+          <label>Account</label>
+          <select value={tAccount} onChange={(e) => setTAccount(e.target.value)}>
+            <option value="">— none —</option>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>{a.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
           <label>Date</label>
           <input type="date" value={tDate} onChange={(e) => setTDate(e.target.value)} />
         </div>
@@ -129,6 +142,7 @@ export default function TransactionsPage() {
             <SortHeader sort={sort} k="date">Date</SortHeader>
             <SortHeader sort={sort} k="category">Category</SortHeader>
             <SortHeader sort={sort} k="note">Note</SortHeader>
+            <th>Account</th>
             <SortHeader sort={sort} k="amount" className="right">Amount</SortHeader>
             <th></th>
           </tr></thead>
@@ -142,6 +156,7 @@ export default function TransactionsPage() {
                   </span>
                 </td>
                 <td className="muted">{t.note}</td>
+                <td className="muted">{t.account_name || "—"}</td>
                 <td className={`right ${t.direction === "expense" ? "amount-expense" : "amount-income"}`}>
                   {t.direction === "expense" ? "-" : "+"}{fmtCur(t.amount, t.currency || settings.currency)}
                 </td>

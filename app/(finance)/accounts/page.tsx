@@ -1,0 +1,186 @@
+"use client";
+
+import { useState } from "react";
+import { useFinance } from "../store";
+import { API, sendJSON, fmt, fmtCur, CURRENCIES } from "@/lib/client";
+import type { Account, Transfer, AccountType } from "@/lib/types";
+
+const TYPES: { v: AccountType; label: string }[] = [
+  { v: "bank", label: "Bank" },
+  { v: "cash", label: "Cash" },
+  { v: "card", label: "Prepaid card" },
+  { v: "other", label: "Other" },
+];
+
+export default function AccountsPage() {
+  const {
+    settings, accounts, transfers, reload, notify, confirm, undo,
+  } = useFinance();
+
+  const [aName, setAName] = useState("");
+  const [aType, setAType] = useState<AccountType>("bank");
+  const [aCur, setACur] = useState<string>(settings.currency || "ILS");
+
+  const [tAmount, setTAmount] = useState("");
+  const [tFrom, setTFrom] = useState<string>("");
+  const [tTo, setTTo] = useState<string>("");
+  const [tDate, setTDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [tNote, setTNote] = useState("");
+  const [tCur, setTCur] = useState<string>(settings.currency || "ILS");
+
+  const total = accounts.reduce((acc, a) => acc + (a.balance || 0), 0);
+
+  const saveAccount = async () => {
+    if (!aName.trim()) return notify("Enter a name");
+    await sendJSON(`${API}/accounts`, "POST", { name: aName.trim(), type: aType, currency: aCur });
+    notify("Account added");
+    setAName(""); setAType("bank"); setACur(settings.currency || "ILS");
+    reload();
+  };
+
+  const deleteAccount = async (id: number) => {
+    const ok = await confirm({
+      title: "Delete account?",
+      message: "Only accounts with no transactions, transfers, or subscriptions can be deleted.",
+      confirmLabel: "Delete", danger: true,
+    });
+    if (!ok) return;
+    const r = await sendJSON<{ ok: boolean; log_id: number | null; error?: string }>(`${API}/accounts/${id}`, "DELETE");
+    if ((r as any).error) { notify((r as any).error); return; }
+    notify("Deleted");
+    reload();
+    if (r.log_id != null) undo({ message: "Account deleted.", logId: r.log_id });
+  };
+
+  const saveTransfer = async () => {
+    const amount = parseFloat(tAmount);
+    if (!Number.isFinite(amount) || amount <= 0) return notify("Enter a valid amount");
+    if (!tFrom || !tTo || tFrom === tTo) return notify("Pick two different accounts");
+    const r = await sendJSON<{ ok: boolean; error?: string }>(`${API}/transfers`, "POST", {
+      amount, from_account: Number(tFrom), to_account: Number(tTo),
+      date: tDate, note: tNote, currency: tCur,
+    });
+    if ((r as any).error) { notify((r as any).error); return; }
+    notify("Transfer recorded");
+    setTAmount(""); setTNote(""); setTFrom(""); setTTo(""); setTCur(settings.currency || "ILS");
+    reload();
+  };
+
+  const deleteTransfer = async (id: number) => {
+    const ok = await confirm({
+      title: "Delete transfer?",
+      message: "This reverses the balance move (no undo snapshot).",
+      confirmLabel: "Delete", danger: true,
+    });
+    if (!ok) return;
+    await sendJSON(`${API}/transfers/${id}`, "DELETE");
+    notify("Deleted");
+    reload();
+  };
+
+  const accName = (id?: number | null) => accounts.find((a) => a.id === id)?.name || "?";
+
+  return (
+    <div className="panel">
+      <h2>Accounts</h2>
+      <p className="muted" style={{ fontSize: 12 }}>
+        Track where money lives. Use <strong>Transfer</strong> for ATM withdrawals (Bank → Cash) or topping up a prepaid card (Bank → Card) — those are not expenses, just moves between accounts.
+      </p>
+
+      <div className="cards" style={{ marginBottom: 18 }}>
+        {accounts.map((a) => (
+          <div className="card" key={a.id} style={{ position: "relative" }}>
+            <div className="label">{a.name} <span className="muted">({a.type})</span></div>
+            <div className={`value ${a.balance! >= 0 ? "green" : "red"}`}>{fmtCur(a.balance || 0, a.currency)}</div>
+            <button
+              className="btn danger small"
+              style={{ position: "absolute", top: 8, right: 8 }}
+              title="Delete"
+              onClick={() => deleteAccount(a.id)}
+            >✕</button>
+          </div>
+        ))}
+        <div className="card">
+          <div className="label">Net worth</div>
+          <div className={`value ${total >= 0 ? "green" : "red"}`}>{fmt(total, settings.currency_symbol || "₪")}</div>
+        </div>
+      </div>
+
+      <h2>Add account</h2>
+      <div className="row">
+        <div className="field">
+          <label>Name</label>
+          <input value={aName} onChange={(e) => setAName(e.target.value)} placeholder="Cash, Prepaid card…" />
+        </div>
+        <div className="field">
+          <label>Type</label>
+          <select value={aType} onChange={(e) => setAType(e.target.value as AccountType)}>
+            {TYPES.map((t) => <option key={t.v} value={t.v}>{t.label}</option>)}
+          </select>
+        </div>
+        <div className="field">
+          <label>Currency</label>
+          <select value={aCur} onChange={(e) => setACur(e.target.value)} style={{ width: 90 }}>
+            {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>)}
+          </select>
+        </div>
+        <button className="btn" onClick={saveAccount}>Add</button>
+      </div>
+
+      <h2 style={{ marginTop: 22 }}>Transfer between accounts</h2>
+      <div className="row">
+        <div className="field">
+          <label>Amount</label>
+          <input type="number" step="0.01" value={tAmount} onChange={(e) => setTAmount(e.target.value)} placeholder="0.00" />
+        </div>
+        <div className="field">
+          <label>From</label>
+          <select value={tFrom} onChange={(e) => setTFrom(e.target.value)}>
+            <option value="">— from —</option>
+            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+          </select>
+        </div>
+        <div className="field">
+          <label>To</label>
+          <select value={tTo} onChange={(e) => setTTo(e.target.value)}>
+            <option value="">— to —</option>
+            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+          </select>
+        </div>
+        <div className="field">
+          <label>Date</label>
+          <input type="date" value={tDate} onChange={(e) => setTDate(e.target.value)} />
+        </div>
+        <div className="field">
+          <label>Note</label>
+          <input value={tNote} onChange={(e) => setTNote(e.target.value)} placeholder="optional" />
+        </div>
+        <button className="btn" onClick={saveTransfer}>Transfer</button>
+      </div>
+
+      <h2 style={{ marginTop: 22 }}>Recent transfers</h2>
+      {transfers.length === 0 && <div className="empty">No transfers yet.</div>}
+      {transfers.length > 0 && (
+        <table>
+          <thead><tr>
+            <th>Date</th><th>From</th><th>To</th><th>Amount</th><th>Note</th><th></th>
+          </tr></thead>
+          <tbody>
+            {transfers.map((t: Transfer) => (
+              <tr key={t.id}>
+                <td>{t.date}</td>
+                <td className="muted">{t.from_name || accName(t.from_account)}</td>
+                <td className="muted">{t.to_name || accName(t.to_account)}</td>
+                <td className="right">{fmtCur(t.amount, t.currency)}</td>
+                <td className="muted">{t.note}</td>
+                <td className="right">
+                  <button className="btn danger small" title="Delete" onClick={() => deleteTransfer(t.id)}>✕</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
