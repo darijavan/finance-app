@@ -222,7 +222,7 @@ function Chrome({ children }: { children: ReactNode }) {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>{confirmState.title}</h3>
             <p>{confirmState.message}</p>
-            <p className="muted" style={{ fontSize: 12 }}>This action cannot be undone after you close this dialog.</p>
+            <p className="muted" style={{ fontSize: 12 }}>Please confirm that you want to delete this item.</p>
             <div className="modal-actions">
               <button className="btn secondary" onClick={() => closeConfirm(false)}>Cancel</button>
               <button
