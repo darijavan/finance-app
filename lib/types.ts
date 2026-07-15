@@ -59,6 +59,7 @@ export interface Subscription {
   month_of_year: number | null; // 1-12 for yearly
   active: boolean;
   note: string;
+  start_date: string | null; // YYYY-MM-DD when the subscription began
   account_id: number | null; // which account it's charged from
   category_name?: string;
   category_color?: string;

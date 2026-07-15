@@ -19,6 +19,7 @@ export default function SubscriptionsPage() {
   const [sCur, setSCur] = useState<string>(settings.currency || "ILS");
   const [sDay, setSDay] = useState("1");
   const [sMonth, setSMonth] = useState("1");
+  const [sDate, setSDate] = useState<string>(""); // start date YYYY-MM-DD
   const [sAccount, setSAccount] = useState<string>("");
   const [sEditId, setSEditId] = useState<number | null>(null);
 
@@ -41,13 +42,14 @@ export default function SubscriptionsPage() {
     setSCur(s.currency || settings.currency || "ILS");
     setSDay(String(s.day_of_month));
     setSMonth(s.month_of_year != null ? String(s.month_of_year) : "1");
+    setSDate(s.start_date || "");
     setSAccount(s.account_id != null ? String(s.account_id) : "");
   };
 
   const cancelEditSub = () => {
     setSEditId(null);
     setSName(""); setSAmount(""); setSCat("");
-    setSDir("expense"); setSFreq("monthly"); setSDay("1"); setSMonth("1"); setSAccount("");
+    setSDir("expense"); setSFreq("monthly"); setSDay("1"); setSMonth("1"); setSDate(""); setSAccount("");
   };
 
   const saveSubscription = async () => {
@@ -57,6 +59,7 @@ export default function SubscriptionsPage() {
       name: sName.trim(), amount, direction: sDir, frequency: sFreq, currency: sCur,
       category_id: sCat ? Number(sCat) : null,
       day_of_month: Number(sDay), month_of_year: sFreq === "yearly" ? Number(sMonth) : null,
+      start_date: sDate ? sDate : null,
       account_id: sAccount ? Number(sAccount) : null,
     };
     if (sEditId != null) payload.subscription_id = sEditId;
@@ -147,6 +150,10 @@ export default function SubscriptionsPage() {
           <label>Day of month</label>
           <input type="number" min="1" max="28" value={sDay} onChange={(e) => setSDay(e.target.value)} style={{ width: 70 }} />
         </div>
+        <div className="field">
+          <label>Start date</label>
+          <input type="date" value={sDate} onChange={(e) => setSDate(e.target.value)} />
+        </div>
         {sFreq === "yearly" && (
           <div className="field">
             <label>Month (1-12)</label>
@@ -188,6 +195,7 @@ export default function SubscriptionsPage() {
                 <td className="muted">{fmtCur(s.monthly_equivalent || 0, s.currency || settings.currency)}</td>
                 <td><span className="tag" style={{ background: s.category_color || "#888" }}>{s.category_name || "—"}</span></td>
                 <td className="muted">{s.account_name || "—"}</td>
+                <td className="muted">{s.start_date || "—"}</td>
                 <td className="right">
                   <button className="btn secondary small" title="Edit" onClick={() => startEditSub(s)}>✎</button>{" "}
                   <button className="btn danger small" title="Delete" onClick={() => deleteSubscription(s.id)}>✕</button>

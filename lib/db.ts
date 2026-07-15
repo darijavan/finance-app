@@ -61,6 +61,7 @@ function initSchema(db: DatabaseSync) {
       month_of_year INTEGER,
       active        INTEGER NOT NULL DEFAULT 1,
       note          TEXT DEFAULT '',
+      start_date    TEXT DEFAULT NULL,        -- when the subscription began (YYYY-MM-DD)
       account_id    INTEGER,                  -- which account it's charged from
       FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
       FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL
@@ -168,6 +169,9 @@ function migrate(db: DatabaseSync) {
   }
   if (!cols("subscriptions").includes("currency")) {
     db.exec("ALTER TABLE subscriptions ADD COLUMN currency TEXT NOT NULL DEFAULT 'ILS'");
+  }
+  if (!cols("subscriptions").includes("start_date")) {
+    db.exec("ALTER TABLE subscriptions ADD COLUMN start_date TEXT DEFAULT NULL");
   }
   if (!cols("transactions").includes("account_id")) {
     db.exec("ALTER TABLE transactions ADD COLUMN account_id INTEGER");

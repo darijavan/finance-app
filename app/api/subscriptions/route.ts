@@ -4,7 +4,7 @@ import { getDb, logActivity } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 // GET /api/subscriptions
-// POST /api/subscriptions  body: { name, amount, direction?, category_id?, frequency?, day_of_month?, month_of_year?, account_id?, active?, note? }
+// POST /api/subscriptions  body: { name, amount, direction?, category_id?, frequency?, day_of_month?, month_of_year?, start_date?, account_id?, active?, note? }
 export async function GET() {
   const db = getDb();
   const rows = db.prepare(
@@ -30,16 +30,17 @@ export async function POST(req: NextRequest) {
   const day_of_month = Math.min(Math.max(Number(b.day_of_month) || 1, 1), 28);
   const month_of_year = b.month_of_year != null ? Number(b.month_of_year) : null;
   const currency = (b.currency || "ILS").toString().toUpperCase();
+  const startDate = b.start_date ? String(b.start_date) : null;
   const accountId = b.account_id != null ? Number(b.account_id) : null;
   const info = db.prepare(
-    `INSERT INTO subscriptions(name,amount,currency,direction,category_id,frequency,day_of_month,month_of_year,active,note,account_id)
-     VALUES(?,?,?,?,?,?,?,?,?,?,?)`
+    `INSERT INTO subscriptions(name,amount,currency,direction,category_id,frequency,day_of_month,month_of_year,active,note,start_date,account_id)
+     VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`
   ).run(
     name, amount, currency,
     b.direction === "income" ? "income" : "expense",
     b.category_id != null ? Number(b.category_id) : null,
     frequency, day_of_month, month_of_year,
-    b.active === false ? 0 : 1, b.note || "", accountId
+    b.active === false ? 0 : 1, b.note || "", startDate, accountId
   );
   logActivity(db, "subscription", "create", Number(info.lastInsertRowid),
     `Added subscription "${name}" (${amount} ${currency}, ${frequency})`);
