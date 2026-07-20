@@ -12,7 +12,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const b = await req.json();
   const fields: string[] = [];
   const args: any[] = [];
-  for (const k of ["name", "amount", "direction", "category_id", "frequency", "day_of_month", "month_of_year", "note", "account_id"]) {
+  for (const k of ["name", "amount", "currency", "direction", "category_id", "frequency", "day_of_month", "month_of_year", "note", "start_date", "account_id"]) {
     if (k in b) { args.push(b[k]); fields.push(`${k}=?`); }
   }
   if ("active" in b) { args.push(b.active ? 1 : 0); fields.push("active=?"); }
