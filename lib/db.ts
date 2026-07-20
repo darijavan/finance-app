@@ -45,9 +45,11 @@ function initSchema(db: DatabaseSync) {
       date        TEXT NOT NULL,
       note        TEXT DEFAULT '',
       account_id  INTEGER,
+      subscription_id INTEGER,
       created_at  TEXT NOT NULL,
       FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
-      FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL
+      FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL,
+      FOREIGN KEY (subscription_id) REFERENCES subscriptions(id) ON DELETE SET NULL
     );
     CREATE TABLE IF NOT EXISTS subscriptions (
       id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -176,9 +178,28 @@ function migrate(db: DatabaseSync) {
   if (!cols("transactions").includes("account_id")) {
     db.exec("ALTER TABLE transactions ADD COLUMN account_id INTEGER");
   }
+  if (!cols("transactions").includes("subscription_id")) {
+    db.exec("ALTER TABLE transactions ADD COLUMN subscription_id INTEGER");
+  }
   if (!cols("subscriptions").includes("account_id")) {
     db.exec("ALTER TABLE subscriptions ADD COLUMN account_id INTEGER");
   }
+  // Link legacy automatic charges to their source subscription before enforcing idempotency.
+  // Matching the generated note *and* scheduled day prevents accidental links to manual rows.
+  db.exec(`UPDATE transactions
+    SET subscription_id = (
+      SELECT s.id FROM subscriptions AS s
+      WHERE transactions.note = '[auto] ' || s.name || ' (' || s.frequency || ')'
+        AND CAST(substr(transactions.date, 9, 2) AS INTEGER) = MIN(COALESCE(s.day_of_month, 1), 28)
+        AND (s.frequency = 'monthly' OR (
+          s.frequency = 'yearly' AND CAST(substr(transactions.date, 6, 2) AS INTEGER) = s.month_of_year
+        ))
+      LIMIT 1
+    )
+    WHERE subscription_id IS NULL AND note LIKE '[auto] %'`);
+  // A recurring subscription may create at most one automatic transaction on its due date.
+  db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_auto_subscription_charge
+    ON transactions(subscription_id, date) WHERE subscription_id IS NOT NULL`);
 }
 
 function seedDefaults(db: DatabaseSync) {

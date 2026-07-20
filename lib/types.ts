@@ -14,6 +14,7 @@ export interface Transaction {
   date: string; // YYYY-MM-DD
   note: string;
   account_id: number | null;
+  subscription_id?: number | null; // set for automatically-created subscription charges
   created_at: string;
   category_name?: string;
   category_color?: string;
