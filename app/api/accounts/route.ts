@@ -4,35 +4,31 @@ import { getConverter } from "@/lib/fx";
 
 export const dynamic = "force-dynamic";
 
-const ACC_TYPES = new Set(["bank", "cash", "card", "other"]);
-
-// Compute each account's balance in base currency from transactions + transfers.
-// Expenses/income on a transaction debit/credit that account; transfers move
-// value from one account to another (no net change to total wealth).
-async function balancesByAccount(db: any, toBase: (n: number, c: string) => number) {
-  const out = new Map<number, number>();
-  const bump = (id: number, v: number) => out.set(id, (out.get(id) || 0) + v);
-  for (const t of db.prepare("SELECT account_id, amount, currency, direction FROM transactions WHERE account_id IS NOT NULL").all() as any[]) {
-    const v = toBase(t.amount, t.currency || "ILS");
-    bump(t.account_id, t.direction === "expense" ? -v : v);
+// Balances are held in each account's native currency. Snapshots prevent later FX changes
+// from rewriting the value of a past transaction or either side of a transfer.
+async function balancesByAccount(db: any, accounts: any[], toBase: (n: number, c: string) => number) {
+  const native = new Map<number, number>();
+  const byId = new Map(accounts.map((a: any) => [a.id, a]));
+  const bump = (id: number, v: number) => native.set(id, (native.get(id) || 0) + v);
+  for (const t of db.prepare("SELECT account_id, amount, currency, account_amount, account_currency, direction FROM transactions WHERE account_id IS NOT NULL").all() as any[]) {
+    const value = t.account_amount ?? t.amount;
+    bump(t.account_id, t.direction === "expense" ? -value : value);
   }
-  for (const x of db.prepare("SELECT from_account, to_account, amount, currency FROM transfers").all() as any[]) {
-    const v = toBase(x.amount, x.currency || "ILS");
-    bump(x.from_account, -v);
-    bump(x.to_account, v);
+  for (const x of db.prepare("SELECT from_account, to_account, amount, from_amount, to_amount FROM transfers").all() as any[]) {
+    bump(x.from_account, -(x.from_amount ?? x.amount));
+    bump(x.to_account, x.to_amount ?? x.amount);
   }
-  return out;
+  return accounts.map((a: any) => {
+    const balance = Math.round((native.get(a.id) || 0) * 100) / 100;
+    return { ...a, balance, base_balance: Math.round(toBase(balance, a.currency) * 100) / 100 };
+  });
 }
 
-// GET /api/accounts   -> accounts with computed `balance` (base currency)
-// POST /api/accounts  body: { name, type?, currency?, note? }
 export async function GET() {
   const db = getDb();
   const { toBase } = await getConverter();
-  const rows = db.prepare("SELECT * FROM accounts ORDER BY active DESC, type, name").all() as any[];
-  const bal = await balancesByAccount(db, toBase);
-  for (const a of rows) a.balance = Math.round((bal.get(a.id) || 0) * 100) / 100;
-  return NextResponse.json(rows);
+  const accounts = db.prepare("SELECT * FROM accounts ORDER BY active DESC, type, name").all() as any[];
+  return NextResponse.json(await balancesByAccount(db, accounts, toBase));
 }
 
 export async function POST(req: NextRequest) {
@@ -40,11 +36,9 @@ export async function POST(req: NextRequest) {
   const b = await req.json();
   const name = (b.name ?? "").trim();
   if (!name) return NextResponse.json({ error: "name required" }, { status: 400 });
-  const type = ACC_TYPES.has(b.type) ? b.type : "bank";
+  const type = new Set(["bank", "cash", "card", "other"]).has(b.type) ? b.type : "bank";
   const currency = (b.currency || "ILS").toString().toUpperCase();
-  const info = db.prepare(
-    "INSERT INTO accounts(name,type,currency,active,note) VALUES(?,?,?,1,?)"
-  ).run(name, type, currency, b.note || "");
+  const info = db.prepare("INSERT INTO accounts(name,type,currency,active,note) VALUES(?,?,?,1,?)").run(name, type, currency, b.note || "");
   logActivity(db, "account", "create", Number(info.lastInsertRowid), `Added account "${name}" (${type})`);
   return NextResponse.json({ ok: true, id: info.lastInsertRowid }, { status: 201 });
 }

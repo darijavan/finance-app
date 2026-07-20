@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, logActivity } from "@/lib/db";
+import { snapshotConversion } from "@/lib/fx-historical";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,9 @@ export async function POST(req: NextRequest) {
   const cutoffDay = month < currentMonth ? 28 : month === currentMonth ? Number(today.slice(8, 10)) : 0;
   const subs = db.prepare("SELECT * FROM subscriptions WHERE active=1").all() as any[];
   const insert = db.prepare(
-    "INSERT OR IGNORE INTO transactions(amount,currency,direction,category_id,date,note,account_id,subscription_id,created_at) VALUES(?,?,?,?,?,?,?,?,?)"
+    `INSERT OR IGNORE INTO transactions(amount,currency,direction,category_id,date,note,account_id,subscription_id,
+      account_amount,account_currency,account_fx_rate,account_fx_date,account_fx_source,created_at)
+     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
   );
   db.exec("BEGIN");
   let created = 0;
@@ -35,9 +38,17 @@ export async function POST(req: NextRequest) {
         const date = `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
         // Do not charge ahead of its due day or before the subscription itself began.
         if (day > cutoffDay || (s.start_date && date < s.start_date)) continue;
+        let snap: any = { account_amount: null, account_currency: null, account_fx_rate: null, account_fx_date: null, account_fx_source: null };
+        if (s.account_id != null) {
+          const account = db.prepare("SELECT currency FROM accounts WHERE id=?").get(s.account_id) as any;
+          if (!account) throw new Error(`subscription account ${s.account_id} not found`);
+          const fx = await snapshotConversion(s.amount, s.currency || "ILS", account.currency, date);
+          snap = { account_amount: fx.amount, account_currency: account.currency, account_fx_rate: fx.rate, account_fx_date: fx.rate_date, account_fx_source: fx.source };
+        }
         const result = insert.run(
           s.amount, s.currency || "ILS", s.direction, s.category_id, date,
-          `[auto] ${s.name} (${s.frequency})`, s.account_id ?? null, s.id, now.toISOString(),
+          `[auto] ${s.name} (${s.frequency})`, s.account_id ?? null, s.id,
+          snap.account_amount, snap.account_currency, snap.account_fx_rate, snap.account_fx_date, snap.account_fx_source, now.toISOString(),
         );
         if (result.changes > 0) created++;
       }

@@ -45,6 +45,11 @@ function initSchema(db: DatabaseSync) {
       date        TEXT NOT NULL,
       note        TEXT DEFAULT '',
       account_id  INTEGER,
+      account_amount REAL,
+      account_currency TEXT,
+      account_fx_rate REAL,
+      account_fx_date TEXT,
+      account_fx_source TEXT,
       subscription_id INTEGER,
       created_at  TEXT NOT NULL,
       FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
@@ -84,6 +89,14 @@ function initSchema(db: DatabaseSync) {
       to_account    INTEGER NOT NULL,
       date          TEXT NOT NULL,
       note          TEXT DEFAULT '',
+      from_amount   REAL,
+      from_currency TEXT,
+      to_amount     REAL,
+      to_currency   TEXT,
+      from_fx_rate  REAL,
+      to_fx_rate    REAL,
+      fx_rate_date  TEXT,
+      fx_source     TEXT,
       created_at    TEXT NOT NULL,
       FOREIGN KEY (from_account) REFERENCES accounts(id) ON DELETE RESTRICT,
       FOREIGN KEY (to_account) REFERENCES accounts(id) ON DELETE RESTRICT
@@ -100,6 +113,16 @@ function initSchema(db: DatabaseSync) {
       code       TEXT PRIMARY KEY,
       rate       REAL NOT NULL,
       updated_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS fx_daily_rates (
+      requested_date TEXT NOT NULL,
+      base_currency  TEXT NOT NULL,
+      quote_currency TEXT NOT NULL,
+      rate           REAL NOT NULL,
+      rate_date      TEXT NOT NULL,
+      source         TEXT NOT NULL,
+      retrieved_at   TEXT NOT NULL,
+      PRIMARY KEY (requested_date, base_currency, quote_currency)
     );
     CREATE INDEX IF NOT EXISTS idx_tx_date ON transactions(date);
     CREATE TABLE IF NOT EXISTS activity_log (
@@ -181,8 +204,24 @@ function migrate(db: DatabaseSync) {
   if (!cols("transactions").includes("subscription_id")) {
     db.exec("ALTER TABLE transactions ADD COLUMN subscription_id INTEGER");
   }
+  for (const column of [
+    "account_amount REAL", "account_currency TEXT", "account_fx_rate REAL",
+    "account_fx_date TEXT", "account_fx_source TEXT",
+  ]) {
+    if (!cols("transactions").includes(column.split(" ")[0])) {
+      db.exec(`ALTER TABLE transactions ADD COLUMN ${column}`);
+    }
+  }
   if (!cols("subscriptions").includes("account_id")) {
     db.exec("ALTER TABLE subscriptions ADD COLUMN account_id INTEGER");
+  }
+  for (const column of [
+    "from_amount REAL", "from_currency TEXT", "to_amount REAL", "to_currency TEXT",
+    "from_fx_rate REAL", "to_fx_rate REAL", "fx_rate_date TEXT", "fx_source TEXT",
+  ]) {
+    if (!cols("transfers").includes(column.split(" ")[0])) {
+      db.exec(`ALTER TABLE transfers ADD COLUMN ${column}`);
+    }
   }
   // Link legacy automatic charges to their source subscription before enforcing idempotency.
   // Matching the generated note *and* scheduled day prevents accidental links to manual rows.

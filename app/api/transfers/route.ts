@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, logActivity } from "@/lib/db";
+import { snapshotConversion } from "@/lib/fx-historical";
 
 export const dynamic = "force-dynamic";
 
 // GET /api/transfers?limit=N
-// POST /api/transfers  body: { amount, from_account, to_account, date?, note?, currency? }
 export async function GET(req: NextRequest) {
   const db = getDb();
   const { searchParams } = new URL(req.url);
@@ -15,11 +15,12 @@ export async function GET(req: NextRequest) {
      FROM transfers t
      LEFT JOIN accounts f ON t.from_account=f.id
      LEFT JOIN accounts g ON t.to_account=g.id
-     ORDER BY t.date DESC, t.id DESC LIMIT ?`
+     ORDER BY t.date DESC, t.id DESC LIMIT ?`,
   ).all(limit) as any[];
   return NextResponse.json(rows);
 }
 
+// POST snapshots both sides in their respective account currencies using the dated quote.
 export async function POST(req: NextRequest) {
   const db = getDb();
   const b = await req.json();
@@ -30,18 +31,29 @@ export async function POST(req: NextRequest) {
   if (!from_account || !to_account || from_account === to_account) {
     return NextResponse.json({ error: "from/to accounts required and must differ" }, { status: 400 });
   }
-  const exists = (id: number) => (db.prepare("SELECT id FROM accounts WHERE id=?").get(id) as any);
-  if (!exists(from_account) || !exists(to_account)) {
-    return NextResponse.json({ error: "account not found" }, { status: 404 });
-  }
+  const from = db.prepare("SELECT currency FROM accounts WHERE id=?").get(from_account) as { currency: string } | undefined;
+  const to = db.prepare("SELECT currency FROM accounts WHERE id=?").get(to_account) as { currency: string } | undefined;
+  if (!from || !to) return NextResponse.json({ error: "account not found" }, { status: 404 });
   const date = b.date || new Date().toISOString().slice(0, 10);
   const note = b.note || "";
   const currency = (b.currency || "ILS").toString().toUpperCase();
-  const info = db.prepare(
-    "INSERT INTO transfers(amount,currency,from_account,to_account,date,note,created_at) VALUES(?,?,?,?,?,?,?)"
-  ).run(amount, currency, from_account, to_account, date, note, new Date().toISOString());
-  const row = db.prepare("SELECT * FROM transfers WHERE id=?").get(info.lastInsertRowid);
-  logActivity(db, "transfer", "create", Number(info.lastInsertRowid),
-    `Transferred ${amount} ${currency} (${from_account} -> ${to_account}) on ${date}`);
-  return NextResponse.json(row, { status: 201 });
+  try {
+    const [fromFx, toFx] = await Promise.all([
+      snapshotConversion(amount, currency, from.currency, date),
+      snapshotConversion(amount, currency, to.currency, date),
+    ]);
+    const info = db.prepare(
+      `INSERT INTO transfers(amount,currency,from_account,to_account,date,note,
+        from_amount,from_currency,to_amount,to_currency,from_fx_rate,to_fx_rate,fx_rate_date,fx_source,created_at)
+       VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    ).run(amount, currency, from_account, to_account, date, note,
+      fromFx.amount, from.currency, toFx.amount, to.currency, fromFx.rate, toFx.rate,
+      `${fromFx.rate_date}|${toFx.rate_date}`, `${fromFx.source}|${toFx.source}`, new Date().toISOString());
+    const row = db.prepare("SELECT * FROM transfers WHERE id=?").get(info.lastInsertRowid);
+    logActivity(db, "transfer", "create", Number(info.lastInsertRowid),
+      `Transferred ${fromFx.amount} ${from.currency} → ${toFx.amount} ${to.currency} on ${date}`);
+    return NextResponse.json(row, { status: 201 });
+  } catch (e) {
+    return NextResponse.json({ error: String(e) }, { status: 422 });
+  }
 }

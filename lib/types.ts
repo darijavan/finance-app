@@ -30,7 +30,8 @@ export interface Account {
   currency: string;
   active: boolean;
   note: string;
-  balance?: number; // base-currency balance, populated by the API
+  balance?: number; // native-currency balance, populated by the API
+  base_balance?: number; // current display/base valuation of the native balance
 }
 
 export interface Transfer {
