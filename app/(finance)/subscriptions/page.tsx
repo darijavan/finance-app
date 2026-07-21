@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useFinance } from "../store";
 import { API, sendJSON, fmt, fmtCur, CURRENCIES } from "@/lib/client";
 import type { Subscription } from "@/lib/types";
@@ -32,7 +32,12 @@ export default function SubscriptionsPage() {
     cat: (s) => s.category_name || "",
   });
 
+  const formRef = useRef<HTMLDivElement>(null);
+
   const startEditSub = (s: Subscription) => {
+    // The form lives above the list — bring it into view so the edit is obvious.
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    formRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
     setSEditId(s.id);
     setSName(s.name);
     setSAmount(String(s.amount));
@@ -95,7 +100,8 @@ export default function SubscriptionsPage() {
   };
 
   return (
-    <div className="panel">
+    <>
+    <div className={sEditId != null ? "panel editing" : "panel"} ref={formRef}>
       <h2>{sEditId != null ? "Edit subscription" : "Add subscription"}</h2>
       <div className="row">
         <div className="field">
@@ -163,8 +169,10 @@ export default function SubscriptionsPage() {
         {sEditId != null && <button className="btn secondary" onClick={cancelEditSub}>Cancel</button>}
         <button className="btn" onClick={saveSubscription}>{sEditId != null ? "Update" : "Add"}</button>
       </div>
+    </div>
 
-      <h2 style={{ marginTop: 22 }}>Subscriptions</h2>
+    <div className="panel">
+      <h2>Subscriptions</h2>
       <div className="row" style={{ marginBottom: 12 }}>
         <button className="btn secondary small" onClick={chargeSubscriptions}>
           ⚡ Charge now ({month})
@@ -174,7 +182,9 @@ export default function SubscriptionsPage() {
           backfills the selected month if needed. Nothing is ever charged twice or ahead of its due day.
         </span>
       </div>
-      {subscriptions.length === 0 && <div className="empty">No subscriptions yet.</div>}
+      {subscriptions.length === 0 && (
+        <div className="empty">No subscriptions yet — add recurring bills or income above and they are charged automatically when due.</div>
+      )}
       {subscriptions.length > 0 && (
         <table>
           <thead><tr>
@@ -204,9 +214,11 @@ export default function SubscriptionsPage() {
                 <td><span className="tag" style={{ background: s.category_color || "#888" }}>{s.category_name || "—"}</span></td>
                 <td className="muted">{s.account_name || "—"}</td>
                 <td className="muted">{s.start_date || "—"}</td>
-                <td className="right">
-                  <button className="btn secondary small" title="Edit" onClick={() => startEditSub(s)}>✎</button>{" "}
-                  <button className="btn danger small" title="Delete" onClick={() => deleteSubscription(s.id)}>✕</button>
+                <td className="right actions">
+                  <button className="btn secondary small" title="Edit" aria-label={`Edit subscription ${s.name}`}
+                    onClick={() => startEditSub(s)}>✎</button>{" "}
+                  <button className="btn danger small" title="Delete" aria-label={`Delete subscription ${s.name}`}
+                    onClick={() => deleteSubscription(s.id)}>✕</button>
                 </td>
               </tr>
             ))}
@@ -218,5 +230,6 @@ export default function SubscriptionsPage() {
         <span style={{ marginLeft: 6 }}>(converted to {settings.currency})</span>
       </p>
     </div>
+    </>
   );
 }

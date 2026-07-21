@@ -57,9 +57,10 @@ export default function ActivityPage() {
                   <span className="muted">{e.entity} {ACTION_LABEL[e.action] || e.action}: </span>
                   {e.summary}
                 </td>
-                <td className="right">
+                <td className="right actions">
                   {e.undoable && (
-                    <button className="btn secondary small" onClick={() => undoEntry(e.id)}>Undo</button>
+                    <button className="btn secondary small" aria-label={`Undo: ${e.summary}`}
+                      onClick={() => undoEntry(e.id)}>Undo</button>
                   )}
                 </td>
               </tr>

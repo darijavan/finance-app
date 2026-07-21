@@ -55,7 +55,8 @@ export function useSorted<T, K extends string>(
   }, [rows, sort.key, sort.dir, accessors]);
 }
 
-// A clickable <th>. Shows a ▲/▼ indicator when it is the active sort column.
+// A sortable <th>. The label is a real button so it works from the keyboard;
+// aria-sort tells screen readers the active column and direction.
 export function SortHeader<K extends string>({
   sort, k, children, className,
 }: {
@@ -65,16 +66,16 @@ export function SortHeader<K extends string>({
   className?: string;
 }) {
   const active = sort.key === k;
-  const arrow = active ? (sort.dir === "asc" ? " ▲" : " ▼") : "";
+  const arrow = active ? (sort.dir === "asc" ? " ▲" : " ▼") : " ↕";
   return (
     <th
       className={className}
-      onClick={() => sort.toggle(k)}
-      style={{ cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}
-      title="Click to sort"
+      aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : undefined}
     >
-      {children}
-      <span style={{ opacity: active ? 1 : 0.25 }}>{arrow || " ↕"}</span>
+      <button type="button" className="sort" onClick={() => sort.toggle(k)} title="Sort by this column">
+        {children}
+        <span aria-hidden="true" style={{ opacity: active ? 1 : 0.25 }}>{arrow}</span>
+      </button>
     </th>
   );
 }

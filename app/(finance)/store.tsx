@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  createContext, useContext, useCallback, useEffect, useMemo, useState,
+  createContext, useContext, useCallback, useEffect, useMemo, useRef, useState,
   type ReactNode,
 } from "react";
 import Link from "next/link";
@@ -58,6 +58,11 @@ export function useFinance(): FinanceCtx {
   return v;
 }
 
+// "2026-07" → "Jul 2026" for the month picker.
+function monthLabel(m: string): string {
+  return new Date(`${m}-01T00:00:00`).toLocaleDateString(undefined, { month: "short", year: "numeric" });
+}
+
 const TABS = [
   { key: "", label: "Dashboard", href: "/" },
   { key: "transactions", label: "Transactions", href: "/transactions" },
@@ -84,8 +89,9 @@ function Chrome({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
-  // Confirmation modal state
+  // Confirmation dialog state (rendered as a native <dialog>)
   const [confirmState, setConfirmState] = useState<ConfirmState>({ open: false, title: "", message: "" });
+  const dialogRef = useRef<HTMLDialogElement>(null);
   // Undo snackbar state
   const [undoState, setUndoState] = useState<UndoState | null>(null);
   const [undoTimer, setUndoTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
@@ -110,6 +116,15 @@ function Chrome({ children }: { children: ReactNode }) {
       return { open: false, title: "", message: "" };
     });
   }, []);
+
+  // Keep the native dialog in sync with confirm state; showModal() gives us
+  // the focus trap, Escape handling, and backdrop for free.
+  useEffect(() => {
+    const d = dialogRef.current;
+    if (!d) return;
+    if (confirmState.open && !d.open) d.showModal();
+    else if (!confirmState.open && d.open) d.close();
+  }, [confirmState.open]);
 
   // Show the bottom "undo" snackbar after a reversible delete.
   const undo = useCallback((state: UndoState) => {
@@ -200,56 +215,65 @@ function Chrome({ children }: { children: ReactNode }) {
         <div className="topbar">
           <h1>💰 Finance</h1>
           <div className="month-picker">
-            <label className="muted">Currency</label>
-            <select value={settings.currency} onChange={(e) => setCurrency(e.target.value)}>
+            <label className="muted" htmlFor="pick-currency">Currency</label>
+            <select id="pick-currency" value={settings.currency} onChange={(e) => setCurrency(e.target.value)}>
               {CURRENCIES.map((c) => (
                 <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>
               ))}
             </select>
-            <label className="muted">Month</label>
-            <select value={month} onChange={(e) => setMonth(e.target.value)}>
+            <label className="muted" htmlFor="pick-month">Month</label>
+            <select id="pick-month" value={month} onChange={(e) => setMonth(e.target.value)}>
               {monthList().map((m) => (
-                <option key={m} value={m}>{m}</option>
+                <option key={m} value={m}>{monthLabel(m)}</option>
               ))}
             </select>
           </div>
         </div>
 
-        <div className="nav">
+        <nav className="nav" aria-label="Primary">
           {TABS.map((t) => {
             const active = t.key === "" ? pathname === "/" : pathname === t.href;
             return (
-              <Link key={t.key} href={`${t.href}?month=${month}`} className={active ? "active" : ""}>
+              <Link key={t.key} href={`${t.href}?month=${month}`} className={active ? "active" : ""}
+                aria-current={active ? "page" : undefined}>
                 {t.label}
               </Link>
             );
           })}
-        </div>
+        </nav>
 
         {children}
       </div>
 
-      {toast && <div className="toast">{toast}</div>}
+      {toast && <div className="toast" role="status">{toast}</div>}
 
-      {confirmState.open && (
-        <div className="modal-overlay" onClick={() => closeConfirm(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>{confirmState.title}</h3>
-            <p>{confirmState.message}</p>
-            <p className="muted" style={{ fontSize: 12 }}>Please confirm that you want to delete this item.</p>
-            <div className="modal-actions">
-              <button className="btn secondary" onClick={() => closeConfirm(false)}>Cancel</button>
-              <button
-                className={confirmState.danger ? "btn danger" : "btn"}
-                onClick={() => closeConfirm(true)}
-              >{confirmState.confirmLabel || "Confirm"}</button>
-            </div>
-          </div>
+      <dialog
+        ref={dialogRef}
+        className="modal"
+        aria-labelledby="confirm-title"
+        onCancel={() => closeConfirm(false)}
+        onClick={(e) => {
+          // A click on the backdrop targets the dialog element itself but
+          // lands outside its box — treat that as cancel.
+          const r = e.currentTarget.getBoundingClientRect();
+          if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) {
+            closeConfirm(false);
+          }
+        }}
+      >
+        <h3 id="confirm-title">{confirmState.title}</h3>
+        <p>{confirmState.message}</p>
+        <div className="modal-actions">
+          <button className="btn secondary" onClick={() => closeConfirm(false)}>Cancel</button>
+          <button
+            className={confirmState.danger ? "btn danger" : "btn"}
+            onClick={() => closeConfirm(true)}
+          >{confirmState.confirmLabel || "Confirm"}</button>
         </div>
-      )}
+      </dialog>
 
       {undoState && (
-        <div className="undo-snackbar">
+        <div className="undo-snackbar" role="status">
           <span>{undoState.message}</span>
           <button className="btn secondary small" onClick={doUndo}>Undo</button>
           <button className="undo-dismiss" onClick={() => setUndoState(null)} aria-label="Dismiss">✕</button>

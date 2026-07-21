@@ -122,32 +122,37 @@ export default function AccountsPage() {
   };
 
   return (
+    <>
     <div className="panel">
       <h2>Accounts</h2>
       <p className="muted" style={{ fontSize: 12 }}>
         Track where money lives. Use <strong>Transfer</strong> for ATM withdrawals (Bank → Cash) or topping up a prepaid card (Bank → Card) — those are not expenses, just moves between accounts.
       </p>
 
-      <div className="cards" style={{ marginBottom: 18 }}>
-        {accounts.map((a) => (
-          <div className="card" key={a.id}>
-            <div className="card-head">
-              <div className="label">{a.name} <span className="muted">({a.type})</span></div>
-              <button
-                className="icon-btn danger"
-                title="Delete"
-                aria-label={`Delete account ${a.name}`}
-                onClick={() => deleteAccount(a.id)}
-              >✕</button>
+      {accounts.length === 0 ? (
+        <div className="empty">No accounts yet — add your first one below.</div>
+      ) : (
+        <div className="cards" style={{ marginBottom: 18 }}>
+          {accounts.map((a) => (
+            <div className="card" key={a.id}>
+              <div className="card-head">
+                <div className="label">{a.name} <span className="muted">({a.type})</span></div>
+                <button
+                  className="icon-btn danger"
+                  title="Delete"
+                  aria-label={`Delete account ${a.name}`}
+                  onClick={() => deleteAccount(a.id)}
+                >✕</button>
+              </div>
+              <div className={`value ${a.balance! >= 0 ? "green" : "red"}`}>{fmtCur(a.balance || 0, a.currency)}</div>
             </div>
-            <div className={`value ${a.balance! >= 0 ? "green" : "red"}`}>{fmtCur(a.balance || 0, a.currency)}</div>
+          ))}
+          <div className="card">
+            <div className="label">Net worth</div>
+            <div className={`value ${total >= 0 ? "green" : "red"}`}>{fmt(total, settings.currency_symbol || "₪")}</div>
           </div>
-        ))}
-        <div className="card">
-          <div className="label">Net worth</div>
-          <div className={`value ${total >= 0 ? "green" : "red"}`}>{fmt(total, settings.currency_symbol || "₪")}</div>
         </div>
-      </div>
+      )}
 
       <h2>Add account</h2>
       <div className="row">
@@ -169,8 +174,10 @@ export default function AccountsPage() {
         </div>
         <button className="btn" onClick={saveAccount}>Add</button>
       </div>
+    </div>
 
-      <h2 style={{ marginTop: 22 }}>Transfer between accounts</h2>
+    <div className="panel">
+      <h2>Transfer between accounts</h2>
       <div className="row">
         <div className="field">
           <label>Amount</label>
@@ -207,7 +214,34 @@ export default function AccountsPage() {
         <button className="btn" onClick={saveTransfer}>Transfer</button>
       </div>
 
-      <h2 style={{ marginTop: 22 }}>Savings goals</h2>
+      <h2 style={{ marginTop: 22 }}>Recent transfers</h2>
+      {transfers.length === 0 && <div className="empty">No transfers yet.</div>}
+      {transfers.length > 0 && (
+        <table>
+          <thead><tr>
+            <th>Date</th><th>From</th><th>To</th><th>Amount</th><th>Note</th><th></th>
+          </tr></thead>
+          <tbody>
+            {transfers.map((t: Transfer) => (
+              <tr key={t.id}>
+                <td>{t.date}</td>
+                <td className="muted">{t.from_name || accName(t.from_account)}</td>
+                <td className="muted">{t.to_name || accName(t.to_account)}</td>
+                <td className="right">{fmtCur(t.amount, t.currency)}</td>
+                <td className="muted">{t.note}</td>
+                <td className="right actions">
+                  <button className="btn danger small" title="Delete" aria-label={`Delete transfer of ${t.date}`}
+                    onClick={() => deleteTransfer(t.id)}>✕</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+
+    <div className="panel">
+      <h2>Savings goals</h2>
       {goals.length > 0 && (
         <div style={{ marginBottom: 12 }}>
           {goals.map((g) => {
@@ -223,7 +257,8 @@ export default function AccountsPage() {
                   </span>
                   <span className={done ? "amount-income" : "muted"}>
                     {fmtCur(cur, g.currency || "ILS")} / {fmtCur(g.target_amount, g.currency || "ILS")} ({Math.round(pct)}%)
-                    {" "}<button className="linkbtn" title="Delete goal" onClick={() => deleteGoal(g.id)}>✕</button>
+                    {" "}<button className="linkbtn" title="Delete goal" aria-label={`Delete goal ${g.name}`}
+                      onClick={() => deleteGoal(g.id)}>✕</button>
                   </span>
                 </div>
                 <div className="bar">
@@ -256,30 +291,7 @@ export default function AccountsPage() {
         </div>
         <button className="btn" onClick={saveGoal}>Add goal</button>
       </div>
-
-      <h2 style={{ marginTop: 22 }}>Recent transfers</h2>
-      {transfers.length === 0 && <div className="empty">No transfers yet.</div>}
-      {transfers.length > 0 && (
-        <table>
-          <thead><tr>
-            <th>Date</th><th>From</th><th>To</th><th>Amount</th><th>Note</th><th></th>
-          </tr></thead>
-          <tbody>
-            {transfers.map((t: Transfer) => (
-              <tr key={t.id}>
-                <td>{t.date}</td>
-                <td className="muted">{t.from_name || accName(t.from_account)}</td>
-                <td className="muted">{t.to_name || accName(t.to_account)}</td>
-                <td className="right">{fmtCur(t.amount, t.currency)}</td>
-                <td className="muted">{t.note}</td>
-                <td className="right">
-                  <button className="btn danger small" title="Delete" onClick={() => deleteTransfer(t.id)}>✕</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
     </div>
+    </>
   );
 }

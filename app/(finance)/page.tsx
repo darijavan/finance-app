@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useFinance } from "./store";
 import { API, getJSON, fmt, fmtCur } from "@/lib/client";
 import { nextChargeDate } from "@/lib/subscription-due";
@@ -126,7 +127,7 @@ function CashFlowChart({ points, sym }: { points: TrendPoint[]; sym: string }) {
 }
 
 export default function DashboardPage() {
-  const { summary, sym, accounts, subscriptions, notify } = useFinance();
+  const { summary, sym, month, accounts, subscriptions, notify } = useFinance();
   const [trends, setTrends] = useState<TrendPoint[] | null>(null);
 
   useEffect(() => {
@@ -199,7 +200,11 @@ export default function DashboardPage() {
       <div className="grid2">
         <div className="panel">
           <h2>Spending by category</h2>
-          {summary.by_category.length === 0 && <div className="empty">No expenses this month.</div>}
+          {summary.by_category.length === 0 && (
+            <div className="empty">
+              No expenses this month — <Link href={`/transactions?month=${month}`}>log one</Link>.
+            </div>
+          )}
           {summary.by_category.map((c) => (
             <div key={c.name} className="budget-row">
               <div className="top">
@@ -215,7 +220,11 @@ export default function DashboardPage() {
 
         <div className="panel">
           <h2>Budgets</h2>
-          {summary.budgets.length === 0 && <div className="empty">No budgets set. Use the Budgets tab.</div>}
+          {summary.budgets.length === 0 && (
+            <div className="empty">
+              No budgets set — <Link href={`/budgets?month=${month}`}>create one</Link>.
+            </div>
+          )}
           {summary.budgets.map((b, i) => {
             const pct = b.budget > 0 ? (b.actual / b.budget) * 100 : 0;
             const over = b.actual > b.budget;

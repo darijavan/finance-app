@@ -83,7 +83,12 @@ export default function TransactionsPage() {
     URL.revokeObjectURL(url);
   };
 
+  const formRef = useRef<HTMLDivElement>(null);
+
   const startEditTx = (t: Transaction) => {
+    // The form lives above the list — bring it into view so the edit is obvious.
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    formRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
     setEditId(t.id);
     setTDir(t.direction);
     setTAmount(String(t.amount));
@@ -138,7 +143,8 @@ export default function TransactionsPage() {
   };
 
   return (
-    <div className="panel">
+    <>
+    <div className={editId != null ? "panel editing" : "panel"} ref={formRef}>
       <h2>{editId != null ? "Edit transaction" : `Add ${tDir}`}</h2>
       <div className="row">
         <div className="field">
@@ -189,9 +195,13 @@ export default function TransactionsPage() {
         {editId != null && <button className="btn secondary" onClick={cancelEdit}>Cancel</button>}
         <button className="btn" onClick={saveTransaction}>{editId != null ? "Update" : "Add"}</button>
       </div>
+    </div>
 
-      <h2 style={{ marginTop: 22 }}>Search &amp; filter</h2>
-      <div className="row">
+    <div className="panel">
+      {/* Collapsed by default so the list stays close to the top of the page. */}
+      <details className="filters" open={filterActive || undefined}>
+        <summary>Search &amp; filter{filterActive ? ` — ${rows.length} match(es), all months` : ""}</summary>
+        <div className="row">
         <div className="field">
           <label>Text</label>
           <input value={fQ} onChange={(e) => setFQ(e.target.value)} placeholder="note contains…" />
@@ -226,10 +236,11 @@ export default function TransactionsPage() {
           <label>Max</label>
           <input type="number" step="0.01" value={fMax} onChange={(e) => setFMax(e.target.value)} style={{ width: 90 }} />
         </div>
-        {filterActive && <button className="btn secondary" onClick={clearFilters}>Clear</button>}
-      </div>
+        {filterActive && <button className="btn secondary" onClick={clearFilters}>Clear filters</button>}
+        </div>
+      </details>
 
-      <div className="row" style={{ marginTop: 22, justifyContent: "space-between" }}>
+      <div className="row" style={{ marginTop: 16, justifyContent: "space-between" }}>
         <h2 style={{ margin: 0 }}>
           {filterActive ? `Search results (${rows.length}, all months)` : "This month"}
         </h2>
@@ -248,7 +259,13 @@ export default function TransactionsPage() {
         />
       )}
 
-      {rows.length === 0 && <div className="empty">{filterActive ? "No matches." : "Nothing logged yet."}</div>}
+      {rows.length === 0 && (
+        <div className="empty">
+          {filterActive
+            ? "No transactions match these filters."
+            : "No transactions this month yet — add your first one above."}
+        </div>
+      )}
       {rows.length > 0 && (
         <table>
           <thead><tr>
@@ -274,8 +291,10 @@ export default function TransactionsPage() {
                   {t.direction === "expense" ? "-" : "+"}{fmtCur(t.amount, t.currency || settings.currency)}
                 </td>
                 <td className="right actions">
-                  <button className="btn secondary small" title="Edit" onClick={() => startEditTx(t)}>✎</button>{" "}
-                  <button className="btn danger small" title="Delete" onClick={() => deleteTransaction(t.id)}>✕</button>
+                  <button className="btn secondary small" title="Edit" aria-label={`Edit transaction of ${t.date}`}
+                    onClick={() => startEditTx(t)}>✎</button>{" "}
+                  <button className="btn danger small" title="Delete" aria-label={`Delete transaction of ${t.date}`}
+                    onClick={() => deleteTransaction(t.id)}>✕</button>
                 </td>
               </tr>
             ))}
@@ -283,6 +302,7 @@ export default function TransactionsPage() {
         </table>
       )}
     </div>
+    </>
   );
 }
 
