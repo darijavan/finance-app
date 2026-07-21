@@ -130,15 +130,17 @@ export default function AccountsPage() {
 
       <div className="cards" style={{ marginBottom: 18 }}>
         {accounts.map((a) => (
-          <div className="card" key={a.id} style={{ position: "relative" }}>
-            <div className="label">{a.name} <span className="muted">({a.type})</span></div>
+          <div className="card" key={a.id}>
+            <div className="card-head">
+              <div className="label">{a.name} <span className="muted">({a.type})</span></div>
+              <button
+                className="icon-btn danger"
+                title="Delete"
+                aria-label={`Delete account ${a.name}`}
+                onClick={() => deleteAccount(a.id)}
+              >✕</button>
+            </div>
             <div className={`value ${a.balance! >= 0 ? "green" : "red"}`}>{fmtCur(a.balance || 0, a.currency)}</div>
-            <button
-              className="btn danger small"
-              style={{ position: "absolute", top: 8, right: 8 }}
-              title="Delete"
-              onClick={() => deleteAccount(a.id)}
-            >✕</button>
           </div>
         ))}
         <div className="card">
