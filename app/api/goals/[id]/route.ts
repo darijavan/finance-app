@@ -5,9 +5,9 @@ import { money, isoDate, optionalId } from "@/lib/validate";
 export const dynamic = "force-dynamic";
 
 // PUT|DELETE /api/goals/[id]
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const db = getDb();
-  const id = Number(params.id);
+  const id = Number((await params).id);
   const before = db.prepare("SELECT * FROM goals WHERE id=?").get(id) as any;
   if (!before) return NextResponse.json({ error: "goal not found" }, { status: 404 });
   const b = await req.json();
@@ -25,9 +25,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const db = getDb();
-  const id = Number(params.id);
+  const id = Number((await params).id);
   const row = db.prepare("SELECT * FROM goals WHERE id=?").get(id) as any;
   if (!row) return NextResponse.json({ ok: true, log_id: null });
   db.prepare("DELETE FROM goals WHERE id=?").run(id);

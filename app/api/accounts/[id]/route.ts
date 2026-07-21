@@ -4,9 +4,9 @@ import { getDb, logActivity } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 // DELETE /api/accounts/[id]  -> removes account (only if no linked rows, else 409)
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const db = getDb();
-  const id = Number(params.id);
+  const id = Number((await params).id);
   const row = db.prepare("SELECT * FROM accounts WHERE id=?").get(id) as any;
   if (!row) return NextResponse.json({ ok: true, log_id: null });
 

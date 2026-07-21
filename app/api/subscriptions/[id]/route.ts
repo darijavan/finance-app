@@ -6,9 +6,9 @@ export const dynamic = "force-dynamic";
 
 // PUT /api/subscriptions/[id]
 // DELETE /api/subscriptions/[id]
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const db = getDb();
-  const id = Number(params.id);
+  const id = Number((await params).id);
   const before = db.prepare("SELECT * FROM subscriptions WHERE id=?").get(id) as any;
   if (!before) return NextResponse.json({ error: "subscription not found" }, { status: 404 });
   const b = await req.json();
@@ -47,9 +47,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const db = getDb();
-  const id = Number(params.id);
+  const id = Number((await params).id);
   const row = db.prepare("SELECT * FROM subscriptions WHERE id=?").get(id) as any;
   if (!row) return NextResponse.json({ ok: true, log_id: null });
   db.prepare("DELETE FROM subscriptions WHERE id=?").run(id);

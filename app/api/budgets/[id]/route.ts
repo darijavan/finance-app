@@ -4,9 +4,9 @@ import { getDb, logActivity } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 // DELETE /api/budgets/[id]
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const db = getDb();
-  const id = Number(params.id);
+  const id = Number((await params).id);
   const row = db.prepare("SELECT * FROM budgets WHERE id=?").get(id) as any;
   if (!row) return NextResponse.json({ ok: true, log_id: null });
   db.prepare("DELETE FROM budgets WHERE id=?").run(id);

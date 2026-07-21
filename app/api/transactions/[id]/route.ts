@@ -5,9 +5,9 @@ import { money, currency, oneOf, isoDate, optionalId } from "@/lib/validate";
 
 export const dynamic = "force-dynamic";
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const db = getDb();
-  const id = Number(params.id);
+  const id = Number((await params).id);
   const before = db.prepare("SELECT * FROM transactions WHERE id=?").get(id) as any;
   if (!before) return NextResponse.json({ error: "transaction not found" }, { status: 404 });
   const body = await req.json();
@@ -49,9 +49,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json(row);
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const db = getDb();
-  const id = Number(params.id);
+  const id = Number((await params).id);
   const row = db.prepare("SELECT * FROM transactions WHERE id=?").get(id) as any;
   if (!row) return NextResponse.json({ ok: true, log_id: null });
   db.prepare("DELETE FROM transactions WHERE id=?").run(id);
