@@ -65,6 +65,15 @@ export default function TransactionsPage() {
     note: (t) => t.note || "",
     amount: (t) => (t.direction === "expense" ? -t.amount : t.amount),
   });
+  // A filter can span accounts in different currencies, so never combine them.
+  const filteredTotals = useMemo(() => {
+    const totals = new Map<string, number>();
+    for (const t of sortedTx) {
+      const currency = t.currency || settings.currency;
+      totals.set(currency, (totals.get(currency) || 0) + (t.direction === "expense" ? -t.amount : t.amount));
+    }
+    return [...totals.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [sortedTx, settings.currency]);
 
   const exportCSV = () => {
     const data = toCSV([
@@ -299,6 +308,21 @@ export default function TransactionsPage() {
               </tr>
             ))}
           </tbody>
+          {filterActive && (
+            <tfoot className="table-total">
+              <tr>
+                <th colSpan={4} className="right">Filtered total</th>
+                <td className="right">
+                  {filteredTotals.map(([currency, total]) => (
+                    <div key={currency} className={total < 0 ? "amount-expense" : "amount-income"}>
+                      {total < 0 ? "-" : "+"}{fmtCur(Math.abs(total), currency)}
+                    </div>
+                  ))}
+                </td>
+                <td />
+              </tr>
+            </tfoot>
+          )}
         </table>
       )}
     </div>

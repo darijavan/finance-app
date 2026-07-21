@@ -84,6 +84,7 @@ input[type="checkbox"] { min-height: 0; width: 16px; height: 16px; padding: 0; a
 table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
 th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); }
 th { color: var(--muted); font-weight: 600; font-size: 12px; }
+.table-total th, .table-total td { border-top: 2px solid var(--border); border-bottom: 0; font-variant-numeric: tabular-nums; }
 th .sort { background: none; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; white-space: nowrap; }
 @media (hover: hover) { tbody tr:hover td { background: rgba(255,255,255,.03); } }
 td.actions { white-space: nowrap; }
