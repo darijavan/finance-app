@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useFinance } from "../store";
-import { API, sendJSON, fmt, fmtCur, CURRENCIES } from "@/lib/client";
-import type { Account, Transfer, AccountType } from "@/lib/types";
+import { API, getJSON, sendJSON, fmt, fmtCur, CURRENCIES } from "@/lib/client";
+import type { Account, Transfer, AccountType, Goal } from "@/lib/types";
 
 const TYPES: { v: AccountType; label: string }[] = [
   { v: "bank", label: "Bank" },
@@ -69,16 +69,57 @@ export default function AccountsPage() {
   const deleteTransfer = async (id: number) => {
     const ok = await confirm({
       title: "Delete transfer?",
-      message: "This reverses the balance move (no undo snapshot).",
+      message: "This reverses the balance move. You can undo it from the bottom bar right after.",
       confirmLabel: "Delete", danger: true,
     });
     if (!ok) return;
-    await sendJSON(`${API}/transfers/${id}`, "DELETE");
+    const r = await sendJSON<{ ok: boolean; log_id: number | null }>(`${API}/transfers/${id}`, "DELETE");
     notify("Deleted");
     reload();
+    if (r.log_id != null) undo({ message: "Transfer deleted.", logId: r.log_id });
   };
 
   const accName = (id?: number | null) => accounts.find((a) => a.id === id)?.name || "?";
+
+  // Savings goals — target is in the linked account's currency; progress is
+  // that account's balance.
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [gName, setGName] = useState("");
+  const [gTarget, setGTarget] = useState("");
+  const [gAccount, setGAccount] = useState("");
+  const [gDate, setGDate] = useState("");
+
+  const loadGoals = useCallback(async () => {
+    try { setGoals(await getJSON<Goal[]>(`${API}/goals`)); }
+    catch { /* non-fatal; section just stays empty */ }
+  }, []);
+  useEffect(() => { loadGoals(); }, [loadGoals, accounts]);
+
+  const saveGoal = async () => {
+    const target = parseFloat(gTarget);
+    if (!gName.trim() || !Number.isFinite(target) || target <= 0) return notify("Enter goal name + target");
+    if (!gAccount) return notify("Pick the account to save into");
+    await sendJSON(`${API}/goals`, "POST", {
+      name: gName.trim(), target_amount: target, account_id: Number(gAccount),
+      target_date: gDate || null,
+    });
+    notify("Goal added");
+    setGName(""); setGTarget(""); setGAccount(""); setGDate("");
+    loadGoals();
+  };
+
+  const deleteGoal = async (id: number) => {
+    const ok = await confirm({
+      title: "Delete goal?",
+      message: "This removes the goal (the account and its money are untouched).",
+      confirmLabel: "Delete", danger: true,
+    });
+    if (!ok) return;
+    const r = await sendJSON<{ ok: boolean; log_id: number | null }>(`${API}/goals/${id}`, "DELETE");
+    notify("Goal deleted");
+    loadGoals();
+    if (r.log_id != null) undo({ message: "Goal deleted.", logId: r.log_id });
+  };
 
   return (
     <div className="panel">
@@ -162,6 +203,56 @@ export default function AccountsPage() {
           </select>
         </div>
         <button className="btn" onClick={saveTransfer}>Transfer</button>
+      </div>
+
+      <h2 style={{ marginTop: 22 }}>Savings goals</h2>
+      {goals.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          {goals.map((g) => {
+            const cur = Math.max(0, g.current || 0);
+            const pct = g.target_amount > 0 ? Math.min(100, (cur / g.target_amount) * 100) : 0;
+            const done = cur >= g.target_amount;
+            return (
+              <div key={g.id} className="budget-row">
+                <div className="top">
+                  <span>
+                    {done ? "🎉 " : ""}{g.name}
+                    <span className="muted"> — {g.account_name}{g.target_date ? ` · by ${g.target_date}` : ""}</span>
+                  </span>
+                  <span className={done ? "amount-income" : "muted"}>
+                    {fmtCur(cur, g.currency || "ILS")} / {fmtCur(g.target_amount, g.currency || "ILS")} ({Math.round(pct)}%)
+                    {" "}<button className="linkbtn" title="Delete goal" onClick={() => deleteGoal(g.id)}>✕</button>
+                  </span>
+                </div>
+                <div className="bar">
+                  <span style={{ width: `${pct}%`, background: done ? "var(--green)" : "var(--accent)" }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <div className="row">
+        <div className="field">
+          <label>Goal name</label>
+          <input value={gName} onChange={(e) => setGName(e.target.value)} placeholder="Emergency fund…" />
+        </div>
+        <div className="field">
+          <label>Target (account currency)</label>
+          <input type="number" step="0.01" value={gTarget} onChange={(e) => setGTarget(e.target.value)} placeholder="0.00" />
+        </div>
+        <div className="field">
+          <label>Account</label>
+          <select value={gAccount} onChange={(e) => setGAccount(e.target.value)}>
+            <option value="">— account —</option>
+            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name} ({a.currency})</option>)}
+          </select>
+        </div>
+        <div className="field">
+          <label>Target date</label>
+          <input type="date" value={gDate} onChange={(e) => setGDate(e.target.value)} />
+        </div>
+        <button className="btn" onClick={saveGoal}>Add goal</button>
       </div>
 
       <h2 style={{ marginTop: 22 }}>Recent transfers</h2>

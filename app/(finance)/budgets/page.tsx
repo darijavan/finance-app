@@ -13,6 +13,7 @@ export default function BudgetsPage() {
 
   const [bCat, setBCat] = useState<string>(""); // "" = overall
   const [bAmount, setBAmount] = useState("");
+  const [bRollover, setBRollover] = useState(false);
   const [cName, setCName] = useState("");
   const [cDir, setCDir] = useState<"expense" | "income">("expense");
   const [bEditing, setBEditing] = useState(false);
@@ -22,11 +23,13 @@ export default function BudgetsPage() {
     setBEditing(true);
     setBCat(b.category_id != null ? String(b.category_id) : "");
     setBAmount(String(b.amount));
+    setBRollover(!!b.rollover);
   };
 
   const cancelEditBudget = () => {
     setBEditing(false);
     setBAmount("");
+    setBRollover(false);
   };
 
   const setBudget = async () => {
@@ -34,10 +37,11 @@ export default function BudgetsPage() {
     const amount = parseFloat(bAmount);
     if (!Number.isFinite(amount) || amount < 0) return notify("Enter a valid budget");
     await sendJSON(`${API}/budgets`, "PUT", {
-      month, category_id: bCat ? Number(bCat) : null, amount,
+      month, category_id: bCat ? Number(bCat) : null, amount, rollover: bRollover,
     });
     setBAmount("");
     setBEditing(false);
+    setBRollover(false);
     notify(wasEditing ? "Budget updated" : "Budget saved");
     reload();
   };
@@ -106,6 +110,11 @@ export default function BudgetsPage() {
           <label>Budget ({sym})</label>
           <input type="number" step="0.01" value={bAmount} onChange={(e) => setBAmount(e.target.value)} />
         </div>
+        <label className="muted" style={{ display: "flex", alignItems: "center", gap: 6, paddingBottom: 10 }}
+          title="Unused budget carries over into next month">
+          <input type="checkbox" checked={bRollover} onChange={(e) => setBRollover(e.target.checked)} />
+          Roll over unused
+        </label>
         {bEditing && <button className="btn secondary" onClick={cancelEditBudget}>Cancel</button>}
         <button className="btn" onClick={setBudget}>{bEditing ? "Update" : `Save for ${month}`}</button>
       </div>
@@ -122,7 +131,10 @@ export default function BudgetsPage() {
           <tbody>
             {sortedBudgets.map((b) => (
               <tr key={b.id}>
-                <td>{b.category_id == null ? "Overall" : (b.category_name || "—")}</td>
+                <td>
+                  {b.category_id == null ? "Overall" : (b.category_name || "—")}
+                  {!!b.rollover && <span className="muted" style={{ fontSize: 12 }}> ↻ rollover</span>}
+                </td>
                 <td className="right">{fmt(b.amount, sym)}</td>
                 <td className="right">
                   <button className="btn secondary small" title="Edit" onClick={() => startEditBudget(b)}>✎</button>{" "}

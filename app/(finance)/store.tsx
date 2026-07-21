@@ -64,6 +64,7 @@ const TABS = [
   { key: "subscriptions", label: "Subscriptions", href: "/subscriptions" },
   { key: "accounts", label: "Accounts", href: "/accounts" },
   { key: "budgets", label: "Budgets", href: "/budgets" },
+  { key: "activity", label: "Activity", href: "/activity" },
 ];
 
 function Chrome({ children }: { children: ReactNode }) {
