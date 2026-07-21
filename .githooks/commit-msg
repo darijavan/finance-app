@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+message_file="$1"
+subject="$(head -n1 "$message_file")"
+pattern='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([A-Za-z0-9][A-Za-z0-9._/-]*\))?: .+$'
+
+if [[ ! "$subject" =~ $pattern ]]; then
+  cat >&2 <<'EOF'
+ERROR: Commit title must follow Conventional Commits.
+
+Required: <type>(<optional-scope>): <imperative summary>
+Allowed types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+Examples:
+  feat(activity): add persistent undo history
+  fix(fx): preserve historical quote date
+  chore(deps): update Next.js patch release
+EOF
+  exit 1
+fi
