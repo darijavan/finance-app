@@ -9,7 +9,8 @@ import type { TrendPoint } from "@/lib/types";
 
 const CHART_W = 560;
 const CHART_H = 200;
-const PAD = { top: 14, right: 10, bottom: 22, left: 46 };
+// Leave room above the plot for the latest-value label at the maximum point.
+const PAD = { top: 26, right: 10, bottom: 22, left: 46 };
 
 function monthLabel(m: string): string {
   return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][Number(m.slice(5, 7)) - 1];
