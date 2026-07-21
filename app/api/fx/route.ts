@@ -13,6 +13,6 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const force = searchParams.get("force") != null;
-  const rates = await refreshRates(force || true);
+  const rates = await refreshRates(force);
   return NextResponse.json({ ok: true, rates });
 }

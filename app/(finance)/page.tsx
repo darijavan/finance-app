@@ -7,7 +7,8 @@ export default function DashboardPage() {
   const { summary, sym, accounts } = useFinance();
   if (!summary) return <div className="empty">Loading…</div>;
 
-  const netWorth = accounts.reduce((acc, a) => acc + (a.balance || 0), 0);
+  // Sum in base currency — native balances can't be added across currencies.
+  const netWorth = accounts.reduce((acc, a) => acc + (a.base_balance || 0), 0);
   const maxCat = summary.by_category.length
     ? Math.max(1, ...summary.by_category.map((c) => c.total))
     : 1;
