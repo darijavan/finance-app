@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { chargeDate, cutoffDay } from "../lib/subscription-due.ts";
+import { chargeDate, cutoffDay, nextChargeDate } from "../lib/subscription-due.ts";
 
 const monthly = { frequency: "monthly", day_of_month: 10, month_of_year: null, start_date: null };
 const TODAY = "2026-07-21";
@@ -46,6 +46,17 @@ test("yearly charges only in its month", () => {
   assert.equal(chargeDate(yearly, "2026-07", TODAY), "2026-07-05");
   assert.equal(chargeDate(yearly, "2026-06", TODAY), null);
   assert.equal(chargeDate({ ...yearly, month_of_year: 6 }, "2026-06", TODAY), "2026-06-05");
+});
+
+test("nextChargeDate finds the upcoming occurrence", () => {
+  assert.equal(nextChargeDate(monthly, TODAY), "2026-08-10"); // day 10 already passed
+  assert.equal(nextChargeDate({ ...monthly, day_of_month: 25 }, TODAY), "2026-07-25");
+  assert.equal(nextChargeDate({ ...monthly, day_of_month: 21 }, TODAY), "2026-07-21"); // today counts
+  const yearly = { frequency: "yearly", day_of_month: 5, month_of_year: 7, start_date: null };
+  assert.equal(nextChargeDate(yearly, TODAY), "2027-07-05"); // July 5 passed -> next year
+  assert.equal(nextChargeDate({ ...yearly, month_of_year: 9 }, TODAY), "2026-09-05");
+  assert.equal(nextChargeDate({ ...monthly, start_date: "2026-10-01" }, TODAY), "2026-10-10");
+  assert.equal(nextChargeDate({ ...monthly, frequency: "weekly" }, TODAY), null);
 });
 
 test("unknown frequency never charges", () => {

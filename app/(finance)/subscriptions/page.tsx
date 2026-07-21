@@ -167,9 +167,12 @@ export default function SubscriptionsPage() {
       <h2 style={{ marginTop: 22 }}>Subscriptions</h2>
       <div className="row" style={{ marginBottom: 12 }}>
         <button className="btn secondary small" onClick={chargeSubscriptions}>
-          ⚡ Charge this month ({month})
+          ⚡ Charge now ({month})
         </button>
-        <span className="muted">Converts active subs into transactions for the month.</span>
+        <span className="muted">
+          Due subscriptions are charged <strong>automatically every night</strong> — this button only
+          backfills the selected month if needed. Nothing is ever charged twice or ahead of its due day.
+        </span>
       </div>
       {subscriptions.length === 0 && <div className="empty">No subscriptions yet.</div>}
       {subscriptions.length > 0 && (
@@ -190,6 +193,11 @@ export default function SubscriptionsPage() {
                 <td>{s.name}</td>
                 <td className={s.direction === "expense" ? "amount-expense" : "amount-income"}>
                   {s.direction === "expense" ? "-" : "+"}{fmtCur(s.amount, s.currency || settings.currency)}
+                  {s.last_charge_amount != null && s.last_charge_amount !== s.amount && (
+                    <span className="muted" title="Price changed since the last charge" style={{ marginLeft: 6, fontSize: 12 }}>
+                      ⚠ was {fmtCur(s.last_charge_amount, s.currency || settings.currency)}
+                    </span>
+                  )}
                 </td>
                 <td className="muted">{s.frequency}{s.frequency === "yearly" ? ` (m${s.month_of_year})` : ""}</td>
                 <td className="muted">{fmtCur(s.monthly_equivalent || 0, s.currency || settings.currency)}</td>

@@ -53,7 +53,9 @@ th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--bord
 th { color: var(--muted); font-weight: 600; font-size: 12px; }
 .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; color: #0b0d12; font-weight: 600; }
 .muted { color: var(--muted); }
+.yellow { color: var(--yellow); }
 .right { text-align: right; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: baseline; }
 .amount-expense { color: var(--red); }
 .amount-income { color: var(--green); }
 
@@ -88,3 +90,23 @@ th { color: var(--muted); font-weight: 600; font-size: 12px; }
   z-index: 40; font-size: 14px; max-width: 90vw; }
 .undo-dismiss { background: transparent; border: none; color: var(--muted); font-size: 13px; padding: 4px 6px; }
 .undo-dismiss:hover { color: var(--text); }
+
+/* Mobile: horizontally scrollable tables, full-width form fields, and
+   touch-sized action buttons. */
+@media (max-width: 640px) {
+  .app { padding: 12px 10px 90px; }
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; }
+  .row .field { flex: 1 1 45%; min-width: 130px; }
+  .row .field input, .row .field select { width: 100%; }
+  .row > .btn { flex: 1 1 100%; }
+  .btn { padding: 12px 14px; }
+  .btn.small { padding: 10px 12px; min-width: 40px; min-height: 40px; }
+  .linkbtn { padding: 6px 8px; }
+  .cards { grid-template-columns: repeat(2, 1fr); }
+  .card .value { font-size: 18px; }
+  td.actions { white-space: nowrap; }
+  .topbar { gap: 8px; }
+}
+@media (max-width: 380px) {
+  .cards { grid-template-columns: 1fr; }
+}
