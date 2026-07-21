@@ -6,7 +6,7 @@ Personal finance tracker — expenses, monthly allowances, and subscriptions
 and a full activity history with undo.
 
 ## Stack
-- **Next.js 14** (App Router) + **TypeScript**
+- **Next.js 16** (App Router) + **TypeScript**
 - **Node 24** (see `.nvmrc`) via **nvm**
 - **pnpm** package manager
 - Storage: **`node:sqlite`** (the built-in SQLite module in Node 24) — no native build step
@@ -65,8 +65,5 @@ middleware, denying requests without a valid JWT. That adds no second login
 and fails closed if the tunnel is ever bypassed.
 
 ## Known dependency advisories
-`pnpm audit` reports advisories for `next` that are only patched in Next 15
-(and one build-time `postcss` advisory pinned by next). Upgrading to Next 15
-is a deliberate, separate migration; the Cloudflare Access boundary in front
-mitigates the network-reachable issues (middleware bypass, DoS, SSRF) in the
-meantime.
+None: on Next 16 with `postcss` overridden to `>=8.5.10` (see
+`pnpm-workspace.yaml`), `pnpm audit` is clean.
