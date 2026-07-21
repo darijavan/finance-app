@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { convertAmount } from "../lib/fx-historical";
+import { convertAmount } from "../lib/fx-historical.ts";
 
 // A dated provider quote means 1 USD = 3.0464 ILS on 2026-07-20.
 // The stored converted amount must be immutable and rounded to cents.
