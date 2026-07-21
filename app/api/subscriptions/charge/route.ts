@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, logActivity } from "@/lib/db";
 import { snapshotConversion } from "@/lib/fx-historical";
+import { chargeDate } from "@/lib/subscription-due";
 
 export const dynamic = "force-dynamic";
 
@@ -16,10 +17,6 @@ export async function POST(req: NextRequest) {
   if (!/^\d{4}-\d{2}$/.test(month)) {
     return NextResponse.json({ error: "month must be YYYY-MM" }, { status: 400 });
   }
-  const [y, m] = month.split("-").map(Number);
-  const currentMonth = today.slice(0, 7);
-  // The button may backfill a past month, but must never book charges dated in the future.
-  const cutoffDay = month < currentMonth ? 28 : month === currentMonth ? Number(today.slice(8, 10)) : 0;
   const subs = db.prepare("SELECT * FROM subscriptions WHERE active=1").all() as any[];
   const insert = db.prepare(
     `INSERT OR IGNORE INTO transactions(amount,currency,direction,category_id,date,note,account_id,subscription_id,
@@ -30,14 +27,10 @@ export async function POST(req: NextRequest) {
   let created = 0;
   try {
     for (const s of subs as any[]) {
-      let due = false;
-      if (s.frequency === "monthly") due = true;
-      else if (s.frequency === "yearly") due = s.month_of_year === m;
-      if (due) {
-        const day = Math.min(s.day_of_month || 1, 28);
-        const date = `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-        // Do not charge ahead of its due day or before the subscription itself began.
-        if (day > cutoffDay || (s.start_date && date < s.start_date)) continue;
+      // The button may backfill a past month, but must never book charges dated
+      // in the future, ahead of the due day, or before the subscription began.
+      const date = chargeDate(s, month, today);
+      if (date != null) {
         let snap: any = { account_amount: null, account_currency: null, account_fx_rate: null, account_fx_date: null, account_fx_source: null };
         if (s.account_id != null) {
           const account = db.prepare("SELECT currency FROM accounts WHERE id=?").get(s.account_id) as any;

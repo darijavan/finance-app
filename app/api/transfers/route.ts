@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, logActivity } from "@/lib/db";
 import { snapshotConversion } from "@/lib/fx-historical";
+import { currency, isoDate } from "@/lib/validate";
 
 export const dynamic = "force-dynamic";
 
@@ -34,19 +35,20 @@ export async function POST(req: NextRequest) {
   const from = db.prepare("SELECT currency FROM accounts WHERE id=?").get(from_account) as { currency: string } | undefined;
   const to = db.prepare("SELECT currency FROM accounts WHERE id=?").get(to_account) as { currency: string } | undefined;
   if (!from || !to) return NextResponse.json({ error: "account not found" }, { status: 404 });
-  const date = b.date || new Date().toISOString().slice(0, 10);
-  const note = b.note || "";
-  const currency = (b.currency || "ILS").toString().toUpperCase();
+  const date = isoDate(b.date) ?? new Date().toISOString().slice(0, 10);
+  const note = String(b.note ?? "");
+  const cur = currency(b.currency);
+  if (cur == null) return NextResponse.json({ error: "invalid currency code" }, { status: 400 });
   try {
     const [fromFx, toFx] = await Promise.all([
-      snapshotConversion(amount, currency, from.currency, date),
-      snapshotConversion(amount, currency, to.currency, date),
+      snapshotConversion(amount, cur, from.currency, date),
+      snapshotConversion(amount, cur, to.currency, date),
     ]);
     const info = db.prepare(
       `INSERT INTO transfers(amount,currency,from_account,to_account,date,note,
         from_amount,from_currency,to_amount,to_currency,from_fx_rate,to_fx_rate,fx_rate_date,fx_source,created_at)
        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    ).run(amount, currency, from_account, to_account, date, note,
+    ).run(amount, cur, from_account, to_account, date, note,
       fromFx.amount, from.currency, toFx.amount, to.currency, fromFx.rate, toFx.rate,
       `${fromFx.rate_date}|${toFx.rate_date}`, `${fromFx.source}|${toFx.source}`, new Date().toISOString());
     const row = db.prepare("SELECT * FROM transfers WHERE id=?").get(info.lastInsertRowid);

@@ -1,4 +1,4 @@
-import { getDb } from "./db";
+import { getDb } from "./db.ts";
 
 const DAILY_FX_ENDPOINT = "https://api.frankfurter.dev/v1";
 

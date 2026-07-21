@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, logActivity } from "@/lib/db";
+import { oneOf } from "@/lib/validate";
 
 export const dynamic = "force-dynamic";
 
@@ -8,9 +9,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const db = getDb();
   const id = Number(params.id);
   const before = db.prepare("SELECT * FROM categories WHERE id=?").get(id) as any;
+  if (!before) return NextResponse.json({ error: "category not found" }, { status: 404 });
   const body = await req.json();
+  const name = (body.name ?? "").trim();
+  if (!name) return NextResponse.json({ error: "name required" }, { status: 400 });
   db.prepare("UPDATE categories SET name=?, color=?, direction=? WHERE id=?")
-    .run(body.name, body.color, body.direction, id);
+    .run(name, body.color || before.color, oneOf(body.direction, ["expense", "income"] as const, before.direction), id);
   const row = db.prepare("SELECT * FROM categories WHERE id=?").get(id);
   logActivity(db, "category", "update", id,
     `Updated category #${id} to "${body.name}" (${body.direction})${before ? ` — was "${before.name}"` : ""}`);

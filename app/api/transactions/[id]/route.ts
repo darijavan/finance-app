@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, logActivity } from "@/lib/db";
 import { snapshotConversion } from "@/lib/fx-historical";
+import { money, currency, oneOf, isoDate, optionalId } from "@/lib/validate";
 
 export const dynamic = "force-dynamic";
 
@@ -10,15 +11,20 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const before = db.prepare("SELECT * FROM transactions WHERE id=?").get(id) as any;
   if (!before) return NextResponse.json({ error: "transaction not found" }, { status: 404 });
   const body = await req.json();
-  const next = {
-    amount: "amount" in body ? Math.abs(Number(body.amount)) : before.amount,
-    currency: "currency" in body ? String(body.currency).toUpperCase() : before.currency,
-    date: "date" in body ? body.date : before.date,
-    account_id: "account_id" in body ? (body.account_id != null ? Number(body.account_id) : null) : before.account_id,
-  };
+  // Same validation rules as POST, applied only to the supplied fields.
+  const amount = "amount" in body ? money(body.amount) : before.amount;
+  const cur = "currency" in body ? currency(body.currency, before.currency) : before.currency;
+  const date = "date" in body ? isoDate(body.date) : before.date;
+  const account_id = "account_id" in body ? optionalId(body.account_id) : before.account_id;
+  const category_id = "category_id" in body ? optionalId(body.category_id) : before.category_id;
+  if (amount == null || cur == null || date == null || account_id === undefined || category_id === undefined) {
+    return NextResponse.json({ error: "invalid amount, currency, date, category, or account" }, { status: 400 });
+  }
+  const next = { amount, currency: cur, date, account_id };
   const fields: string[] = [];
   const args: any[] = [];
-  for (const [name, value] of Object.entries({ amount: next.amount, currency: next.currency, direction: body.direction, category_id: body.category_id != null ? Number(body.category_id) : body.category_id, account_id: next.account_id, date: next.date, note: body.note })) {
+  const direction = "direction" in body ? oneOf(body.direction, ["expense", "income"] as const, before.direction) : undefined;
+  for (const [name, value] of Object.entries({ amount: next.amount, currency: next.currency, direction, category_id, account_id: next.account_id, date: next.date, note: "note" in body ? String(body.note ?? "") : undefined })) {
     const supplied = name === "amount" || name === "currency" || name === "account_id" || name === "date" || name in body;
     if (supplied) { fields.push(`${name}=?`); args.push(value); }
   }

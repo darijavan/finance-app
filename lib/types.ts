@@ -67,6 +67,7 @@ export interface Subscription {
   category_color?: string;
   account_name?: string;
   monthly_equivalent?: number;
+  last_charge_amount?: number | null; // amount of the most recent automatic charge
 }
 
 export interface Budget {
@@ -74,8 +75,38 @@ export interface Budget {
   category_id: number | null; // null = overall
   month: string; // YYYY-MM
   amount: number;
+  rollover?: number; // 1 = unused budget carries into the next month
   category_name?: string;
   category_color?: string;
+}
+
+export interface ActivityEntry {
+  id: number;
+  entity: string;
+  action: string;
+  entity_id: number | null;
+  summary: string;
+  created_at: string;
+  undoable: boolean;
+}
+
+export interface Goal {
+  id: number;
+  name: string;
+  target_amount: number;
+  account_id: number;
+  target_date: string | null;
+  note: string;
+  account_name?: string;
+  currency?: string; // linked account's currency (targets are in it)
+  current?: number; // linked account's native balance
+}
+
+export interface TrendPoint {
+  month: string;
+  spent: number;
+  earned: number;
+  net_worth: number;
 }
 
 export interface Summary {
@@ -93,6 +124,7 @@ export interface Summary {
     color: string;
     budget: number;
     actual: number;
+    rollover?: boolean;
   }[];
 }
 

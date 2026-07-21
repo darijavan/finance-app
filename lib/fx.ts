@@ -1,4 +1,4 @@
-import { getDb } from "./db";
+import { getDb } from "./db.ts";
 
 // Exchange rates are stored relative to the app's BASE currency (the settings
 // `currency`, normally ILS). rate[code] = how many units of `code` equal 1 base

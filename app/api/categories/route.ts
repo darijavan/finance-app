@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   const name = (body.name ?? "").trim();
   if (!name) return NextResponse.json({ error: "name required" }, { status: 400 });
   const color = body.color || "#7c9cff";
-  const direction = body.direction === "income" ? "income" : "expense";
+  const direction = body.direction === "income" ? "income" : "expense"; // enum-safe: anything else -> expense
   const info = db.prepare("INSERT INTO categories(name,color,direction) VALUES(?,?,?)").run(name, color, direction);
   const row = db.prepare("SELECT * FROM categories WHERE id=?").get(info.lastInsertRowid);
   logActivity(db, "category", "create", Number(info.lastInsertRowid), `Added category "${name}" (${direction})`);

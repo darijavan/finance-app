@@ -125,6 +125,16 @@ function initSchema(db: DatabaseSync) {
       PRIMARY KEY (requested_date, base_currency, quote_currency)
     );
     CREATE INDEX IF NOT EXISTS idx_tx_date ON transactions(date);
+    CREATE TABLE IF NOT EXISTS goals (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      name          TEXT NOT NULL,
+      target_amount REAL NOT NULL,
+      account_id    INTEGER NOT NULL,          -- progress = this account's native balance
+      target_date   TEXT,                      -- optional YYYY-MM-DD
+      note          TEXT DEFAULT '',
+      created_at    TEXT NOT NULL,
+      FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+    );
     CREATE TABLE IF NOT EXISTS activity_log (
       id          INTEGER PRIMARY KEY AUTOINCREMENT,
       entity      TEXT NOT NULL,              -- 'transaction' | 'subscription' | 'budget' | 'category'
@@ -223,6 +233,12 @@ function migrate(db: DatabaseSync) {
       db.exec(`ALTER TABLE transfers ADD COLUMN ${column}`);
     }
   }
+  if (!cols("budgets").includes("rollover")) {
+    db.exec("ALTER TABLE budgets ADD COLUMN rollover INTEGER NOT NULL DEFAULT 0");
+  }
+  // After the column adds above, so they also work on databases created before those columns.
+  db.exec("CREATE INDEX IF NOT EXISTS idx_tx_account ON transactions(account_id)");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_tx_category ON transactions(category_id)");
   // Link legacy automatic charges to their source subscription before enforcing idempotency.
   // Matching the generated note *and* scheduled day prevents accidental links to manual rows.
   db.exec(`UPDATE transactions
