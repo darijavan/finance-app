@@ -144,6 +144,31 @@ function initSchema(db: DatabaseSync) {
       payload     TEXT,                       -- JSON snapshot needed to undo a delete
       created_at  TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS statement_imports (
+      id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+      source             TEXT NOT NULL,
+      source_fingerprint TEXT NOT NULL UNIQUE,
+      account_id         INTEGER NOT NULL,
+      currency           TEXT NOT NULL,
+      status             TEXT NOT NULL DEFAULT 'draft',
+      created_at         TEXT NOT NULL,
+      FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE RESTRICT
+    );
+    CREATE TABLE IF NOT EXISTS statement_import_rows (
+      id                     INTEGER PRIMARY KEY AUTOINCREMENT,
+      import_id              INTEGER NOT NULL,
+      row_index              INTEGER NOT NULL,
+      date                   TEXT NOT NULL,
+      amount                 REAL NOT NULL,
+      direction              TEXT NOT NULL,
+      note                   TEXT NOT NULL DEFAULT '',
+      status                 TEXT NOT NULL,
+      matched_transaction_id INTEGER,
+      created_at             TEXT NOT NULL,
+      FOREIGN KEY (import_id) REFERENCES statement_imports(id) ON DELETE CASCADE,
+      FOREIGN KEY (matched_transaction_id) REFERENCES transactions(id) ON DELETE SET NULL,
+      UNIQUE(import_id, row_index)
+    );
   `);
 }
 

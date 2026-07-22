@@ -128,6 +128,29 @@ export interface Summary {
   }[];
 }
 
+export interface StatementImportRow {
+  id: number;
+  import_id: number;
+  row_index: number;
+  date: string;
+  amount: number;
+  direction: "expense" | "income";
+  note: string;
+  status: "new" | "exact_duplicate" | "possible_duplicate";
+  matched_transaction_id: number | null;
+}
+
+export interface StatementImport {
+  id: number;
+  source: string;
+  source_fingerprint: string;
+  account_id: number;
+  currency: string;
+  status: "draft" | "applied" | "rejected";
+  created_at: string;
+  rows?: StatementImportRow[];
+}
+
 export interface Settings {
   currency: string;
   currency_symbol: string;
