@@ -27,6 +27,7 @@ export default function AccountsPage() {
   const [tDate, setTDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [tNote, setTNote] = useState("");
   const [tCur, setTCur] = useState<string>(settings.currency || "ILS");
+  const [tEditId, setTEditId] = useState<number | null>(null);
 
   const total = accounts.reduce((acc, a) => acc + (a.base_balance || 0), 0);
 
@@ -56,14 +57,26 @@ export default function AccountsPage() {
     const amount = parseFloat(tAmount);
     if (!Number.isFinite(amount) || amount <= 0) return notify("Enter a valid amount");
     if (!tFrom || !tTo || tFrom === tTo) return notify("Pick two different accounts");
-    const r = await sendJSON<{ ok: boolean; error?: string }>(`${API}/transfers`, "POST", {
+    const payload = {
       amount, from_account: Number(tFrom), to_account: Number(tTo),
       date: tDate, note: tNote, currency: tCur,
-    });
-    if ((r as any).error) { notify((r as any).error); return; }
-    notify("Transfer recorded");
-    setTAmount(""); setTNote(""); setTFrom(""); setTTo(""); setTCur(settings.currency || "ILS");
+    };
+    await sendJSON(tEditId != null ? `${API}/transfers/${tEditId}` : `${API}/transfers`, tEditId != null ? "PUT" : "POST", payload);
+    notify(tEditId != null ? "Transfer updated" : "Transfer recorded");
+    cancelTransferEdit();
     reload();
+  };
+
+  const startEditTransfer = (t: Transfer) => {
+    setTEditId(t.id);
+    setTAmount(String(t.amount)); setTFrom(String(t.from_account)); setTTo(String(t.to_account));
+    setTDate(t.date); setTNote(t.note || ""); setTCur(t.currency || settings.currency || "ILS");
+  };
+
+  const cancelTransferEdit = () => {
+    setTEditId(null);
+    setTAmount(""); setTNote(""); setTFrom(""); setTTo("");
+    setTDate(new Date().toISOString().slice(0, 10)); setTCur(settings.currency || "ILS");
   };
 
   const deleteTransfer = async (id: number) => {
@@ -176,8 +189,8 @@ export default function AccountsPage() {
       </div>
     </div>
 
-    <div className="panel">
-      <h2>Transfer between accounts</h2>
+    <div className={tEditId != null ? "panel editing" : "panel"}>
+      <h2>{tEditId != null ? "Edit transfer" : "Transfer between accounts"}</h2>
       <div className="row">
         <div className="field">
           <label>Amount</label>
@@ -211,7 +224,8 @@ export default function AccountsPage() {
             {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>)}
           </select>
         </div>
-        <button className="btn" onClick={saveTransfer}>Transfer</button>
+        <button className="btn" onClick={saveTransfer}>{tEditId != null ? "Update" : "Transfer"}</button>
+        {tEditId != null && <button className="btn secondary" onClick={cancelTransferEdit}>Cancel</button>}
       </div>
 
       <h2 style={{ marginTop: 22 }}>Recent transfers</h2>
@@ -230,6 +244,8 @@ export default function AccountsPage() {
                 <td className="right">{fmtCur(t.amount, t.currency)}</td>
                 <td className="muted">{t.note}</td>
                 <td className="right actions">
+                  <button className="btn secondary small" title="Edit" aria-label={`Edit transfer of ${t.date}`}
+                    onClick={() => startEditTransfer(t)}>✎</button>{" "}
                   <button className="btn danger small" title="Delete" aria-label={`Delete transfer of ${t.date}`}
                     onClick={() => deleteTransfer(t.id)}>✕</button>
                 </td>
