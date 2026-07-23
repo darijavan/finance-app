@@ -22,7 +22,7 @@ export async function GET() {
      WHERE id IN (SELECT MAX(id) FROM transactions WHERE subscription_id IS NOT NULL GROUP BY subscription_id)`
   ).all() as any[]) lastCharges.set(r.subscription_id, r.amount);
   for (const s of rows) {
-    s.monthly_equivalent = s.frequency === "yearly" ? Math.round((s.amount / 12) * 100) / 100 : Math.round(s.amount * 100) / 100;
+    s.monthly_equivalent = s.frequency === "monthly" ? Math.round(s.amount * 100) / 100 : null;
     s.last_charge_amount = lastCharges.get(s.id) ?? null;
   }
   return NextResponse.json(rows);

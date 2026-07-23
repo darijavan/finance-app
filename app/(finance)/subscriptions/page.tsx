@@ -191,7 +191,7 @@ export default function SubscriptionsPage() {
             <SortHeader sort={sort} k="name">Name</SortHeader>
             <SortHeader sort={sort} k="amount">Amount</SortHeader>
             <SortHeader sort={sort} k="freq">Freq</SortHeader>
-            <SortHeader sort={sort} k="monthly">~/mo</SortHeader>
+            <SortHeader sort={sort} k="monthly">Monthly</SortHeader>
             <SortHeader sort={sort} k="cat">Cat</SortHeader>
             <th>Paid from</th>
             <th>Started</th>
@@ -210,7 +210,7 @@ export default function SubscriptionsPage() {
                   )}
                 </td>
                 <td className="muted">{s.frequency}{s.frequency === "yearly" ? ` (m${s.month_of_year})` : ""}</td>
-                <td className="muted">{fmtCur(s.monthly_equivalent || 0, s.currency || settings.currency)}</td>
+                <td className="muted">{s.monthly_equivalent == null ? "—" : fmtCur(s.monthly_equivalent, s.currency || settings.currency)}</td>
                 <td><span className="tag" style={{ background: s.category_color || "#888" }}>{s.category_name || "—"}</span></td>
                 <td className="muted">{s.account_name || "—"}</td>
                 <td className="muted">{s.start_date || "—"}</td>
@@ -226,8 +226,9 @@ export default function SubscriptionsPage() {
         </table>
       )}
       <p className="muted" style={{ fontSize: 12, marginTop: 12 }}>
-        Total recurring ≈ {fmt(summary?.recurring_monthly ?? 0, sym)} / month
+        Total monthly subscriptions {fmt(summary?.recurring_monthly ?? 0, sym)} / month
         <span style={{ marginLeft: 6 }}>(converted to {settings.currency})</span>
+        <span style={{ marginLeft: 16 }}>Remaining to pay: {fmt(summary?.remaining_subscriptions ?? 0, sym)}</span>
       </p>
     </div>
     </>

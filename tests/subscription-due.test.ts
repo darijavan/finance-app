@@ -22,6 +22,9 @@ test("monthly charge not yet due this month is skipped", () => {
 test("scheduled date remains available for an unpaid upcoming subscription", () => {
   assert.equal(scheduledDateInMonth({ ...monthly, day_of_month: 25 }, "2026-07"), "2026-07-25");
   assert.equal(scheduledDateInMonth({ ...monthly, day_of_month: 31 }, "2026-07"), "2026-07-28");
+  const yearly = { frequency: "yearly", day_of_month: 5, month_of_year: 3, start_date: null };
+  assert.equal(scheduledDateInMonth(yearly, "2026-03"), "2026-03-05");
+  assert.equal(scheduledDateInMonth(yearly, "2026-07"), null);
 });
 
 test("future months are never charged", () => {

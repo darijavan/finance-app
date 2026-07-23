@@ -93,8 +93,7 @@ export async function GET(req: NextRequest) {
   ).all() as any[];
   const recurring_monthly = r2(
     subs.reduce((acc: number, s: any) => {
-      const monthly = s.frequency === "yearly" ? s.amount / 12 : s.amount;
-      return acc + toBase(monthly, s.currency || base);
+      return s.frequency === "monthly" ? acc + toBase(s.amount, s.currency || base) : acc;
     }, 0)
   );
 

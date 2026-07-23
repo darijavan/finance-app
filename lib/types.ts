@@ -66,7 +66,7 @@ export interface Subscription {
   category_name?: string;
   category_color?: string;
   account_name?: string;
-  monthly_equivalent?: number;
+  monthly_equivalent?: number | null;
   last_charge_amount?: number | null; // amount of the most recent automatic charge
 }
 
