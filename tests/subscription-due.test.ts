@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { chargeDate, cutoffDay, nextChargeDate } from "../lib/subscription-due.ts";
+import { chargeDate, cutoffDay, nextChargeDate, scheduledDateInMonth } from "../lib/subscription-due.ts";
 
 const monthly = { frequency: "monthly", day_of_month: 10, month_of_year: null, start_date: null };
 const TODAY = "2026-07-21";
@@ -17,6 +17,11 @@ test("monthly charge lands on its day when already due", () => {
 
 test("monthly charge not yet due this month is skipped", () => {
   assert.equal(chargeDate({ ...monthly, day_of_month: 25 }, "2026-07", TODAY), null);
+});
+
+test("scheduled date remains available for an unpaid upcoming subscription", () => {
+  assert.equal(scheduledDateInMonth({ ...monthly, day_of_month: 25 }, "2026-07"), "2026-07-25");
+  assert.equal(scheduledDateInMonth({ ...monthly, day_of_month: 31 }, "2026-07"), "2026-07-28");
 });
 
 test("future months are never charged", () => {

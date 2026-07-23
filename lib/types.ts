@@ -117,6 +117,8 @@ export interface Summary {
   net: number;
   remaining: number;
   recurring_monthly: number;
+  remaining_subscriptions: number;
+  due_subscriptions: { id: number; name: string; amount: number; currency: string; date: string; overdue: boolean }[];
   by_category: { name: string; color: string; total: number }[];
   budgets: {
     category_id: number | null;

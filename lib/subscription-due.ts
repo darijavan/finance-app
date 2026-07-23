@@ -37,16 +37,19 @@ export function nextChargeDate(sub: DueSub, today: string): string | null {
   return null;
 }
 
+// The scheduled date in one month, regardless of whether it has passed.
+export function scheduledDateInMonth(sub: DueSub, month: string): string | null {
+  const m = Number(month.slice(5, 7));
+  if (sub.frequency === "yearly" && sub.month_of_year !== m) return null;
+  if (sub.frequency !== "yearly" && sub.frequency !== "monthly") return null;
+  const date = `${month}-${String(Math.min(sub.day_of_month || 1, 28)).padStart(2, "0")}`;
+  return sub.start_date && date < sub.start_date ? null : date;
+}
+
 // The date a subscription should be charged in `month`, or null when it is not
 // due (wrong yearly month, due day after the cutoff, or before its start date).
 // Days are clamped to 28 so every month has the charge day.
 export function chargeDate(sub: DueSub, month: string, today: string): string | null {
-  const m = Number(month.slice(5, 7));
-  if (sub.frequency === "yearly" && sub.month_of_year !== m) return null;
-  if (sub.frequency !== "yearly" && sub.frequency !== "monthly") return null;
-  const day = Math.min(sub.day_of_month || 1, 28);
-  if (day > cutoffDay(month, today)) return null;
-  const date = `${month}-${String(day).padStart(2, "0")}`;
-  if (sub.start_date && date < sub.start_date) return null;
-  return date;
+  const date = scheduledDateInMonth(sub, month);
+  return date != null && Number(date.slice(8, 10)) <= cutoffDay(month, today) ? date : null;
 }

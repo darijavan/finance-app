@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getConverter } from "@/lib/fx";
+import { scheduledDateInMonth } from "@/lib/subscription-due";
 
 export const dynamic = "force-dynamic";
 
@@ -87,13 +88,32 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  const subs = db.prepare("SELECT amount, currency, frequency FROM subscriptions WHERE active=1").all() as any[];
+  const subs = db.prepare(
+    "SELECT id, name, amount, currency, direction, frequency, day_of_month, month_of_year, start_date FROM subscriptions WHERE active=1",
+  ).all() as any[];
   const recurring_monthly = r2(
     subs.reduce((acc: number, s: any) => {
       const monthly = s.frequency === "yearly" ? s.amount / 12 : s.amount;
       return acc + toBase(monthly, s.currency || base);
     }, 0)
   );
+
+  // Paid subscription transactions carry their source id, letting this show
+  // only the current month's unpaid expense subscriptions.
+  const today = new Date().toISOString().slice(0, 10);
+  const currentMonth = today.slice(0, 7);
+  const charged = new Set((db.prepare(
+    "SELECT DISTINCT subscription_id FROM transactions WHERE subscription_id IS NOT NULL AND substr(date,1,7)=?",
+  ).all(currentMonth) as any[]).map((t) => t.subscription_id));
+  const due_subscriptions = subs
+    .filter((s) => s.direction === "expense" && !charged.has(s.id))
+    .map((s) => ({ ...s, date: scheduledDateInMonth(s, currentMonth) }))
+    .filter((s): s is typeof s & { date: string } => s.date != null)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((s) => ({ id: s.id, name: s.name, amount: s.amount, currency: s.currency || base, date: s.date, overdue: s.date < today }));
+  const remaining_subscriptions = r2(due_subscriptions.reduce(
+    (total, s) => total + toBase(s.amount, s.currency), 0,
+  ));
 
   return NextResponse.json({
     month,
@@ -103,6 +123,8 @@ export async function GET(req: NextRequest) {
     net: r2(earned - spent),
     remaining: r2(earned - spent),
     recurring_monthly,
+    remaining_subscriptions,
+    due_subscriptions,
     by_category,
     budgets: budgetRows,
   });

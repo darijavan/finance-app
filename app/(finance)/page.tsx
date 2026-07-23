@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useFinance } from "./store";
 import { API, getJSON, fmt, fmtCur } from "@/lib/client";
-import { nextChargeDate } from "@/lib/subscription-due";
 import type { TrendPoint } from "@/lib/types";
 
 const CHART_W = 560;
@@ -128,7 +127,7 @@ function CashFlowChart({ points, sym }: { points: TrendPoint[]; sym: string }) {
 }
 
 export default function DashboardPage() {
-  const { summary, sym, month, accounts, subscriptions, notify } = useFinance();
+  const { summary, sym, month, accounts, notify } = useFinance();
   const [trends, setTrends] = useState<TrendPoint[] | null>(null);
 
   useEffect(() => {
@@ -136,16 +135,6 @@ export default function DashboardPage() {
       .then((r) => setTrends(r.months))
       .catch((e) => notify("Trends failed: " + String(e)));
   }, [notify]);
-
-  const today = new Date().toISOString().slice(0, 10);
-  const upcoming = useMemo(() => {
-    const horizon = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
-    return subscriptions
-      .filter((s) => s.active)
-      .map((s) => ({ sub: s, date: nextChargeDate(s, today) }))
-      .filter((u): u is { sub: typeof u.sub; date: string } => u.date != null && u.date <= horizon)
-      .sort((a, b) => a.date.localeCompare(b.date));
-  }, [subscriptions, today]);
 
   if (!summary) return <div className="empty">Loading…</div>;
 
@@ -173,6 +162,10 @@ export default function DashboardPage() {
         <div className="card">
           <div className="label">Recurring / mo</div>
           <div className="value yellow">{fmt(summary.recurring_monthly, sym)}</div>
+        </div>
+        <div className="card">
+          <div className="label">Remaining subscriptions</div>
+          <div className="value yellow">{fmt(summary.remaining_subscriptions, sym)}</div>
         </div>
         <div className="card">
           <div className="label">Net worth</div>
@@ -247,29 +240,20 @@ export default function DashboardPage() {
       </div>
 
       <div className="panel">
-        <h2>Upcoming charges — next 30 days</h2>
+        <h2>Still due this month</h2>
         <p className="muted" style={{ fontSize: 12 }}>
-          Due subscriptions are charged automatically each night.
+          Unpaid expense subscriptions, including overdue items. Due subscriptions are charged automatically each night.
         </p>
-        {upcoming.length === 0 && <div className="empty">Nothing due in the next 30 days.</div>}
-        {upcoming.length > 0 && (
+        {summary.due_subscriptions.length === 0 && <div className="empty">No subscriptions left to pay this month.</div>}
+        {summary.due_subscriptions.length > 0 && (
           <table>
             <thead><tr><th className="date-cell">Date</th><th>Subscription</th><th className="right">Amount</th></tr></thead>
             <tbody>
-              {upcoming.map(({ sub, date }) => (
+              {summary.due_subscriptions.map((sub) => (
                 <tr key={sub.id}>
-                  <td className={`date-cell ${date <= new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10) ? "yellow" : "muted"}`}>{date}</td>
-                  <td>{sub.name}
-                    {sub.last_charge_amount != null && sub.last_charge_amount !== sub.amount && (
-                      <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}
-                        title="Price changed since the last charge">
-                        ⚠ was {fmtCur(sub.last_charge_amount, sub.currency)}
-                      </span>
-                    )}
-                  </td>
-                  <td className={`right ${sub.direction === "expense" ? "amount-expense" : "amount-income"}`}>
-                    {sub.direction === "expense" ? "-" : "+"}{fmtCur(sub.amount, sub.currency)}
-                  </td>
+                  <td className={`date-cell ${sub.overdue ? "amount-expense" : "muted"}`}>{sub.date}{sub.overdue ? " · overdue" : ""}</td>
+                  <td>{sub.name}</td>
+                  <td className="right amount-expense">-{fmtCur(sub.amount, sub.currency)}</td>
                 </tr>
               ))}
             </tbody>
