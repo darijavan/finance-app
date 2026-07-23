@@ -219,12 +219,12 @@ export default function AccountsPage() {
       {transfers.length > 0 && (
         <table>
           <thead><tr>
-            <th>Date</th><th>From</th><th>To</th><th>Amount</th><th>Note</th><th></th>
+            <th className="date-cell">Date</th><th>From</th><th>To</th><th>Amount</th><th>Note</th><th></th>
           </tr></thead>
           <tbody>
             {transfers.map((t: Transfer) => (
               <tr key={t.id}>
-                <td>{t.date}</td>
+                <td className="date-cell">{t.date}</td>
                 <td className="muted">{t.from_name || accName(t.from_account)}</td>
                 <td className="muted">{t.to_name || accName(t.to_account)}</td>
                 <td className="right">{fmtCur(t.amount, t.currency)}</td>

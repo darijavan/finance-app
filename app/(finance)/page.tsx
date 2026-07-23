@@ -254,11 +254,11 @@ export default function DashboardPage() {
         {upcoming.length === 0 && <div className="empty">Nothing due in the next 30 days.</div>}
         {upcoming.length > 0 && (
           <table>
-            <thead><tr><th>Date</th><th>Subscription</th><th className="right">Amount</th></tr></thead>
+            <thead><tr><th className="date-cell">Date</th><th>Subscription</th><th className="right">Amount</th></tr></thead>
             <tbody>
               {upcoming.map(({ sub, date }) => (
                 <tr key={sub.id}>
-                  <td className={date <= new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10) ? "yellow" : "muted"}>{date}</td>
+                  <td className={`date-cell ${date <= new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10) ? "yellow" : "muted"}`}>{date}</td>
                   <td>{sub.name}
                     {sub.last_charge_amount != null && sub.last_charge_amount !== sub.amount && (
                       <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}

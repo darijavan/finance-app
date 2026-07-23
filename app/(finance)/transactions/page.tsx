@@ -278,7 +278,7 @@ export default function TransactionsPage() {
       {rows.length > 0 && (
         <table>
           <thead><tr>
-            <SortHeader sort={sort} k="date">Date</SortHeader>
+            <SortHeader sort={sort} k="date" className="date-cell">Date</SortHeader>
             <SortHeader sort={sort} k="category">Category</SortHeader>
             <SortHeader sort={sort} k="note">Note</SortHeader>
             <th>Account</th>
@@ -288,7 +288,7 @@ export default function TransactionsPage() {
           <tbody>
             {sortedTx.map((t) => (
               <tr key={t.id}>
-                <td>{t.date}</td>
+                <td className="date-cell">{t.date}</td>
                 <td>
                   <span className="tag" style={{ background: catColor(categories, t.category_id) }}>
                     {catName(categories, t.category_id, t.direction)}
@@ -485,11 +485,11 @@ function ImportCSV({ onDone, notify }: { onDone: () => void; notify: (m: string)
           </p>
           {valid.length > 0 && (
             <table>
-              <thead><tr><th>Date</th><th>Direction</th><th className="right">Amount</th><th>Note</th></tr></thead>
+              <thead><tr><th className="date-cell">Date</th><th>Direction</th><th className="right">Amount</th><th>Note</th></tr></thead>
               <tbody>
                 {valid.slice(0, 8).map((p, i) => (
                   <tr key={i}>
-                    <td>{p.date}</td>
+                    <td className="date-cell">{p.date}</td>
                     <td className={p.direction === "expense" ? "amount-expense" : "amount-income"}>{p.direction}</td>
                     <td className="right">{fmtCur(p.amount, iCur)}</td>
                     <td className="muted">{p.note}</td>
