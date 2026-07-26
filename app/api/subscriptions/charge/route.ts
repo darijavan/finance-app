@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
   );
   db.exec("BEGIN");
   let created = 0;
+  const chargedNames: string[] = [];
   try {
     for (const s of subs as any[]) {
       // The button may backfill a past month, but must never book charges dated
@@ -43,7 +44,10 @@ export async function POST(req: NextRequest) {
           `[auto] ${s.name} (${s.frequency})`, s.account_id ?? null, s.id,
           snap.account_amount, snap.account_currency, snap.account_fx_rate, snap.account_fx_date, snap.account_fx_source, now.toISOString(),
         );
-        if (result.changes > 0) created++;
+        if (result.changes > 0) {
+          created++;
+          chargedNames.push(s.name);
+        }
       }
     }
     db.exec("COMMIT");
@@ -53,7 +57,7 @@ export async function POST(req: NextRequest) {
   }
   if (created > 0) {
     logActivity(db, "transaction", "create", null,
-      `Charged ${created} subscription(s) for ${month}`);
+      `Charged ${chargedNames.join(", ")} for ${month}`);
   }
   return NextResponse.json({ created });
 }
