@@ -306,7 +306,7 @@ export default function TransactionsPage() {
                   </span>
                 </td>
                 <td className="muted">
-                  {t.subscription_id != null && <span className="tag">↻ Subscription</span>}{" "}
+                  {t.subscription_id != null && <span className="tag subscription-tag">↻ Subscription</span>}{" "}
                   {t.note}
                 </td>
                 <td className="muted">{t.account_name || "—"}</td>
