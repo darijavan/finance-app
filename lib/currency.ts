@@ -12,5 +12,6 @@ export type Currency = (typeof CURRENCIES)[number]["code"];
 export const DEFAULT_CURRENCY: Currency = "ILS";
 
 export function isCurrency(value: string): value is Currency {
+
   return CURRENCIES.some((currency) => currency.code === value);
 }

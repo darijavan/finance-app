@@ -305,7 +305,10 @@ export default function TransactionsPage() {
                     {catName(categories, t.category_id, t.direction)}
                   </span>
                 </td>
-                <td className="muted">{t.note}</td>
+                <td className="muted">
+                  {t.subscription_id != null && <span className="tag">↻ Subscription</span>}{" "}
+                  {t.note}
+                </td>
                 <td className="muted">{t.account_name || "—"}</td>
                 <td className={`right ${t.direction === "expense" ? "amount-expense" : "amount-income"}`}>
                   {t.direction === "expense" ? "-" : "+"}{fmtCur(t.amount, t.currency || settings.currency)}
