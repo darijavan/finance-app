@@ -25,6 +25,8 @@ export async function GET() {
     s.monthly_equivalent = s.frequency === "monthly" ? Math.round(s.amount * 100) / 100 : null;
     s.last_charge_amount = lastCharges.get(s.id) ?? null;
   }
+  
+
   return NextResponse.json(rows);
 }
 
@@ -33,8 +35,12 @@ export async function POST(req: NextRequest) {
   const b = await req.json();
   const name = (b.name ?? "").trim();
   const amount = money(b.amount);
-  if (!name) return NextResponse.json({ error: "name required" }, { status: 400 });
-  if (amount == null) return NextResponse.json({ error: "valid amount required" }, { status: 400 });
+  if (!name) 
+
+  return NextResponse.json({ error: "name required" }, { status: 400 });
+  if (amount == null) 
+
+  return NextResponse.json({ error: "valid amount required" }, { status: 400 });
   const frequency = oneOf(b.frequency, ["monthly", "yearly"] as const, "monthly");
   const day_of_month = intInRange(b.day_of_month, 1, 28, 1);
   const month_of_year = frequency === "yearly" ? intInRange(b.month_of_year, 1, 12, 1) : null;
@@ -43,6 +49,8 @@ export async function POST(req: NextRequest) {
   const accountId = optionalId(b.account_id);
   const categoryId = optionalId(b.category_id);
   if (cur == null || (b.start_date && startDate == null) || accountId === undefined || categoryId === undefined) {
+    
+
     return NextResponse.json({ error: "invalid currency, start date, category, or account" }, { status: 400 });
   }
   const info = db.prepare(
@@ -56,5 +64,7 @@ export async function POST(req: NextRequest) {
   );
   logActivity(db, "subscription", "create", Number(info.lastInsertRowid),
     `Added subscription "${name}" (${amount} ${cur}, ${frequency})`);
+  
+
   return NextResponse.json({ ok: true, id: info.lastInsertRowid }, { status: 201 });
 }

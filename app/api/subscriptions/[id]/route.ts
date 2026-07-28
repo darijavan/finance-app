@@ -10,7 +10,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const db = getDb();
   const id = Number((await params).id);
   const before = db.prepare("SELECT * FROM subscriptions WHERE id=?").get(id) as any;
-  if (!before) return NextResponse.json({ error: "subscription not found" }, { status: 404 });
+  if (!before) 
+
+  return NextResponse.json({ error: "subscription not found" }, { status: 404 });
   const b = await req.json();
   // Same validation rules as POST, applied only to the supplied fields.
   const validated: Record<string, unknown> = {
@@ -31,6 +33,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       ("start_date" in b && b.start_date && validated.start_date == null) ||
       validated.category_id === undefined && "category_id" in b ||
       validated.account_id === undefined && "account_id" in b) {
+    
+
     return NextResponse.json({ error: "invalid field value" }, { status: 400 });
   }
   const fields: string[] = [];
@@ -39,11 +43,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (v !== undefined) { args.push(v); fields.push(`${k}=?`); }
   }
   if ("active" in b) { args.push(b.active ? 1 : 0); fields.push("active=?"); }
-  if (!fields.length) return NextResponse.json({ ok: true });
+  if (!fields.length) 
+
+  return NextResponse.json({ ok: true });
   args.push(id);
   db.prepare(`UPDATE subscriptions SET ${fields.join(", ")} WHERE id=?`).run(...args);
   logActivity(db, "subscription", "update", id,
     `Updated subscription #${id} (${fields.join(", ") || "no fields"})${before ? ` — was "${before.name}"` : ""}`);
+  
+
   return NextResponse.json({ ok: true });
 }
 
@@ -51,10 +59,14 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const db = getDb();
   const id = Number((await params).id);
   const row = db.prepare("SELECT * FROM subscriptions WHERE id=?").get(id) as any;
-  if (!row) return NextResponse.json({ ok: true, log_id: null });
+  if (!row) 
+
+  return NextResponse.json({ ok: true, log_id: null });
   db.prepare("DELETE FROM subscriptions WHERE id=?").run(id);
   const logId = logActivity(db, "subscription", "delete", id,
     `Deleted subscription #${id} ("${row.name}", ${row.amount} ${row.currency || ""}, ${row.frequency})`,
     { table: "subscriptions", ...row });
+  
+
   return NextResponse.json({ ok: true, log_id: logId });
 }

@@ -23,6 +23,8 @@ export function useSort<K extends string>(initialKey: K | null = null, initialDi
       setDir("asc");
     }
   };
+  
+
   return { key, dir, toggle };
 }
 
@@ -34,22 +36,40 @@ export function useSorted<T, K extends string>(
   sort: SortState<K>,
   accessors: Record<K, (row: T) => string | number | null | undefined>
 ): T[] {
+  
+
   return useMemo(() => {
-    if (!sort.key) return rows;
+    if (!sort.key) 
+
+    return rows;
     const acc = accessors[sort.key];
     const mult = sort.dir === "asc" ? 1 : -1;
+    
+
     return [...rows].sort((a, b) => {
       let av = acc(a);
       let bv = acc(b);
-      if (av == null && bv == null) return 0;
-      if (av == null) return 1; // nulls last
-      if (bv == null) return -1;
+      if (av == null && bv == null) 
+
+      return 0;
+      if (av == null) 
+
+      return 1; // nulls last
+      if (bv == null) 
+
+      return -1;
       if (typeof av === "string" && typeof bv === "string") {
         av = av.toLowerCase();
         bv = bv.toLowerCase();
       }
-      if (av < bv) return -1 * mult;
-      if (av > bv) return 1 * mult;
+      if (av < bv) 
+
+      return -1 * mult;
+      if (av > bv) 
+
+      return 1 * mult;
+      
+
       return 0;
     });
   }, [rows, sort.key, sort.dir, accessors]);
@@ -67,6 +87,8 @@ export function SortHeader<K extends string>({
 }) {
   const active = sort.key === k;
   const arrow = active ? (sort.dir === "asc" ? " ▲" : " ▼") : " ↕";
+  
+
   return (
     <th
       className={className}

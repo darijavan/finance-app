@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, logActivity } from "@/lib/db";
+import type { Currency } from "@/lib/currency";
 import { snapshotConversion } from "@/lib/fx-historical";
 import { money, currency, oneOf, isoDate, optionalId } from "@/lib/validate";
 
 export const dynamic = "force-dynamic";
 
-async function accountSnapshot(db: any, amount: number, currency: string, date: string, accountId: number | null) {
-  if (accountId == null) return { account_amount: null, account_currency: null, account_fx_rate: null, account_fx_date: null, account_fx_source: null };
-  const account = db.prepare("SELECT currency FROM accounts WHERE id=?").get(accountId) as { currency: string } | undefined;
+async function accountSnapshot(db: any, amount: number, currency: Currency, date: string, accountId: number | null) {
+  if (accountId == null) 
+
+  return { account_amount: null, account_currency: null, account_fx_rate: null, account_fx_date: null, account_fx_source: null };
+  const account = db.prepare("SELECT currency FROM accounts WHERE id=?").get(accountId) as { currency: Currency } | undefined;
   if (!account) throw new Error("account not found");
   const fx = await snapshotConversion(amount, currency, account.currency, date);
+  
+
   return { account_amount: fx.amount, account_currency: account.currency, account_fx_rate: fx.rate, account_fx_date: fx.rate_date, account_fx_source: fx.source };
 }
 
@@ -36,6 +41,8 @@ export async function GET(req: NextRequest) {
      LEFT JOIN accounts a ON t.account_id=a.id
      ${where} ORDER BY t.date DESC, t.id DESC`,
   ).all(...args);
+  
+
   return NextResponse.json(rows);
 }
 
@@ -43,17 +50,23 @@ export async function POST(req: NextRequest) {
   const db = getDb();
   const body = await req.json();
   const amount = money(body.amount);
-  if (amount == null) return NextResponse.json({ error: "valid amount required" }, { status: 400 });
+  if (amount == null) 
+
+  return NextResponse.json({ error: "valid amount required" }, { status: 400 });
   const direction = oneOf(body.direction, ["expense", "income"] as const, "expense");
   const date = isoDate(body.date) ?? new Date().toISOString().slice(0, 10);
   const note = String(body.note ?? "");
   const category_id = optionalId(body.category_id);
   const account_id = optionalId(body.account_id);
   if (category_id === undefined || account_id === undefined) {
+    
+
     return NextResponse.json({ error: "invalid category or account id" }, { status: 400 });
   }
   const cur = currency(body.currency);
-  if (cur == null) return NextResponse.json({ error: "invalid currency code" }, { status: 400 });
+  if (cur == null) 
+
+  return NextResponse.json({ error: "invalid currency code" }, { status: 400 });
   try {
     const snap = await accountSnapshot(db, amount, cur, date, account_id);
     const info = db.prepare(
@@ -65,8 +78,12 @@ export async function POST(req: NextRequest) {
     const row = db.prepare("SELECT * FROM transactions WHERE id=?").get(info.lastInsertRowid);
     logActivity(db, "transaction", "create", Number(info.lastInsertRowid),
       `Added ${direction} ${amount} ${cur}${note ? ` (${note})` : ""} for ${date}`);
+    
+
     return NextResponse.json(row, { status: 201 });
   } catch (e) {
+    
+
     return NextResponse.json({ error: String(e) }, { status: 422 });
   }
 }

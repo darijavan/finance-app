@@ -28,5 +28,7 @@ export function nativeBalances(txs: TxRow[], transfers: TransferRow[]): Map<numb
     bump(x.from_account, -(x.from_amount ?? x.amount));
     bump(x.to_account, x.to_amount ?? x.amount);
   }
+  
+
   return native;
 }

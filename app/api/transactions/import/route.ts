@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, logActivity } from "@/lib/db";
+import type { Currency } from "@/lib/currency";
 import { snapshotConversion } from "@/lib/fx-historical";
 import { money, currency, oneOf, isoDate, optionalId } from "@/lib/validate";
 
@@ -13,19 +14,27 @@ export async function POST(req: NextRequest) {
   const db = getDb();
   const b = await req.json();
   if (!Array.isArray(b.rows) || b.rows.length === 0) {
+    
+
     return NextResponse.json({ error: "rows required" }, { status: 400 });
   }
-  if (b.rows.length > 2000) return NextResponse.json({ error: "too many rows (max 2000)" }, { status: 400 });
+  if (b.rows.length > 2000) 
+
+  return NextResponse.json({ error: "too many rows (max 2000)" }, { status: 400 });
   const cur = currency(b.currency);
   const account_id = optionalId(b.account_id);
   const category_id = optionalId(b.category_id);
   if (cur == null || account_id === undefined || category_id === undefined) {
+    
+
     return NextResponse.json({ error: "invalid currency, account, or category" }, { status: 400 });
   }
-  let accountCurrency: string | null = null;
+  let accountCurrency: Currency | null = null;
   if (account_id != null) {
     const acc = db.prepare("SELECT currency FROM accounts WHERE id=?").get(account_id) as any;
-    if (!acc) return NextResponse.json({ error: "account not found" }, { status: 404 });
+    if (!acc) 
+
+    return NextResponse.json({ error: "account not found" }, { status: 404 });
     accountCurrency = acc.currency;
   }
 
@@ -59,5 +68,7 @@ export async function POST(req: NextRequest) {
   if (created > 0) {
     logActivity(db, "transaction", "create", null, `Imported ${created} transaction(s) from CSV`);
   }
+  
+
   return NextResponse.json({ created, skipped, invalid });
 }

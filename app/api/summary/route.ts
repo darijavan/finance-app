@@ -55,29 +55,43 @@ export async function GET(req: NextRequest) {
     const rows = (catId == null
       ? db.prepare("SELECT amount, currency FROM transactions WHERE substr(date,1,7)=? AND direction='expense'").all(m)
       : db.prepare("SELECT amount, currency FROM transactions WHERE substr(date,1,7)=? AND direction='expense' AND category_id=?").all(m, catId)) as any[];
+    
+
     return rows.reduce((acc, r) => acc + toBase(r.amount, r.currency || base), 0);
   };
   const prevMonth = (m: string) => {
     const [y, mm] = m.split("-").map(Number);
     const d = new Date(y, mm - 2, 1);
+    
+
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   };
   // ponytail: positive carryover only, chain capped at 12 months back.
   const effectiveBudget = (b: any, depth = 0): number => {
-    if (!b.rollover || depth >= 12) return b.amount;
+    if (!b.rollover || depth >= 12) 
+
+    return b.amount;
     const pm = prevMonth(b.month);
     const prev = db.prepare("SELECT * FROM budgets WHERE month=? AND category_id IS ?").get(pm, b.category_id) as any;
-    if (!prev) return b.amount;
+    if (!prev) 
+
+    return b.amount;
     const leftover = effectiveBudget(prev, depth + 1) - spentInMonth(b.category_id, pm);
+    
+
     return b.amount + Math.max(0, leftover);
   };
 
   const budgets = db.prepare("SELECT * FROM budgets WHERE month=?").all(month) as any[];
   const budgetRows = budgets.map((b: any) => {
     if (b.category_id == null) {
+      
+
       return { category_id: null, category_name: "Overall", color: "#7c9cff", budget: r2(effectiveBudget(b)), actual: spent, rollover: !!b.rollover };
     }
     const cat = db.prepare("SELECT name,color FROM categories WHERE id=?").get(b.category_id) as any;
+    
+
     return {
       category_id: b.category_id,
       category_name: cat?.name ?? "Unknown",
@@ -93,6 +107,8 @@ export async function GET(req: NextRequest) {
   ).all() as any[];
   const recurring_monthly = r2(
     subs.reduce((acc: number, s: any) => {
+      
+
       return s.frequency === "monthly" ? acc + toBase(s.amount, s.currency || base) : acc;
     }, 0)
   );

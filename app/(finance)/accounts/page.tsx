@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useFinance } from "../store";
 import { API, getJSON, sendJSON, fmt, fmtCur, CURRENCIES } from "@/lib/client";
-import type { Account, Transfer, AccountType, Goal } from "@/lib/types";
+import type { Transfer, AccountType, Goal } from "@/lib/types";
 
 const TYPES: { v: AccountType; label: string }[] = [
   { v: "bank", label: "Bank" },
@@ -32,7 +32,9 @@ export default function AccountsPage() {
   const total = accounts.reduce((acc, a) => acc + (a.base_balance || 0), 0);
 
   const saveAccount = async () => {
-    if (!aName.trim()) return notify("Enter a name");
+    if (!aName.trim()) 
+
+    return notify("Enter a name");
     await sendJSON(`${API}/accounts`, "POST", { name: aName.trim(), type: aType, currency: aCur });
     notify("Account added");
     setAName(""); setAType("bank"); setACur(settings.currency || "ILS");
@@ -45,9 +47,13 @@ export default function AccountsPage() {
       message: "Only accounts with no transactions, transfers, or subscriptions can be deleted.",
       confirmLabel: "Delete", danger: true,
     });
-    if (!ok) return;
+    if (!ok) 
+
+    return;
     const r = await sendJSON<{ ok: boolean; log_id: number | null; error?: string }>(`${API}/accounts/${id}`, "DELETE");
-    if ((r as any).error) { notify((r as any).error); return; }
+    if ((r as any).error) { notify((r as any).error); 
+
+    return; }
     notify("Deleted");
     reload();
     if (r.log_id != null) undo({ message: "Account deleted.", logId: r.log_id });
@@ -55,8 +61,12 @@ export default function AccountsPage() {
 
   const saveTransfer = async () => {
     const amount = parseFloat(tAmount);
-    if (!Number.isFinite(amount) || amount <= 0) return notify("Enter a valid amount");
-    if (!tFrom || !tTo || tFrom === tTo) return notify("Pick two different accounts");
+    if (!Number.isFinite(amount) || amount <= 0) 
+
+    return notify("Enter a valid amount");
+    if (!tFrom || !tTo || tFrom === tTo) 
+
+    return notify("Pick two different accounts");
     const payload = {
       amount, from_account: Number(tFrom), to_account: Number(tTo),
       date: tDate, note: tNote, currency: tCur,
@@ -85,7 +95,9 @@ export default function AccountsPage() {
       message: "This reverses the balance move. You can undo it from the bottom bar right after.",
       confirmLabel: "Delete", danger: true,
     });
-    if (!ok) return;
+    if (!ok) 
+
+    return;
     const r = await sendJSON<{ ok: boolean; log_id: number | null }>(`${API}/transfers/${id}`, "DELETE");
     notify("Deleted");
     reload();
@@ -110,8 +122,12 @@ export default function AccountsPage() {
 
   const saveGoal = async () => {
     const target = parseFloat(gTarget);
-    if (!gName.trim() || !Number.isFinite(target) || target <= 0) return notify("Enter goal name + target");
-    if (!gAccount) return notify("Pick the account to save into");
+    if (!gName.trim() || !Number.isFinite(target) || target <= 0) 
+
+    return notify("Enter goal name + target");
+    if (!gAccount) 
+
+    return notify("Pick the account to save into");
     await sendJSON(`${API}/goals`, "POST", {
       name: gName.trim(), target_amount: target, account_id: Number(gAccount),
       target_date: gDate || null,
@@ -127,7 +143,9 @@ export default function AccountsPage() {
       message: "This removes the goal (the account and its money are untouched).",
       confirmLabel: "Delete", danger: true,
     });
-    if (!ok) return;
+    if (!ok) 
+
+    return;
     const r = await sendJSON<{ ok: boolean; log_id: number | null }>(`${API}/goals/${id}`, "DELETE");
     notify("Goal deleted");
     loadGoals();
@@ -264,6 +282,8 @@ export default function AccountsPage() {
             const cur = Math.max(0, g.current || 0);
             const pct = g.target_amount > 0 ? Math.min(100, (cur / g.target_amount) * 100) : 0;
             const done = cur >= g.target_amount;
+            
+
             return (
               <div key={g.id} className="budget-row">
                 <div className="top">

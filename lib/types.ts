@@ -1,3 +1,5 @@
+import type { Currency } from "./currency.ts";
+
 export interface Category {
   id: number;
   name: string;
@@ -8,7 +10,7 @@ export interface Category {
 export interface Transaction {
   id: number;
   amount: number;
-  currency: string;
+  currency: Currency;
   direction: "expense" | "income";
   category_id: number | null;
   date: string; // YYYY-MM-DD
@@ -27,7 +29,7 @@ export interface Account {
   id: number;
   name: string;
   type: AccountType;
-  currency: string;
+  currency: Currency;
   active: boolean;
   note: string;
   balance?: number; // native-currency balance, populated by the API
@@ -37,7 +39,7 @@ export interface Account {
 export interface Transfer {
   id: number;
   amount: number;
-  currency: string;
+  currency: Currency;
   from_account: number;
   to_account: number;
   date: string;
@@ -53,7 +55,7 @@ export interface Subscription {
   id: number;
   name: string;
   amount: number;
-  currency: string;
+  currency: Currency;
   direction: "expense" | "income";
   category_id: number | null;
   frequency: Frequency;
@@ -98,7 +100,7 @@ export interface Goal {
   target_date: string | null;
   note: string;
   account_name?: string;
-  currency?: string; // linked account's currency (targets are in it)
+  currency?: Currency; // linked account's currency (targets are in it)
   current?: number; // linked account's native balance
 }
 
@@ -111,14 +113,14 @@ export interface TrendPoint {
 
 export interface Summary {
   month: string;
-  base?: string;
+  base?: Currency;
   spent: number;
   earned: number;
   net: number;
   remaining: number;
   recurring_monthly: number;
   remaining_subscriptions: number;
-  due_subscriptions: { id: number; name: string; amount: number; currency: string; date: string; overdue: boolean }[];
+  due_subscriptions: { id: number; name: string; amount: number; currency: Currency; date: string; overdue: boolean }[];
   by_category: { name: string; color: string; total: number }[];
   budgets: {
     category_id: number | null;
@@ -147,13 +149,13 @@ export interface StatementImport {
   source: string;
   source_fingerprint: string;
   account_id: number;
-  currency: string;
+  currency: Currency;
   status: "draft" | "applied" | "rejected";
   created_at: string;
   rows?: StatementImportRow[];
 }
 
 export interface Settings {
-  currency: string;
+  currency: Currency;
   currency_symbol: string;
 }

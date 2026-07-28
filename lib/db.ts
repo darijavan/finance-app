@@ -8,7 +8,9 @@ const DB_PATH = path.join(DB_DIR, "finance.db");
 let _db: DatabaseSync | null = null;
 
 export function getDb(): DatabaseSync {
-  if (_db) return _db;
+  if (_db) 
+
+  return _db;
   fs.mkdirSync(DB_DIR, { recursive: true });
   const db = new DatabaseSync(DB_PATH);
   db.exec("PRAGMA journal_mode = WAL");
@@ -17,6 +19,8 @@ export function getDb(): DatabaseSync {
   migrate(db);
   seedDefaults(db);
   _db = db;
+  
+
   return db;
 }
 
@@ -194,6 +198,8 @@ export function logActivity(
     payload === undefined ? null : JSON.stringify(payload),
     new Date().toISOString(),
   );
+  
+
   return Number(info.lastInsertRowid);
 }
 
@@ -204,9 +210,13 @@ export function undoActivity(
   logId: number,
 ): number | null {
   const row = db.prepare("SELECT * FROM activity_log WHERE id=?").get(logId) as any;
-  if (!row || row.action !== "delete" || !row.payload) return null;
+  if (!row || row.action !== "delete" || !row.payload) 
+
+  return null;
   const data = JSON.parse(row.payload);
-  if (!data || typeof data !== "object" || !data.table) return null;
+  if (!data || typeof data !== "object" || !data.table) 
+
+  return null;
 
   const cols = Object.keys(data).filter((k) => k !== "table");
   const placeholders = cols.map(() => "?").join(", ");
@@ -217,6 +227,8 @@ export function undoActivity(
 
   // Mark the log entry as undone so it can't be re-applied.
   db.prepare("UPDATE activity_log SET action='delete-undone' WHERE id=?").run(logId);
+  
+
   return Number((db.prepare("SELECT last_insert_rowid() AS id").get() as any).id);
 }
 

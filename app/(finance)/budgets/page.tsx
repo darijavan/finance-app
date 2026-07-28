@@ -35,7 +35,9 @@ export default function BudgetsPage() {
   const setBudget = async () => {
     const wasEditing = bEditing;
     const amount = parseFloat(bAmount);
-    if (!Number.isFinite(amount) || amount < 0) return notify("Enter a valid budget");
+    if (!Number.isFinite(amount) || amount < 0) 
+
+    return notify("Enter a valid budget");
     await sendJSON(`${API}/budgets`, "PUT", {
       month, category_id: bCat ? Number(bCat) : null, amount, rollover: bRollover,
     });
@@ -53,7 +55,9 @@ export default function BudgetsPage() {
       confirmLabel: "Delete",
       danger: true,
     });
-    if (!ok) return;
+    if (!ok) 
+
+    return;
     const r = await sendJSON<{ ok: boolean; log_id: number | null }>(`${API}/budgets/${id}`, "DELETE");
     notify("Budget removed");
     reload();
@@ -73,7 +77,9 @@ export default function BudgetsPage() {
   };
 
   const saveCategory = async () => {
-    if (!cName.trim()) return notify("Enter category name");
+    if (!cName.trim()) 
+
+    return notify("Enter category name");
     if (cEditId != null) {
       const c = categories.find((x) => x.id === cEditId);
       await sendJSON(`${API}/categories/${cEditId}`, "PUT", {

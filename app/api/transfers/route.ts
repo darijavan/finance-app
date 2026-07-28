@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, logActivity } from "@/lib/db";
+import type { Currency } from "@/lib/currency";
 import { snapshotConversion } from "@/lib/fx-historical";
 import { currency, isoDate } from "@/lib/validate";
 
@@ -18,6 +19,8 @@ export async function GET(req: NextRequest) {
      LEFT JOIN accounts g ON t.to_account=g.id
      ORDER BY t.date DESC, t.id DESC LIMIT ?`,
   ).all(limit) as any[];
+  
+
   return NextResponse.json(rows);
 }
 
@@ -26,19 +29,27 @@ export async function POST(req: NextRequest) {
   const db = getDb();
   const b = await req.json();
   const amount = Math.abs(Number(b.amount));
-  if (!Number.isFinite(amount) || amount <= 0) return NextResponse.json({ error: "valid amount required" }, { status: 400 });
+  if (!Number.isFinite(amount) || amount <= 0) 
+
+  return NextResponse.json({ error: "valid amount required" }, { status: 400 });
   const from_account = Number(b.from_account);
   const to_account = Number(b.to_account);
   if (!from_account || !to_account || from_account === to_account) {
+    
+
     return NextResponse.json({ error: "from/to accounts required and must differ" }, { status: 400 });
   }
-  const from = db.prepare("SELECT currency FROM accounts WHERE id=?").get(from_account) as { currency: string } | undefined;
-  const to = db.prepare("SELECT currency FROM accounts WHERE id=?").get(to_account) as { currency: string } | undefined;
-  if (!from || !to) return NextResponse.json({ error: "account not found" }, { status: 404 });
+  const from = db.prepare("SELECT currency FROM accounts WHERE id=?").get(from_account) as { currency: Currency } | undefined;
+  const to = db.prepare("SELECT currency FROM accounts WHERE id=?").get(to_account) as { currency: Currency } | undefined;
+  if (!from || !to) 
+
+  return NextResponse.json({ error: "account not found" }, { status: 404 });
   const date = isoDate(b.date) ?? new Date().toISOString().slice(0, 10);
   const note = String(b.note ?? "");
   const cur = currency(b.currency);
-  if (cur == null) return NextResponse.json({ error: "invalid currency code" }, { status: 400 });
+  if (cur == null) 
+
+  return NextResponse.json({ error: "invalid currency code" }, { status: 400 });
   try {
     const [fromFx, toFx] = await Promise.all([
       snapshotConversion(amount, cur, from.currency, date),
@@ -54,8 +65,12 @@ export async function POST(req: NextRequest) {
     const row = db.prepare("SELECT * FROM transfers WHERE id=?").get(info.lastInsertRowid);
     logActivity(db, "transfer", "create", Number(info.lastInsertRowid),
       `Transferred ${fromFx.amount} ${from.currency} → ${toFx.amount} ${to.currency} on ${date}`);
+    
+
     return NextResponse.json(row, { status: 201 });
   } catch (e) {
+    
+
     return NextResponse.json({ error: String(e) }, { status: 422 });
   }
 }

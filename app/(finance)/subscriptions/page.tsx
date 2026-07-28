@@ -59,7 +59,9 @@ export default function SubscriptionsPage() {
 
   const saveSubscription = async () => {
     const amount = parseFloat(sAmount);
-    if (!sName.trim() || !Number.isFinite(amount) || amount <= 0) return notify("Enter name + amount");
+    if (!sName.trim() || !Number.isFinite(amount) || amount <= 0) 
+
+    return notify("Enter name + amount");
     const payload: Record<string, unknown> = {
       name: sName.trim(), amount, direction: sDir, frequency: sFreq, currency: sCur,
       category_id: sCat ? Number(sCat) : null,
@@ -86,7 +88,9 @@ export default function SubscriptionsPage() {
       confirmLabel: "Delete",
       danger: true,
     });
-    if (!ok) return;
+    if (!ok) 
+
+    return;
     const r = await sendJSON<{ ok: boolean; log_id: number | null }>(`${API}/subscriptions/${id}`, "DELETE");
     notify("Removed");
     reload();

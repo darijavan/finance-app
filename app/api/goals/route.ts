@@ -18,6 +18,8 @@ export async function GET() {
     db.prepare("SELECT from_account, to_account, amount, from_amount, to_amount FROM transfers").all() as any[],
   );
   for (const g of rows) g.current = Math.round((native.get(g.account_id) || 0) * 100) / 100;
+  
+
   return NextResponse.json(rows);
 }
 
@@ -29,16 +31,28 @@ export async function POST(req: NextRequest) {
   const target = money(b.target_amount);
   const account_id = optionalId(b.account_id);
   const target_date = b.target_date ? isoDate(b.target_date) : null;
-  if (!name) return NextResponse.json({ error: "name required" }, { status: 400 });
-  if (target == null) return NextResponse.json({ error: "valid target amount required" }, { status: 400 });
-  if (account_id == null) return NextResponse.json({ error: "account required" }, { status: 400 });
-  if (b.target_date && target_date == null) return NextResponse.json({ error: "invalid target date" }, { status: 400 });
+  if (!name) 
+
+  return NextResponse.json({ error: "name required" }, { status: 400 });
+  if (target == null) 
+
+  return NextResponse.json({ error: "valid target amount required" }, { status: 400 });
+  if (account_id == null) 
+
+  return NextResponse.json({ error: "account required" }, { status: 400 });
+  if (b.target_date && target_date == null) 
+
+  return NextResponse.json({ error: "invalid target date" }, { status: 400 });
   if (!db.prepare("SELECT 1 FROM accounts WHERE id=?").get(account_id)) {
+    
+
     return NextResponse.json({ error: "account not found" }, { status: 404 });
   }
   const info = db.prepare(
     "INSERT INTO goals(name,target_amount,account_id,target_date,note,created_at) VALUES(?,?,?,?,?,?)"
   ).run(name, target, account_id, target_date, String(b.note ?? ""), new Date().toISOString());
   logActivity(db, "goal", "create", Number(info.lastInsertRowid), `Added savings goal "${name}" (${target})`);
+  
+
   return NextResponse.json({ ok: true, id: info.lastInsertRowid }, { status: 201 });
 }

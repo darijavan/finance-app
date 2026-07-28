@@ -69,7 +69,11 @@ export async function GET(req: NextRequest) {
     let netWorth = 0;
     for (const a of accounts) netWorth += toBase(running.get(a.id) || 0, a.currency);
     const f = flow.get(m) || { spent: 0, earned: 0 };
+    
+
     return { month: m, spent: r2(f.spent), earned: r2(f.earned), net_worth: r2(netWorth) };
   });
+  
+
   return NextResponse.json({ base, months: out });
 }

@@ -15,6 +15,8 @@ export async function POST(req: NextRequest) {
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const month = searchParams.get("month") || today.slice(0, 7);
   if (!/^\d{4}-\d{2}$/.test(month)) {
+    
+
     return NextResponse.json({ error: "month must be YYYY-MM" }, { status: 400 });
   }
   const subs = db.prepare("SELECT * FROM subscriptions WHERE active=1").all() as any[];
@@ -53,11 +55,15 @@ export async function POST(req: NextRequest) {
     db.exec("COMMIT");
   } catch (e) {
     db.exec("ROLLBACK");
+    
+
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
   if (created > 0) {
     logActivity(db, "transaction", "create", null,
       `Charged ${chargedNames.join(", ")} for ${month}`);
   }
+  
+
   return NextResponse.json({ created });
 }

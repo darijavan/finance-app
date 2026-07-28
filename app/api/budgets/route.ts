@@ -15,6 +15,8 @@ export async function GET(req: NextRequest) {
     `SELECT b.*, c.name AS category_name, c.color AS category_color
      FROM budgets b LEFT JOIN categories c ON b.category_id=c.id WHERE b.month=?`
   ).all(month);
+  
+
   return NextResponse.json(rows);
 }
 
@@ -25,6 +27,8 @@ export async function PUT(req: NextRequest) {
   const category_id = optionalId(b.category_id);
   const amount = moneyOrZero(b.amount);
   if (amount == null || category_id === undefined) {
+    
+
     return NextResponse.json({ error: "valid amount and category required" }, { status: 400 });
   }
   const rollover = b.rollover ? 1 : 0;
@@ -37,5 +41,7 @@ export async function PUT(req: NextRequest) {
   const newId = Number((db.prepare("SELECT last_insert_rowid() AS id").get() as any).id);
   const scope = category_id == null ? "overall" : `category #${category_id}`;
   logActivity(db, "budget", "create", newId, `Set ${scope} budget for ${month} = ${amount}`);
+  
+
   return NextResponse.json({ ok: true });
 }

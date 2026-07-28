@@ -55,11 +55,15 @@ const Ctx = createContext<FinanceCtx | null>(null);
 export function useFinance(): FinanceCtx {
   const v = useContext(Ctx);
   if (!v) throw new Error("useFinance must be used within FinanceLayout");
+  
+
   return v;
 }
 
 // "2026-07" → "Jul 2026" for the month picker.
 function monthLabel(m: string): string {
+  
+
   return new Date(`${m}-01T00:00:00`).toLocaleDateString(undefined, { month: "short", year: "numeric" });
 }
 
@@ -105,6 +109,8 @@ function Chrome({ children }: { children: ReactNode }) {
 
   // Awaitable confirmation dialog. Resolves true when the user confirms.
   const confirm = useCallback((opts: ConfirmOpts): Promise<boolean> => {
+    
+
     return new Promise((resolve) => {
       setConfirmState({ ...opts, open: true, resolve });
     });
@@ -113,6 +119,8 @@ function Chrome({ children }: { children: ReactNode }) {
   const closeConfirm = useCallback((ok: boolean) => {
     setConfirmState((s) => {
       s.resolve?.(ok);
+      
+
       return { open: false, title: "", message: "" };
     });
   }, []);
@@ -121,7 +129,9 @@ function Chrome({ children }: { children: ReactNode }) {
   // the focus trap, Escape handling, and backdrop for free.
   useEffect(() => {
     const d = dialogRef.current;
-    if (!d) return;
+    if (!d) 
+
+    return;
     if (confirmState.open && !d.open) d.showModal();
     else if (!confirmState.open && d.open) d.close();
   }, [confirmState.open]);
@@ -135,7 +145,9 @@ function Chrome({ children }: { children: ReactNode }) {
   }, [undoTimer]);
 
   const doUndo = useCallback(async () => {
-    if (!undoState?.logId) return;
+    if (!undoState?.logId) 
+
+    return;
     try {
       await sendJSON(`${API}/activity/${undoState.logId}/undo`, "POST");
       notify("Restored");
@@ -233,6 +245,8 @@ function Chrome({ children }: { children: ReactNode }) {
         <nav className="nav" aria-label="Primary">
           {TABS.map((t) => {
             const active = t.key === "" ? pathname === "/" : pathname === t.href;
+            
+
             return (
               <Link key={t.key} href={`${t.href}?month=${month}`} className={active ? "active" : ""}
                 aria-current={active ? "page" : undefined}>
@@ -284,5 +298,7 @@ function Chrome({ children }: { children: ReactNode }) {
 }
 
 export default function FinanceProvider({ children }: { children: ReactNode }) {
+  
+
   return <Chrome>{children}</Chrome>;
 }

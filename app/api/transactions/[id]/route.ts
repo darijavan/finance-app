@@ -9,7 +9,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const db = getDb();
   const id = Number((await params).id);
   const before = db.prepare("SELECT * FROM transactions WHERE id=?").get(id) as any;
-  if (!before) return NextResponse.json({ error: "transaction not found" }, { status: 404 });
+  if (!before) 
+
+  return NextResponse.json({ error: "transaction not found" }, { status: 404 });
   const body = await req.json();
   // Same validation rules as POST, applied only to the supplied fields.
   const amount = "amount" in body ? money(body.amount) : before.amount;
@@ -18,6 +20,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const account_id = "account_id" in body ? optionalId(body.account_id) : before.account_id;
   const category_id = "category_id" in body ? optionalId(body.category_id) : before.category_id;
   if (amount == null || cur == null || date == null || account_id === undefined || category_id === undefined) {
+    
+
     return NextResponse.json({ error: "invalid amount, currency, date, category, or account" }, { status: 400 });
   }
   const next = { amount, currency: cur, date, account_id };
@@ -39,13 +43,19 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       }
       fields.push("account_amount=?", "account_currency=?", "account_fx_rate=?", "account_fx_date=?", "account_fx_source=?");
       args.push(snap.amount, snap.currency, snap.rate, snap.date, snap.source);
-    } catch (e) { return NextResponse.json({ error: String(e) }, { status: 422 }); }
+    } catch (e) { 
+
+    return NextResponse.json({ error: String(e) }, { status: 422 }); }
   }
-  if (!fields.length) return NextResponse.json(before);
+  if (!fields.length) 
+
+  return NextResponse.json(before);
   args.push(id);
   db.prepare(`UPDATE transactions SET ${fields.join(", ")} WHERE id=?`).run(...args);
   const row = db.prepare("SELECT * FROM transactions WHERE id=?").get(id);
   logActivity(db, "transaction", "update", id, `Updated transaction #${id} (${fields.join(", ")})`);
+  
+
   return NextResponse.json(row);
 }
 
@@ -53,9 +63,13 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const db = getDb();
   const id = Number((await params).id);
   const row = db.prepare("SELECT * FROM transactions WHERE id=?").get(id) as any;
-  if (!row) return NextResponse.json({ ok: true, log_id: null });
+  if (!row) 
+
+  return NextResponse.json({ ok: true, log_id: null });
   db.prepare("DELETE FROM transactions WHERE id=?").run(id);
   const logId = logActivity(db, "transaction", "delete", id,
     `Deleted transaction #${id} (${row.direction} ${row.amount} ${row.currency || ""}, ${row.date})`, { table: "transactions", ...row });
+  
+
   return NextResponse.json({ ok: true, log_id: logId });
 }

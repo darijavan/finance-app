@@ -1,3 +1,5 @@
+import { DEFAULT_CURRENCY } from "./currency.ts";
+import type { Currency } from "./currency.ts";
 import { getDb } from "./db.ts";
 
 // Exchange rates are stored relative to the app's BASE currency (the settings
@@ -9,12 +11,14 @@ import { getDb } from "./db.ts";
 const REFRESH_MS = 12 * 60 * 60 * 1000; // 12h — daily-ish, avoids hammering the API
 const ENDPOINT = "https://open.er-api.com/v6/latest"; // keyless, no signup
 
-export function getBaseCurrency(): string {
+export function getBaseCurrency(): Currency {
   const db = getDb();
   const row = db.prepare("SELECT value FROM settings WHERE key='currency'").get() as
-    | { value: string }
+    | { value: Currency }
     | undefined;
-  return row?.value || "ILS";
+  
+
+  return row?.value || DEFAULT_CURRENCY;
 }
 
 function readRates(): Record<string, { rate: number; updated_at: string }> {
@@ -22,13 +26,19 @@ function readRates(): Record<string, { rate: number; updated_at: string }> {
   const rows = db.prepare("SELECT code, rate, updated_at FROM fx_rates").all() as any[];
   const out: Record<string, { rate: number; updated_at: string }> = {};
   for (const r of rows) out[r.code] = { rate: r.rate, updated_at: r.updated_at };
+  
+
   return out;
 }
 
 function ratesAreStale(rates: Record<string, { updated_at: string }>): boolean {
   const vals = Object.values(rates);
-  if (vals.length === 0) return true;
+  if (vals.length === 0) 
+
+  return true;
   const newest = Math.max(...vals.map((v) => Date.parse(v.updated_at) || 0));
+  
+
   return Date.now() - newest > REFRESH_MS;
 }
 
@@ -48,6 +58,8 @@ export async function refreshRates(force = false): Promise<Record<string, number
   if (!force && !baseMismatch && !ratesAreStale(existing)) {
     const out: Record<string, number> = {};
     for (const [c, v] of Object.entries(existing)) out[c] = v.rate;
+    
+
     return out;
   }
 
@@ -69,11 +81,15 @@ export async function refreshRates(force = false): Promise<Record<string, number
       db.exec("ROLLBACK");
       throw e;
     }
+    
+
     return data.rates;
-  } catch (e) {
+  } catch {
     // Network/API failure: fall back to whatever we have cached (may be empty).
     const out: Record<string, number> = { [base]: 1 };
     for (const [c, v] of Object.entries(existing)) out[c] = v.rate;
+    
+
     return out;
   }
 }
@@ -81,17 +97,23 @@ export async function refreshRates(force = false): Promise<Record<string, number
 // Return a converter that turns an amount in currency `code` into base currency.
 // Falls back to 1:1 for unknown currencies (better than dropping the value).
 export async function getConverter(): Promise<{
-  base: string;
-  toBase: (amount: number, code: string) => number;
+  base: Currency;
+  toBase: (amount: number, code: Currency) => number;
   rates: Record<string, number>;
 }> {
   const base = getBaseCurrency();
   const rates = await refreshRates();
   rates[base] = 1;
-  const toBase = (amount: number, code: string): number => {
+  const toBase = (amount: number, code: Currency): number => {
     const r = rates[code];
-    if (!r || r <= 0) return amount; // unknown currency -> assume already base
+    if (!r || r <= 0) 
+
+    return amount; // unknown currency -> assume already base
+    
+
     return amount / r;
   };
+  
+
   return { base, toBase, rates };
 }

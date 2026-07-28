@@ -17,11 +17,13 @@ test("moneyOrZero additionally allows zero", () => {
   assert.equal(moneyOrZero("1e999"), null);
 });
 
-test("currency normalizes and rejects non-ISO codes", () => {
+test("currency normalizes supported codes and rejects others", () => {
   assert.equal(currency("usd"), "USD");
   assert.equal(currency(" eur "), "EUR");
   assert.equal(currency("", "ILS"), "ILS");
   assert.equal(currency(null), "ILS");
+  assert.equal(currency("MGA"), "MGA");
+  assert.equal(currency("CAD"), null);
   assert.equal(currency("DOLLARS"), null);
   assert.equal(currency("U$"), null);
 });

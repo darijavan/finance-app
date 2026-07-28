@@ -12,6 +12,8 @@ export async function GET(req: NextRequest) {
   const rows = db.prepare(
     "SELECT id, entity, action, entity_id, summary, payload IS NOT NULL AS has_payload, created_at FROM activity_log ORDER BY id DESC LIMIT ?"
   ).all(limit) as any[];
+  
+
   return NextResponse.json(rows.map((r) => ({
     id: r.id, entity: r.entity, action: r.action, entity_id: r.entity_id,
     summary: r.summary, created_at: r.created_at,

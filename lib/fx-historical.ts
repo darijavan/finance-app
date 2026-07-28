@@ -1,3 +1,4 @@
+import type { Currency } from "./currency.ts";
 import { getDb } from "./db.ts";
 
 const DAILY_FX_ENDPOINT = "https://api.frankfurter.dev/v1";
@@ -12,6 +13,8 @@ export type FxSnapshot = {
 /** Convert with an explicit, immutable rate and round to the target currency's cents. */
 export function convertAmount(amount: number, rate: number): number {
   if (!Number.isFinite(rate) || rate <= 0) throw new Error("FX rate must be positive");
+  
+
   return Math.round(amount * rate * 100) / 100;
 }
 
@@ -22,13 +25,15 @@ export function convertAmount(amount: number, rate: number): number {
  */
 export async function snapshotConversion(
   amount: number,
-  fromCurrency: string,
-  toCurrency: string,
+  fromCurrency: Currency,
+  toCurrency: Currency,
   date: string,
 ): Promise<FxSnapshot> {
   const from = fromCurrency.toUpperCase();
   const to = toCurrency.toUpperCase();
-  if (from === to) return { amount: convertAmount(amount, 1), rate: 1, rate_date: date, source: "identity" };
+  if (from === to) 
+
+  return { amount: convertAmount(amount, 1), rate: 1, rate_date: date, source: "identity" };
 
   const db = getDb();
   const cached = db.prepare(
@@ -36,6 +41,8 @@ export async function snapshotConversion(
      WHERE requested_date=? AND base_currency=? AND quote_currency=?`,
   ).get(date, from, to) as { rate: number; rate_date: string; source: string } | undefined;
   if (cached) {
+    
+
     return { amount: convertAmount(amount, cached.rate), rate: cached.rate, rate_date: cached.rate_date, source: cached.source };
   }
 
@@ -54,5 +61,7 @@ export async function snapshotConversion(
     `INSERT INTO fx_daily_rates(requested_date,base_currency,quote_currency,rate,rate_date,source,retrieved_at)
      VALUES(?,?,?,?,?,?,?)`,
   ).run(date, from, to, rate, data.date, source, new Date().toISOString());
+  
+
   return { amount: convertAmount(amount, rate), rate, rate_date: data.date, source };
 }

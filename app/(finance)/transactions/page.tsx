@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useFinance } from "../store";
 import { API, getJSON, sendJSON, fmtCur, catName, catColor, CURRENCIES } from "@/lib/client";
 import { parseCSV, toCSV, normalizeDate, normalizeAmount, type DateFormat } from "@/lib/csv";
+import type { Currency } from "@/lib/currency";
 import type { Transaction } from "@/lib/types";
 import { useSort, useSorted, SortHeader } from "@/lib/sort";
 
@@ -15,7 +16,7 @@ export default function TransactionsPage() {
   const [tAmount, setTAmount] = useState("");
   const [tDir, setTDir] = useState<"expense" | "income">("expense");
   const [tCat, setTCat] = useState<string>("");
-  const [tCur, setTCur] = useState<string>(settings.currency || "ILS");
+  const [tCur, setTCur] = useState<Currency>(settings.currency || "ILS");
   const [tDate, setTDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [tNote, setTNote] = useState("");
   const [tAccount, setTAccount] = useState<string>("");
@@ -35,7 +36,9 @@ export default function TransactionsPage() {
   const filterActive = !!(fQ || fAccount || fCat || fFrom || fTo || fMin || fMax);
 
   useEffect(() => {
-    if (!filterActive) { setFiltered(null); return; }
+    if (!filterActive) { setFiltered(null); 
+
+    return; }
     const params = new URLSearchParams();
     if (fQ) params.set("q", fQ);
     if (fAccount) params.set("account_id", fAccount);
@@ -49,6 +52,8 @@ export default function TransactionsPage() {
         .then(setFiltered)
         .catch((e) => notify("Search failed: " + String(e)));
     }, 250); // debounce typing
+    
+
     return () => clearTimeout(t);
   }, [filterActive, fQ, fAccount, fCat, fFrom, fTo, fMin, fMax, notify]);
 
@@ -67,11 +72,13 @@ export default function TransactionsPage() {
   });
   // A filter can span accounts in different currencies, so never combine them.
   const filteredTotals = useMemo(() => {
-    const totals = new Map<string, number>();
+    const totals = new Map<Currency, number>();
     for (const t of sortedTx) {
       const currency = t.currency || settings.currency;
       totals.set(currency, (totals.get(currency) || 0) + (t.direction === "expense" ? -t.amount : t.amount));
     }
+    
+
     return [...totals.entries()].sort(([a], [b]) => a.localeCompare(b));
   }, [sortedTx, settings.currency]);
 
@@ -119,7 +126,9 @@ export default function TransactionsPage() {
 
   const saveTransaction = async () => {
     const amount = parseFloat(tAmount);
-    if (!Number.isFinite(amount) || amount <= 0) return notify("Enter a valid amount");
+    if (!Number.isFinite(amount) || amount <= 0) 
+
+    return notify("Enter a valid amount");
     const cid = tCat ? Number(tCat) : null;
     const payload = {
       amount, direction: tDir, category_id: cid, date: tDate, note: tNote, currency: tCur,
@@ -143,7 +152,9 @@ export default function TransactionsPage() {
       confirmLabel: "Delete",
       danger: true,
     });
-    if (!ok) return;
+    if (!ok) 
+
+    return;
     const r = await sendJSON<{ ok: boolean; log_id: number | null }>(`${API}/transactions/${id}`, "DELETE");
     notify("Deleted");
     reload();
@@ -169,7 +180,7 @@ export default function TransactionsPage() {
         </div>
         <div className="field">
           <label>Currency</label>
-          <select value={tCur} onChange={(e) => setTCur(e.target.value)} style={{ width: 90 }}>
+          <select value={tCur} onChange={(e) => setTCur(e.target.value as Currency)} style={{ width: 90 }}>
             {CURRENCIES.map((c) => (
               <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>
             ))}
@@ -350,9 +361,13 @@ function ImportCSV({ onDone, notify }: { onDone: () => void; notify: (m: string)
   const [busy, setBusy] = useState(false);
 
   const onFile = async (f: File | undefined) => {
-    if (!f) return;
+    if (!f) 
+
+    return;
     const g = parseCSV(await f.text());
-    if (g.length === 0) return notify("Empty file");
+    if (g.length === 0) 
+
+    return notify("Empty file");
     setGrid(g);
     // Guess columns from the header row.
     const header = g[0].map((h) => h.toLowerCase());
@@ -371,7 +386,9 @@ function ImportCSV({ onDone, notify }: { onDone: () => void; notify: (m: string)
   const parsed = useMemo(() => dataRows.map((r) => {
     const date = normalizeDate(r[dateCol] ?? "", dateFormat);
     const raw = normalizeAmount(r[amountCol] ?? "");
-    if (date == null || raw == null || raw === 0) return null;
+    if (date == null || raw == null || raw === 0) 
+
+    return null;
     let direction: "expense" | "income";
     if (signRule === "expense") direction = "expense";
     else if (signRule === "income") direction = "income";
@@ -379,6 +396,8 @@ function ImportCSV({ onDone, notify }: { onDone: () => void; notify: (m: string)
       const negIsExpense = signRule === "sign";
       direction = (raw < 0) === negIsExpense ? "expense" : "income";
     }
+    
+
     return { date, amount: Math.abs(raw), direction, note: noteCol >= 0 ? (r[noteCol] ?? "").trim() : "" };
   }), [dataRows, dateCol, amountCol, noteCol, dateFormat, signRule]);
 
@@ -386,7 +405,9 @@ function ImportCSV({ onDone, notify }: { onDone: () => void; notify: (m: string)
   const invalid = parsed.length - valid.length;
 
   const doImport = async () => {
-    if (valid.length === 0) return notify("No importable rows");
+    if (valid.length === 0) 
+
+    return notify("No importable rows");
     setBusy(true);
     try {
       const r = await sendJSON<{ created: number; skipped: number; invalid: number }>(
@@ -459,7 +480,7 @@ function ImportCSV({ onDone, notify }: { onDone: () => void; notify: (m: string)
             </div>
             <div className="field">
               <label>Currency</label>
-              <select value={iCur} onChange={(e) => setICur(e.target.value)}>
+              <select value={iCur} onChange={(e) => setICur(e.target.value as Currency)}>
                 {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.code}</option>)}
               </select>
             </div>
