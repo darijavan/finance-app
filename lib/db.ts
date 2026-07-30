@@ -289,9 +289,11 @@ function migrate(db: DatabaseSync) {
       LIMIT 1
     )
     WHERE subscription_id IS NULL AND note LIKE '[auto] %'`);
-  // A recurring subscription may create at most one automatic transaction on its due date.
+  // A subscription may have only one linked charge per calendar month. This also
+  // prevents an automatic due-date entry after an imported statement posts later.
+  db.exec("DROP INDEX IF EXISTS idx_auto_subscription_charge");
   db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_auto_subscription_charge
-    ON transactions(subscription_id, date) WHERE subscription_id IS NOT NULL`);
+    ON transactions(subscription_id, substr(date, 1, 7)) WHERE subscription_id IS NOT NULL`);
 }
 
 function seedDefaults(db: DatabaseSync) {

@@ -34,6 +34,10 @@ export async function POST(req: NextRequest) {
       // in the future, ahead of the due day, or before the subscription began.
       const date = chargeDate(s, month, today);
       if (date != null) {
+        const alreadyCharged = db.prepare(
+          "SELECT 1 FROM transactions WHERE subscription_id=? AND substr(date, 1, 7)=?",
+        ).get(s.id, month);
+        if (alreadyCharged) continue;
         let snap: any = { account_amount: null, account_currency: null, account_fx_rate: null, account_fx_date: null, account_fx_source: null };
         if (s.account_id != null) {
           const account = db.prepare("SELECT currency FROM accounts WHERE id=?").get(s.account_id) as any;
