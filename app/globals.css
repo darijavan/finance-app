@@ -97,7 +97,7 @@ td.actions { white-space: nowrap; }
 .yellow { color: var(--yellow); }
 .right { text-align: right; }
 .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: baseline; }
-.amount-expense { color: var(--red); }
+.amount-expense { color: var(--red); white-space: nowrap; }
 .amount-income { color: var(--green); }
 
 .bar { height: 10px; background: var(--panel-2); border-radius: 999px; overflow: hidden; margin-top: 6px; }
