@@ -306,7 +306,7 @@ export default function TransactionsPage() {
                   </span>
                 </td>
                 <td className="muted">
-                  {t.subscription_id != null && <span className="tag subscription-tag">↻ Subscription</span>}{" "}
+                  {t.is_subscription_charge && <span className="tag subscription-tag">↻ Subscription · read-only</span>}{" "}
                   {t.note}
                 </td>
                 <td className="muted">{t.account_name || "—"}</td>
@@ -314,10 +314,12 @@ export default function TransactionsPage() {
                   {t.direction === "expense" ? "-" : "+"}{fmtCur(t.amount, t.currency || settings.currency)}
                 </td>
                 <td className="right actions">
-                  <button className="btn secondary small" title="Edit" aria-label={`Edit transaction of ${t.date}`}
-                    onClick={() => startEditTx(t)}>✎</button>{" "}
-                  <button className="btn danger small" title="Delete" aria-label={`Delete transaction of ${t.date}`}
-                    onClick={() => deleteTransaction(t.id)}>✕</button>
+                  {t.is_subscription_charge ? <span className="muted">🔒</span> : <>
+                    <button className="btn secondary small" title="Edit" aria-label={`Edit transaction of ${t.date}`}
+                      onClick={() => startEditTx(t)}>✎</button>{" "}
+                    <button className="btn danger small" title="Delete" aria-label={`Delete transaction of ${t.date}`}
+                      onClick={() => deleteTransaction(t.id)}>✕</button>
+                  </>}
                 </td>
               </tr>
             ))}

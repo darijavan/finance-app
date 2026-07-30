@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb, logActivity } from "@/lib/db";
 import { snapshotConversion } from "@/lib/fx-historical";
 import { money, currency, oneOf, isoDate, optionalId } from "@/lib/validate";
+import { isSubscriptionCharge } from "@/lib/subscription-charge";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!before) 
 
   return NextResponse.json({ error: "transaction not found" }, { status: 404 });
+  if (isSubscriptionCharge(before)) {
+
+    return NextResponse.json({ error: "subscription charges are read-only" }, { status: 409 });
+  }
   const body = await req.json();
   // Same validation rules as POST, applied only to the supplied fields.
   const amount = "amount" in body ? money(body.amount) : before.amount;
@@ -66,6 +71,10 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (!row) 
 
   return NextResponse.json({ ok: true, log_id: null });
+  if (isSubscriptionCharge(row)) {
+
+    return NextResponse.json({ error: "subscription charges are read-only" }, { status: 409 });
+  }
   db.prepare("DELETE FROM transactions WHERE id=?").run(id);
   const logId = logActivity(db, "transaction", "delete", id,
     `Deleted transaction #${id} (${row.direction} ${row.amount} ${row.currency || ""}, ${row.date})`, { table: "transactions", ...row });

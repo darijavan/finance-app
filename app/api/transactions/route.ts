@@ -35,12 +35,13 @@ export async function GET(req: NextRequest) {
   if (searchParams.get("min")) { wheres.push("t.amount>=?"); args.push(Number(searchParams.get("min"))); }
   if (searchParams.get("max")) { wheres.push("t.amount<=?"); args.push(Number(searchParams.get("max"))); }
   const where = wheres.length ? " WHERE " + wheres.join(" AND ") : "";
-  const rows = db.prepare(
-    `SELECT t.*, c.name AS category_name, c.color AS category_color, a.name AS account_name
+  const rows = (db.prepare(
+    `SELECT t.*, t.subscription_id IS NOT NULL AS is_subscription_charge,
+      c.name AS category_name, c.color AS category_color, a.name AS account_name
      FROM transactions t LEFT JOIN categories c ON t.category_id=c.id
      LEFT JOIN accounts a ON t.account_id=a.id
      ${where} ORDER BY t.date DESC, t.id DESC`,
-  ).all(...args);
+  ).all(...args) as any[]).map((row) => ({ ...row, is_subscription_charge: Boolean(row.is_subscription_charge) }));
   
 
   return NextResponse.json(rows);
