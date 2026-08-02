@@ -324,21 +324,19 @@ export default function TransactionsPage() {
               </tr>
             ))}
           </tbody>
-          {filterActive && (
-            <tfoot className="table-total">
-              <tr>
-                <th colSpan={4} className="right">Filtered total</th>
-                <td className="right">
-                  {filteredTotals.map(([currency, total]) => (
-                    <div key={currency} className={total < 0 ? "amount-expense" : "amount-income"}>
-                      {total < 0 ? "-" : "+"}{fmtCur(Math.abs(total), currency)}
-                    </div>
-                  ))}
-                </td>
-                <td />
-              </tr>
-            </tfoot>
-          )}
+          <tfoot className="table-total">
+            <tr>
+              <th colSpan={4} className="right">Total</th>
+              <td className="right">
+                {filteredTotals.map(([currency, total]) => (
+                  <div key={currency} className={total < 0 ? "amount-expense" : "amount-income"}>
+                    {total < 0 ? "-" : "+"}{fmtCur(Math.abs(total), currency)}
+                  </div>
+                ))}
+              </td>
+              <td />
+            </tr>
+          </tfoot>
         </table>
       )}
     </div>
