@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import * as fs from "node:fs/promises";
 import { getDb, logActivity } from "@/lib/db";
-import { receiptDir, receiptName, receiptPath, validReceipt } from "@/lib/receipts";
+import { MAX_RECEIPT_BYTES, receiptDir, receiptMime, receiptName, receiptPath, validReceipt } from "@/lib/receipts";
 import { isSubscriptionCharge } from "@/lib/subscription-charge";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +32,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const db = getDb();
+  const contentLength = Number(req.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > MAX_RECEIPT_BYTES + 1024 * 1024) {
+
+    return NextResponse.json({ error: "receipt is too large" }, { status: 413 });
+  }
   const id = Number((await params).id);
   const transaction = db.prepare("SELECT receipt_key, receipt_name, subscription_id FROM transactions WHERE id=?").get(id) as any;
   if (!transaction)
@@ -46,11 +51,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return NextResponse.json({ error: "receipt must be a PDF, JPEG, PNG, or WebP up to 10 MB" }, { status: 400 });
   }
+  const bytes = Buffer.from(await receipt.arrayBuffer());
+  if (receiptMime(bytes) !== receipt.type) {
+
+    return NextResponse.json({ error: "receipt content does not match its file type" }, { status: 400 });
+  }
   const key = randomUUID();
   const target = receiptPath(key);
   await fs.mkdir(receiptDir(), { recursive: true });
   try {
-    await fs.writeFile(target, Buffer.from(await receipt.arrayBuffer()), { flag: "wx" });
+    await fs.writeFile(target, bytes, { flag: "wx" });
     db.prepare("UPDATE transactions SET receipt_key=?, receipt_name=?, receipt_mime=? WHERE id=?")
       .run(key, receiptName(receipt.name), receipt.type, id);
   } catch (error) {

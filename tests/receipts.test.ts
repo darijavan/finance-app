@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { MAX_RECEIPT_BYTES, receiptName, validReceipt } from "../lib/receipts.ts";
+import { MAX_RECEIPT_BYTES, receiptMime, receiptName, validReceipt } from "../lib/receipts.ts";
 
 test("receipts accept only non-empty PDFs and images within the size limit", () => {
   assert.equal(validReceipt({ type: "application/pdf", size: 1 }), true);
@@ -12,4 +12,10 @@ test("receipts accept only non-empty PDFs and images within the size limit", () 
 
 test("receipt filenames cannot introduce paths or headers", () => {
   assert.equal(receiptName("../../receipt\".pdf"), "receipt_.pdf");
+});
+
+test("receipt magic bytes must match a safe file type", () => {
+  assert.equal(receiptMime(Buffer.from("%PDF-1.7")), "application/pdf");
+  assert.equal(receiptMime(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])), "image/png");
+  assert.equal(receiptMime(Buffer.from("<html>")), null);
 });
