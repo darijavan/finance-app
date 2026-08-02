@@ -41,7 +41,11 @@ export async function GET(req: NextRequest) {
      FROM transactions t LEFT JOIN categories c ON t.category_id=c.id
      LEFT JOIN accounts a ON t.account_id=a.id
      ${where} ORDER BY t.date DESC, t.id DESC`,
-  ).all(...args) as any[]).map((row) => ({ ...row, is_subscription_charge: Boolean(row.is_subscription_charge) }));
+  ).all(...args) as any[]).map((row) => ({
+    ...row,
+    is_subscription_charge: Boolean(row.is_subscription_charge),
+    reimbursable: Boolean(row.reimbursable),
+  }));
   
 
   return NextResponse.json(rows);
@@ -59,6 +63,11 @@ export async function POST(req: NextRequest) {
   const note = String(body.note ?? "");
   const category_id = optionalId(body.category_id);
   const account_id = optionalId(body.account_id);
+  if ("reimbursable" in body && typeof body.reimbursable !== "boolean") {
+
+    return NextResponse.json({ error: "reimbursable must be a boolean" }, { status: 400 });
+  }
+  const reimbursable = body.reimbursable ? 1 : 0;
   if (category_id === undefined || account_id === undefined) {
     
 
@@ -71,11 +80,11 @@ export async function POST(req: NextRequest) {
   try {
     const snap = await accountSnapshot(db, amount, cur, date, account_id);
     const info = db.prepare(
-      `INSERT INTO transactions(amount,currency,direction,category_id,date,note,account_id,
+      `INSERT INTO transactions(amount,currency,direction,category_id,date,note,account_id,reimbursable,
         account_amount,account_currency,account_fx_rate,account_fx_date,account_fx_source,created_at)
-       VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     ).run(amount, cur, direction, category_id, date, note, account_id,
-      snap.account_amount, snap.account_currency, snap.account_fx_rate, snap.account_fx_date, snap.account_fx_source, new Date().toISOString());
+      reimbursable, snap.account_amount, snap.account_currency, snap.account_fx_rate, snap.account_fx_date, snap.account_fx_source, new Date().toISOString());
     const row = db.prepare("SELECT * FROM transactions WHERE id=?").get(info.lastInsertRowid);
     logActivity(db, "transaction", "create", Number(info.lastInsertRowid),
       `Added ${direction} ${amount} ${cur}${note ? ` (${note})` : ""} for ${date}`);

@@ -20,6 +20,8 @@ export default function TransactionsPage() {
   const [tDate, setTDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [tNote, setTNote] = useState("");
   const [tAccount, setTAccount] = useState<string>("");
+  const [tReimbursable, setTReimbursable] = useState(false);
+  const [tReceipt, setTReceipt] = useState<File | null>(null);
   const [editId, setEditId] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
 
@@ -113,6 +115,8 @@ export default function TransactionsPage() {
     setTNote(t.note || "");
     setTCur(t.currency || settings.currency || "ILS");
     setTAccount(t.account_id != null ? String(t.account_id) : "");
+    setTReimbursable(t.reimbursable);
+    setTReceipt(null);
   };
 
   const cancelEdit = () => {
@@ -122,6 +126,24 @@ export default function TransactionsPage() {
     setTDate(new Date().toISOString().slice(0, 10));
     setTCur(settings.currency || "ILS");
     setTAccount("");
+    setTReimbursable(false);
+    setTReceipt(null);
+  };
+
+  const uploadReceipt = async (id: number, receipt: File) => {
+    const body = new FormData();
+    body.set("receipt", receipt);
+    const response = await fetch(`${API}/transactions/${id}/receipt`, { method: "POST", body });
+    if (!response.ok) throw new Error(await response.text());
+  };
+
+  const markReimbursed = async (id: number) => {
+    const result = await sendJSON<{ reimbursed_at: string }>(`${API}/transactions/${id}/reimburse`, "POST");
+    setFiltered((current) => current?.map((transaction) => transaction.id === id
+      ? { ...transaction, reimbursed_at: result.reimbursed_at }
+      : transaction) ?? null);
+    notify("Marked reimbursed");
+    reload();
   };
 
   const saveTransaction = async () => {
@@ -132,15 +154,17 @@ export default function TransactionsPage() {
     const cid = tCat ? Number(tCat) : null;
     const payload = {
       amount, direction: tDir, category_id: cid, date: tDate, note: tNote, currency: tCur,
-      account_id: tAccount ? Number(tAccount) : null,
+      account_id: tAccount ? Number(tAccount) : null, reimbursable: tReimbursable,
     };
+    let transactionId = editId;
     if (editId != null) {
       await sendJSON(`${API}/transactions/${editId}`, "PUT", payload);
       notify("Updated");
     } else {
-      await sendJSON(`${API}/transactions`, "POST", payload);
+      transactionId = (await sendJSON<Transaction>(`${API}/transactions`, "POST", payload)).id;
       notify("Saved");
     }
+    if (tReceipt && transactionId != null) await uploadReceipt(transactionId, tReceipt);
     cancelEdit();
     reload();
   };
@@ -211,6 +235,15 @@ export default function TransactionsPage() {
         <div className="field">
           <label>Note</label>
           <input value={tNote} onChange={(e) => setTNote(e.target.value)} placeholder="optional" />
+        </div>
+        <label className="muted" style={{ display: "flex", alignItems: "center", gap: 6, paddingBottom: 10 }}>
+          <input type="checkbox" checked={tReimbursable} onChange={(e) => setTReimbursable(e.target.checked)} />
+          Reimbursable
+        </label>
+        <div className="field">
+          <label>Receipt (PDF or image)</label>
+          <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp"
+            onChange={(e) => setTReceipt(e.target.files?.[0] ?? null)} />
         </div>
         {editId != null && <button className="btn secondary" onClick={cancelEdit}>Cancel</button>}
         <button className="btn" onClick={saveTransaction}>{editId != null ? "Update" : "Add"}</button>
@@ -307,6 +340,8 @@ export default function TransactionsPage() {
                 </td>
                 <td className="muted">
                   {t.is_subscription_charge && <span className="tag subscription-tag">↻ Subscription · read-only</span>}{" "}
+                  {t.reimbursable && <span className="tag reimbursement-tag">{t.reimbursed_at ? "✓ Reimbursed" : "↻ Reimbursable"}</span>}{" "}
+                  {t.receipt_name && <a className="linkbtn" href={`${API}/transactions/${t.id}/receipt`}>📎 Receipt</a>}{" "}
                   {t.note}
                 </td>
                 <td className="muted">{t.account_name || "—"}</td>
@@ -315,6 +350,13 @@ export default function TransactionsPage() {
                 </td>
                 <td className="right actions">
                   {t.is_subscription_charge ? <span className="muted">🔒</span> : <>
+                    {t.reimbursable && !t.reimbursed_at && <button className="btn secondary small" title="Mark reimbursed"
+                      aria-label={`Mark transaction of ${t.date} reimbursed`} onClick={() => markReimbursed(t.id)}>Reimburse</button>}{" "}
+                    <label className="btn secondary small" title="Attach receipt" aria-label={`Attach receipt to transaction of ${t.date}`}>
+                      <input hidden type="file" accept="application/pdf,image/jpeg,image/png,image/webp"
+                        onChange={(e) => { const receipt = e.target.files?.[0]; if (receipt) void uploadReceipt(t.id, receipt).then(reload).catch((error) => notify(`Receipt upload failed: ${String(error)}`)); e.currentTarget.value = ""; }} />
+                      📎
+                    </label>{" "}
                     <button className="btn secondary small" title="Edit" aria-label={`Edit transaction of ${t.date}`}
                       onClick={() => startEditTx(t)}>✎</button>{" "}
                     <button className="btn danger small" title="Delete" aria-label={`Delete transaction of ${t.date}`}

@@ -18,6 +18,9 @@ export interface Transaction {
   account_id: number | null;
   subscription_id: number | null;
   is_subscription_charge: boolean;
+  reimbursable: boolean;
+  reimbursed_at: string | null;
+  receipt_name: string | null;
   created_at: string;
   category_name?: string;
   category_color?: string;

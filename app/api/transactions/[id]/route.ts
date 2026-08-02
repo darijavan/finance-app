@@ -18,6 +18,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "subscription charges are read-only" }, { status: 409 });
   }
   const body = await req.json();
+  if ("reimbursable" in body && typeof body.reimbursable !== "boolean") {
+
+    return NextResponse.json({ error: "reimbursable must be a boolean" }, { status: 400 });
+  }
   // Same validation rules as POST, applied only to the supplied fields.
   const amount = "amount" in body ? money(body.amount) : before.amount;
   const cur = "currency" in body ? currency(body.currency, before.currency) : before.currency;
@@ -33,10 +37,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const fields: string[] = [];
   const args: any[] = [];
   const direction = "direction" in body ? oneOf(body.direction, ["expense", "income"] as const, before.direction) : undefined;
-  for (const [name, value] of Object.entries({ amount: next.amount, currency: next.currency, direction, category_id, account_id: next.account_id, date: next.date, note: "note" in body ? String(body.note ?? "") : undefined })) {
+  const reimbursable = "reimbursable" in body ? Number(body.reimbursable) : undefined;
+  for (const [name, value] of Object.entries({
+    amount: next.amount, currency: next.currency, direction, category_id, account_id: next.account_id,
+    date: next.date, note: "note" in body ? String(body.note ?? "") : undefined, reimbursable,
+  })) {
     const supplied = name === "amount" || name === "currency" || name === "account_id" || name === "date" || name in body;
     if (supplied) { fields.push(`${name}=?`); args.push(value); }
   }
+  if (reimbursable === 0) fields.push("reimbursed_at=NULL");
   if (["amount", "currency", "account_id", "date"].some((x) => x in body)) {
     try {
       let snap: any = { amount: null, currency: null, rate: null, date: null, source: null };

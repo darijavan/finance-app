@@ -55,6 +55,11 @@ function initSchema(db: DatabaseSync) {
       account_fx_date TEXT,
       account_fx_source TEXT,
       subscription_id INTEGER,
+      reimbursable INTEGER NOT NULL DEFAULT 0,
+      reimbursed_at TEXT,
+      receipt_key TEXT,
+      receipt_name TEXT,
+      receipt_mime TEXT,
       created_at  TEXT NOT NULL,
       FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
       FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL,
@@ -253,7 +258,8 @@ function migrate(db: DatabaseSync) {
   }
   for (const column of [
     "account_amount REAL", "account_currency TEXT", "account_fx_rate REAL",
-    "account_fx_date TEXT", "account_fx_source TEXT",
+    "account_fx_date TEXT", "account_fx_source TEXT", "reimbursable INTEGER NOT NULL DEFAULT 0",
+    "reimbursed_at TEXT", "receipt_key TEXT", "receipt_name TEXT", "receipt_mime TEXT",
   ]) {
     if (!cols("transactions").includes(column.split(" ")[0])) {
       db.exec(`ALTER TABLE transactions ADD COLUMN ${column}`);
