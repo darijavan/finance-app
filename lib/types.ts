@@ -36,6 +36,7 @@ export interface Account {
   currency: Currency;
   active: boolean;
   note: string;
+  sort_order: number;
   balance?: number; // native-currency balance, populated by the API
   base_balance?: number; // current display/base valuation of the native balance
 }

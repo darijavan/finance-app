@@ -27,7 +27,7 @@ async function balancesByAccount(db: any, accounts: { id: number; currency: Curr
 export async function GET() {
   const db = getDb();
   const { toBase } = await getConverter();
-  const accounts = db.prepare("SELECT * FROM accounts ORDER BY active DESC, type, name").all() as any[];
+  const accounts = db.prepare("SELECT * FROM accounts ORDER BY active DESC, sort_order, id").all() as any[];
   
 
   return NextResponse.json(await balancesByAccount(db, accounts, toBase));
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   if (cur == null) 
 
   return NextResponse.json({ error: "invalid currency code" }, { status: 400 });
-  const info = db.prepare("INSERT INTO accounts(name,type,currency,active,note) VALUES(?,?,?,1,?)").run(name, type, cur, String(b.note ?? ""));
+  const info = db.prepare("INSERT INTO accounts(name,type,currency,active,note,sort_order) VALUES(?,?,?,1,?,COALESCE((SELECT MAX(sort_order) + 1 FROM accounts), 1))").run(name, type, cur, String(b.note ?? ""));
   logActivity(db, "account", "create", Number(info.lastInsertRowid), `Added account "${name}" (${type})`);
   
 

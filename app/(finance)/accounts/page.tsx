@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type DragEvent } from "react";
 import { useFinance } from "../store";
 import { API, getJSON, sendJSON, fmt, fmtCur, CURRENCIES } from "@/lib/client";
 import type { Transfer, AccountType, Goal } from "@/lib/types";
@@ -20,6 +20,9 @@ export default function AccountsPage() {
   const [aName, setAName] = useState("");
   const [aType, setAType] = useState<AccountType>("bank");
   const [aCur, setACur] = useState<string>(settings.currency || "ILS");
+  const [accountOrder, setAccountOrder] = useState<number[]>([]);
+  const [draggedAccountId, setDraggedAccountId] = useState<number | null>(null);
+  const [dragOverAccountId, setDragOverAccountId] = useState<number | null>(null);
 
   const [tAmount, setTAmount] = useState("");
   const [tFrom, setTFrom] = useState<string>("");
@@ -30,6 +33,36 @@ export default function AccountsPage() {
   const [tEditId, setTEditId] = useState<number | null>(null);
 
   const total = accounts.reduce((acc, a) => acc + (a.base_balance || 0), 0);
+  const accountsById = new Map(accounts.map((account) => [account.id, account]));
+  const orderedAccounts = accountOrder.length === accounts.length
+    ? accountOrder.flatMap((id) => accountsById.get(id) ?? [])
+    : accounts;
+
+  useEffect(() => { setAccountOrder(accounts.map((account) => account.id)); }, [accounts]);
+
+  const dropAccount = async (event: DragEvent<HTMLDivElement>, targetId: number) => {
+    event.preventDefault();
+    setDragOverAccountId(null);
+    if (draggedAccountId == null || draggedAccountId === targetId)
+
+    return;
+    const next = [...accountOrder];
+    const from = next.indexOf(draggedAccountId);
+    const to = next.indexOf(targetId);
+    if (from < 0 || to < 0)
+
+    return;
+    next.splice(from, 1);
+    next.splice(to, 0, draggedAccountId);
+    setAccountOrder(next);
+    try {
+      await sendJSON(`${API}/accounts/reorder`, "POST", { ids: next });
+      reload();
+    } catch {
+      notify("Could not save account order");
+      reload();
+    }
+  };
 
   const saveAccount = async () => {
     if (!aName.trim()) 
@@ -157,15 +190,24 @@ export default function AccountsPage() {
     <div className="panel">
       <h2>Accounts</h2>
       <p className="muted" style={{ fontSize: 12 }}>
-        Track where money lives. Use <strong>Transfer</strong> for ATM withdrawals (Bank → Cash) or topping up a prepaid card (Bank → Card) — those are not expenses, just moves between accounts.
+        Track where money lives. Use <strong>Transfer</strong> for ATM withdrawals (Bank → Cash) or topping up a prepaid card (Bank → Card) — those are not expenses, just moves between accounts. Drag account cards to reorder them.
       </p>
 
       {accounts.length === 0 ? (
         <div className="empty">No accounts yet — add your first one below.</div>
       ) : (
         <div className="cards" style={{ marginBottom: 18 }}>
-          {accounts.map((a) => (
-            <div className="card" key={a.id}>
+          {orderedAccounts.map((a) => (
+            <div
+              className={`card account-card${draggedAccountId === a.id ? " dragging" : ""}${dragOverAccountId === a.id ? " drag-over" : ""}`}
+              key={a.id}
+              draggable
+              onDragEnd={() => { setDraggedAccountId(null); setDragOverAccountId(null); }}
+              onDragEnter={() => setDragOverAccountId(a.id)}
+              onDragOver={(event) => event.preventDefault()}
+              onDragStart={(event) => { setDraggedAccountId(a.id); event.dataTransfer.effectAllowed = "move"; }}
+              onDrop={(event) => dropAccount(event, a.id)}
+            >
               <div className="card-head">
                 <div className="label">{a.name} <span className="muted">({a.type})</span></div>
                 <button
@@ -176,6 +218,7 @@ export default function AccountsPage() {
                 >✕</button>
               </div>
               <div className={`value ${a.balance! >= 0 ? "green" : "red"}`}>{fmtCur(a.balance || 0, a.currency)}</div>
+              <div className="drag-hint" aria-hidden="true">↕ Drag to reorder</div>
             </div>
           ))}
           <div className="card">

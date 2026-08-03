@@ -88,7 +88,8 @@ function initSchema(db: DatabaseSync) {
       type      TEXT NOT NULL DEFAULT 'bank',   -- 'bank' | 'cash' | 'card' | 'other'
       currency  TEXT NOT NULL DEFAULT 'ILS',
       active    INTEGER NOT NULL DEFAULT 1,
-      note      TEXT DEFAULT ''
+      note      TEXT DEFAULT '',
+      sort_order INTEGER NOT NULL DEFAULT 0
     );
     CREATE TABLE IF NOT EXISTS transfers (
       id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -278,6 +279,10 @@ function migrate(db: DatabaseSync) {
   }
   if (!cols("budgets").includes("rollover")) {
     db.exec("ALTER TABLE budgets ADD COLUMN rollover INTEGER NOT NULL DEFAULT 0");
+  }
+  if (!cols("accounts").includes("sort_order")) {
+    db.exec("ALTER TABLE accounts ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0");
+    db.exec("UPDATE accounts SET sort_order = id WHERE sort_order = 0");
   }
   // After the column adds above, so they also work on databases created before those columns.
   db.exec("CREATE INDEX IF NOT EXISTS idx_tx_account ON transactions(account_id)");

@@ -50,6 +50,10 @@ input[type="checkbox"] { min-height: 0; width: 16px; height: 16px; padding: 0; a
   font-variant-numeric: tabular-nums; }
 .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 .card-head .label { min-width: 0; overflow-wrap: anywhere; }
+.account-card[draggable="true"] { cursor: grab; }
+.account-card.dragging { opacity: .45; }
+.account-card.drag-over { border-color: var(--accent); }
+.drag-hint { color: var(--muted); font-size: 11px; }
 .value.green { color: var(--green); } .value.red { color: var(--red); } .value.yellow { color: var(--yellow); }
 
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
