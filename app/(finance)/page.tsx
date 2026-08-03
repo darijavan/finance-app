@@ -267,6 +267,12 @@ export default function DashboardPage() {
                 </tr>
               ))}
             </tbody>
+            <tfoot className="table-total">
+              <tr>
+                <th colSpan={2} className="right">Total</th>
+                <td className="right amount-expense">-{fmt(summary.remaining_subscriptions, sym)}</td>
+              </tr>
+            </tfoot>
           </table>
         )}
       </div>
