@@ -1,14 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useFinance } from "../store";
 import { API, getJSON, sendJSON, fmtCur, catName, catColor, CURRENCIES } from "@/lib/client";
 import { parseCSV, toCSV, normalizeDate, normalizeAmount, type DateFormat } from "@/lib/csv";
 import type { Currency } from "@/lib/currency";
 import type { Transaction } from "@/lib/types";
 import { useSort, useSorted, SortHeader } from "@/lib/sort";
+import { withQueryParam } from "@/lib/query";
+
+const FILTER_KEYS = ["q", "account_id", "category_id", "from", "to", "min", "max", "reimbursable"];
 
 export default function TransactionsPage() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     month, settings, categories, accounts, transactions, expenseCats, incomeCats, reload, notify, confirm, undo,
   } = useFinance();
@@ -27,16 +34,22 @@ export default function TransactionsPage() {
 
   // Search / filters. When any filter is set, results come from the API across
   // all months instead of the month view.
-  const [fQ, setFQ] = useState("");
-  const [fAccount, setFAccount] = useState("");
-  const [fCat, setFCat] = useState("");
-  const [fFrom, setFFrom] = useState("");
-  const [fTo, setFTo] = useState("");
-  const [fMin, setFMin] = useState("");
-  const [fMax, setFMax] = useState("");
-  const [fReimbursable, setFReimbursable] = useState("");
+  const fQ = searchParams.get("q") || "";
+  const fAccount = searchParams.get("account_id") || "";
+  const fCat = searchParams.get("category_id") || "";
+  const fFrom = searchParams.get("from") || "";
+  const fTo = searchParams.get("to") || "";
+  const fMin = searchParams.get("min") || "";
+  const fMax = searchParams.get("max") || "";
+  const fReimbursable = searchParams.get("reimbursable") || "";
   const [filtered, setFiltered] = useState<Transaction[] | null>(null);
   const filterActive = !!(fQ || fAccount || fCat || fFrom || fTo || fMin || fMax || fReimbursable);
+
+  const setFilter = useCallback((key: string, value: string) => {
+    const query = withQueryParam(searchParams.toString(), key, value);
+
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [pathname, router, searchParams]);
 
   useEffect(() => {
     if (!filterActive) { setFiltered(null); 
@@ -62,7 +75,11 @@ export default function TransactionsPage() {
   }, [filterActive, fQ, fAccount, fCat, fFrom, fTo, fMin, fMax, fReimbursable, notify]);
 
   const clearFilters = () => {
-    setFQ(""); setFAccount(""); setFCat(""); setFFrom(""); setFTo(""); setFMin(""); setFMax(""); setFReimbursable("");
+    const params = new URLSearchParams(searchParams.toString());
+    for (const key of FILTER_KEYS) params.delete(key);
+    const query = params.toString();
+
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   };
 
   const rows = filterActive ? (filtered ?? []) : transactions;
@@ -259,41 +276,41 @@ export default function TransactionsPage() {
         <div className="row">
         <div className="field">
           <label>Text</label>
-          <input value={fQ} onChange={(e) => setFQ(e.target.value)} placeholder="note contains…" />
+          <input value={fQ} onChange={(e) => setFilter("q", e.target.value)} placeholder="note contains…" />
         </div>
         <div className="field">
           <label>Account</label>
-          <select value={fAccount} onChange={(e) => setFAccount(e.target.value)}>
+          <select value={fAccount} onChange={(e) => setFilter("account_id", e.target.value)}>
             <option value="">— any —</option>
             {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
         </div>
         <div className="field">
           <label>Category</label>
-          <select value={fCat} onChange={(e) => setFCat(e.target.value)}>
+          <select value={fCat} onChange={(e) => setFilter("category_id", e.target.value)}>
             <option value="">— any —</option>
             {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
         <div className="field">
           <label>From</label>
-          <input type="date" value={fFrom} onChange={(e) => setFFrom(e.target.value)} />
+          <input type="date" value={fFrom} onChange={(e) => setFilter("from", e.target.value)} />
         </div>
         <div className="field">
           <label>To</label>
-          <input type="date" value={fTo} onChange={(e) => setFTo(e.target.value)} />
+          <input type="date" value={fTo} onChange={(e) => setFilter("to", e.target.value)} />
         </div>
         <div className="field">
           <label>Min</label>
-          <input type="number" step="0.01" value={fMin} onChange={(e) => setFMin(e.target.value)} style={{ width: 90 }} />
+          <input type="number" step="0.01" value={fMin} onChange={(e) => setFilter("min", e.target.value)} style={{ width: 90 }} />
         </div>
         <div className="field">
           <label>Max</label>
-          <input type="number" step="0.01" value={fMax} onChange={(e) => setFMax(e.target.value)} style={{ width: 90 }} />
+          <input type="number" step="0.01" value={fMax} onChange={(e) => setFilter("max", e.target.value)} style={{ width: 90 }} />
         </div>
         <div className="field">
           <label>Reimbursable</label>
-          <select value={fReimbursable} onChange={(e) => setFReimbursable(e.target.value)}>
+          <select value={fReimbursable} onChange={(e) => setFilter("reimbursable", e.target.value)}>
             <option value="">— any —</option>
             <option value="1">Reimbursable</option>
             <option value="0">Not reimbursable</option>
