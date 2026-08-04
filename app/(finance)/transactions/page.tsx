@@ -9,6 +9,7 @@ import type { Currency } from "@/lib/currency";
 import type { Transaction } from "@/lib/types";
 import { useSort, useSorted, SortHeader } from "@/lib/sort";
 import { withQueryParam } from "@/lib/query";
+import { withReceiptName } from "@/lib/receipt-state";
 
 const FILTER_KEYS = ["q", "account_id", "category_id", "from", "to", "min", "max", "reimbursable"];
 
@@ -154,6 +155,9 @@ export default function TransactionsPage() {
     body.set("receipt", receipt);
     const response = await fetch(`${API}/transactions/${id}/receipt`, { method: "POST", body });
     if (!response.ok) throw new Error(await response.text());
+    const { name } = await response.json() as { name: string };
+    setFiltered((current) => current ? withReceiptName(current, id, name) : null);
+    reload();
   };
 
   const markReimbursed = async (id: number) => {
@@ -381,7 +385,7 @@ export default function TransactionsPage() {
                       aria-label={`Mark transaction of ${t.date} reimbursed`} onClick={() => markReimbursed(t.id)}>Reimburse</button>}{" "}
                     <label className="btn secondary small" title="Attach receipt" aria-label={`Attach receipt to transaction of ${t.date}`}>
                       <input hidden type="file" accept="application/pdf,image/jpeg,image/png,image/webp"
-                        onChange={(e) => { const receipt = e.target.files?.[0]; if (receipt) void uploadReceipt(t.id, receipt).then(reload).catch((error) => notify(`Receipt upload failed: ${String(error)}`)); e.currentTarget.value = ""; }} />
+                        onChange={(e) => { const receipt = e.target.files?.[0]; if (receipt) void uploadReceipt(t.id, receipt).catch((error) => notify(`Receipt upload failed: ${String(error)}`)); e.currentTarget.value = ""; }} />
                       📎
                     </label>{" "}
                     <button className="btn secondary small" title="Edit" aria-label={`Edit transaction of ${t.date}`}
