@@ -12,7 +12,11 @@ test("cutoff: past months backfill fully, current month up to today, future neve
 });
 
 test("monthly charge lands on its day when already due", () => {
-  assert.equal(chargeDate(monthly, "2026-07", TODAY), "2026-07-10");
+  assert.equal(chargeDate({ frequency: "monthly", day_of_month: 12, month_of_year: null, start_date: null }, "2026-07", "2026-07-16"), "2026-07-12");
+});
+
+test("inactive subscriptions never produce a charge date", () => {
+  assert.equal(chargeDate({ frequency: "monthly", day_of_month: 12, month_of_year: null, start_date: null, active: false }, "2026-07", "2026-07-16"), null);
 });
 
 test("monthly charge not yet due this month is skipped", () => {

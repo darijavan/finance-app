@@ -1,6 +1,7 @@
 // Pure due-date logic for subscription charging, shared by the charge API and tests.
 
 export interface DueSub {
+  active?: boolean | number;
   frequency: string;
   day_of_month: number | null;
   month_of_year: number | null;
@@ -24,8 +25,11 @@ export function cutoffDay(month: string, today: string): number {
 }
 
 // The next date on or after `today` that the subscription will be charged.
-// Null when it never will (inactive handling is the caller's job).
+// Null when it never will, including when it is inactive.
 export function nextChargeDate(sub: DueSub, today: string): string | null {
+  if (sub.active === false || sub.active === 0)
+
+  return null;
   const y = Number(today.slice(0, 4));
   const m = Number(today.slice(5, 7));
   const day = Math.min(sub.day_of_month || 1, 28);
@@ -68,6 +72,9 @@ export function scheduledDateInMonth(sub: DueSub, month: string): string | null 
 // due (wrong yearly month, due day after the cutoff, or before its start date).
 // Days are clamped to 28 so every month has the charge day.
 export function chargeDate(sub: DueSub, month: string, today: string): string | null {
+  if (sub.active === false || sub.active === 0)
+
+  return null;
   const date = scheduledDateInMonth(sub, month);
   
 

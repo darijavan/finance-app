@@ -8,7 +8,7 @@ import { useSort, useSorted, SortHeader } from "@/lib/sort";
 
 export default function SubscriptionsPage() {
   const {
-    month, sym, settings, subscriptions, summary, expenseCats, incomeCats, accounts, reload, notify, confirm, undo,
+    month, sym, settings, subscriptions, summary, expenseCats, incomeCats, accounts, reload, notify,
   } = useFinance();
 
   const [sName, setSName] = useState("");
@@ -81,20 +81,10 @@ export default function SubscriptionsPage() {
     reload();
   };
 
-  const deleteSubscription = async (id: number) => {
-    const ok = await confirm({
-      title: "Delete subscription?",
-      message: "This permanently removes the subscription. You can undo it from the bottom bar right after.",
-      confirmLabel: "Delete",
-      danger: true,
-    });
-    if (!ok) 
-
-    return;
-    const r = await sendJSON<{ ok: boolean; log_id: number | null }>(`${API}/subscriptions/${id}`, "DELETE");
-    notify("Removed");
+  const setSubscriptionActive = async (subscription: Subscription) => {
+    await sendJSON(`${API}/subscriptions/${subscription.id}`, "PUT", { active: !subscription.active });
+    notify(subscription.active ? "Subscription inactive — future charges paused" : "Subscription reactivated");
     reload();
-    if (r.log_id != null) undo({ message: "Subscription deleted.", logId: r.log_id });
   };
 
   const chargeSubscriptions = async () => {
@@ -221,8 +211,9 @@ export default function SubscriptionsPage() {
                 <td className="right actions">
                   <button className="btn secondary small" title="Edit" aria-label={`Edit subscription ${s.name}`}
                     onClick={() => startEditSub(s)}>✎</button>{" "}
-                  <button className="btn danger small" title="Delete" aria-label={`Delete subscription ${s.name}`}
-                    onClick={() => deleteSubscription(s.id)}>✕</button>
+                  <button className="btn secondary small" title={s.active ? "Pause future charges" : "Resume future charges"}
+                    aria-label={`${s.active ? "Pause" : "Resume"} subscription ${s.name}`}
+                    onClick={() => setSubscriptionActive(s)}>{s.active ? "Pause" : "Resume"}</button>
                 </td>
               </tr>
             ))}

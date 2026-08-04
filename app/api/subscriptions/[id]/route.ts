@@ -5,7 +5,7 @@ import { money, currency, oneOf, isoDate, optionalId, intInRange } from "@/lib/v
 export const dynamic = "force-dynamic";
 
 // PUT /api/subscriptions/[id]
-// DELETE /api/subscriptions/[id]
+// Subscriptions are retained indefinitely so historical automatic charges keep their link.
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const db = getDb();
   const id = Number((await params).id);
@@ -14,6 +14,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   return NextResponse.json({ error: "subscription not found" }, { status: 404 });
   const b = await req.json();
+  if ("active" in b && typeof b.active !== "boolean") {
+
+    return NextResponse.json({ error: "active must be a boolean" }, { status: 400 });
+  }
   // Same validation rules as POST, applied only to the supplied fields.
   const validated: Record<string, unknown> = {
     name: "name" in b ? String(b.name ?? "").trim() || null : undefined,
@@ -56,17 +60,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const db = getDb();
-  const id = Number((await params).id);
-  const row = db.prepare("SELECT * FROM subscriptions WHERE id=?").get(id) as any;
-  if (!row) 
+  await params;
 
-  return NextResponse.json({ ok: true, log_id: null });
-  db.prepare("DELETE FROM subscriptions WHERE id=?").run(id);
-  const logId = logActivity(db, "subscription", "delete", id,
-    `Deleted subscription #${id} ("${row.name}", ${row.amount} ${row.currency || ""}, ${row.frequency})`,
-    { table: "subscriptions", ...row });
-  
-
-  return NextResponse.json({ ok: true, log_id: logId });
+  return NextResponse.json({ error: "Subscriptions are retained for charge history. Set active=false instead." }, { status: 405 });
 }
