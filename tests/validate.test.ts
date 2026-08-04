@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { money, moneyOrZero, currency, oneOf, isoDate, isoMonth, optionalId, intInRange } from "../lib/validate.ts";
+import { booleanParam, money, moneyOrZero, currency, oneOf, isoDate, isoMonth, optionalId, intInRange } from "../lib/validate.ts";
 
 test("money accepts finite positive values, absolutizes, rejects garbage", () => {
   assert.equal(money("12.5"), 12.5);
@@ -31,6 +31,13 @@ test("currency normalizes supported codes and rejects others", () => {
 test("oneOf falls back on anything outside the enum", () => {
   assert.equal(oneOf("income", ["expense", "income"] as const, "expense"), "income");
   assert.equal(oneOf("DROP TABLE", ["expense", "income"] as const, "expense"), "expense");
+});
+
+test("booleanParam accepts explicit query values only", () => {
+  assert.equal(booleanParam("1"), true);
+  assert.equal(booleanParam("0"), false);
+  assert.equal(booleanParam(null), undefined);
+  assert.equal(booleanParam("true"), undefined);
 });
 
 test("isoDate / isoMonth enforce shape", () => {

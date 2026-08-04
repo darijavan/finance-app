@@ -34,8 +34,9 @@ export default function TransactionsPage() {
   const [fTo, setFTo] = useState("");
   const [fMin, setFMin] = useState("");
   const [fMax, setFMax] = useState("");
+  const [fReimbursable, setFReimbursable] = useState("");
   const [filtered, setFiltered] = useState<Transaction[] | null>(null);
-  const filterActive = !!(fQ || fAccount || fCat || fFrom || fTo || fMin || fMax);
+  const filterActive = !!(fQ || fAccount || fCat || fFrom || fTo || fMin || fMax || fReimbursable);
 
   useEffect(() => {
     if (!filterActive) { setFiltered(null); 
@@ -49,6 +50,7 @@ export default function TransactionsPage() {
     if (fTo) params.set("to", fTo);
     if (fMin) params.set("min", fMin);
     if (fMax) params.set("max", fMax);
+    if (fReimbursable) params.set("reimbursable", fReimbursable);
     const t = setTimeout(() => {
       getJSON<Transaction[]>(`${API}/transactions?${params}`)
         .then(setFiltered)
@@ -57,10 +59,10 @@ export default function TransactionsPage() {
     
 
     return () => clearTimeout(t);
-  }, [filterActive, fQ, fAccount, fCat, fFrom, fTo, fMin, fMax, notify]);
+  }, [filterActive, fQ, fAccount, fCat, fFrom, fTo, fMin, fMax, fReimbursable, notify]);
 
   const clearFilters = () => {
-    setFQ(""); setFAccount(""); setFCat(""); setFFrom(""); setFTo(""); setFMin(""); setFMax("");
+    setFQ(""); setFAccount(""); setFCat(""); setFFrom(""); setFTo(""); setFMin(""); setFMax(""); setFReimbursable("");
   };
 
   const rows = filterActive ? (filtered ?? []) : transactions;
@@ -288,6 +290,14 @@ export default function TransactionsPage() {
         <div className="field">
           <label>Max</label>
           <input type="number" step="0.01" value={fMax} onChange={(e) => setFMax(e.target.value)} style={{ width: 90 }} />
+        </div>
+        <div className="field">
+          <label>Reimbursable</label>
+          <select value={fReimbursable} onChange={(e) => setFReimbursable(e.target.value)}>
+            <option value="">— any —</option>
+            <option value="1">Reimbursable</option>
+            <option value="0">Not reimbursable</option>
+          </select>
         </div>
         {filterActive && <button className="btn secondary" onClick={clearFilters}>Clear filters</button>}
         </div>

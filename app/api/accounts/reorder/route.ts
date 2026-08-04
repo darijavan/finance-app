@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   const ids = (await req.json()).ids;
   if (!Array.isArray(ids) || !ids.every(Number.isInteger)) {
+
     return NextResponse.json({ error: "ids must be an array of account IDs" }, { status: 400 });
   }
 
@@ -13,6 +14,7 @@ export async function POST(req: NextRequest) {
   const existing = db.prepare("SELECT id FROM accounts ORDER BY id").all() as { id: number }[];
   const requested = [...ids].sort((a, b) => a - b);
   if (existing.length !== requested.length || existing.some((account, index) => account.id !== requested[index])) {
+
     return NextResponse.json({ error: "account list is out of date" }, { status: 409 });
   }
 

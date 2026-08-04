@@ -36,6 +36,19 @@ export function oneOf<T extends string>(v: unknown, allowed: readonly T[], fallb
   return (allowed as readonly string[]).includes(v as string) ? (v as T) : fallback;
 }
 
+export function booleanParam(v: string | null): boolean | undefined {
+  if (v === "1") {
+
+    return true;
+  }
+  if (v === "0") {
+
+    return false;
+  }
+
+  return undefined;
+}
+
 export function isoDate(v: unknown): string | null {
   
 

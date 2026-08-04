@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb, logActivity } from "@/lib/db";
 import type { Currency } from "@/lib/currency";
 import { snapshotConversion } from "@/lib/fx-historical";
-import { money, currency, oneOf, isoDate, optionalId } from "@/lib/validate";
+import { booleanParam, money, currency, oneOf, isoDate, optionalId } from "@/lib/validate";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +34,8 @@ export async function GET(req: NextRequest) {
   if (searchParams.get("to")) { wheres.push("t.date<=?"); args.push(searchParams.get("to")); }
   if (searchParams.get("min")) { wheres.push("t.amount>=?"); args.push(Number(searchParams.get("min"))); }
   if (searchParams.get("max")) { wheres.push("t.amount<=?"); args.push(Number(searchParams.get("max"))); }
+  const reimbursable = booleanParam(searchParams.get("reimbursable"));
+  if (reimbursable !== undefined) { wheres.push("t.reimbursable=?"); args.push(Number(reimbursable)); }
   const where = wheres.length ? " WHERE " + wheres.join(" AND ") : "";
   const rows = (db.prepare(
     `SELECT t.*, t.subscription_id IS NOT NULL AS is_subscription_charge,
