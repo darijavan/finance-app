@@ -23,10 +23,11 @@ export default function SubscriptionsPage() {
   const [sAccount, setSAccount] = useState<string>("");
   const [sEditId, setSEditId] = useState<number | null>(null);
 
-  const sort = useSort<"name" | "amount" | "freq" | "monthly" | "cat">(null);
+  const sort = useSort<"name" | "amount" | "paymentDay" | "freq" | "monthly" | "cat">("paymentDay");
   const sortedSubs = useSorted(subscriptions, sort, {
     name: (s) => s.name,
     amount: (s) => s.amount,
+    paymentDay: (s) => s.day_of_month,
     freq: (s) => s.frequency,
     monthly: (s) => s.monthly_equivalent || 0,
     cat: (s) => s.category_name || "",
@@ -184,6 +185,7 @@ export default function SubscriptionsPage() {
           <thead><tr>
             <SortHeader sort={sort} k="name">Name</SortHeader>
             <SortHeader sort={sort} k="amount">Amount</SortHeader>
+            <SortHeader sort={sort} k="paymentDay">Payment day</SortHeader>
             <SortHeader sort={sort} k="freq">Freq</SortHeader>
             <SortHeader sort={sort} k="monthly">Monthly</SortHeader>
             <SortHeader sort={sort} k="cat">Cat</SortHeader>
@@ -203,6 +205,7 @@ export default function SubscriptionsPage() {
                     </span>
                   )}
                 </td>
+                <td className="muted">{s.frequency === "yearly" ? `${s.month_of_year}/${s.day_of_month}` : s.day_of_month}</td>
                 <td className="muted">{s.frequency}{s.frequency === "yearly" ? ` (m${s.month_of_year})` : ""}</td>
                 <td className="muted">{s.monthly_equivalent == null ? "—" : fmtCur(s.monthly_equivalent, s.currency || settings.currency)}</td>
                 <td><span className="tag" style={{ background: s.category_color || "#888" }}>{s.category_name || "—"}</span></td>
