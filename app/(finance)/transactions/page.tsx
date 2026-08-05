@@ -354,6 +354,7 @@ export default function TransactionsPage() {
             <SortHeader sort={sort} k="note">Note</SortHeader>
             <th>Account</th>
             <SortHeader sort={sort} k="amount" className="right">Amount</SortHeader>
+            <th className="right" title="Immutable linked-account amount on the transaction date">Account amount</th>
             <th></th>
           </tr></thead>
           <tbody>
@@ -374,6 +375,9 @@ export default function TransactionsPage() {
                 <td className="muted">{t.account_name || "—"}</td>
                 <td className={`right ${t.direction === "expense" ? "amount-expense" : "amount-income"}`}>
                   {t.direction === "expense" ? "-" : "+"}{fmtCur(t.amount, t.currency || settings.currency)}
+                </td>
+                <td className={`right ${t.direction === "expense" ? "amount-expense" : "amount-income"}`}>
+                  {t.account_amount == null || t.account_currency == null ? "—" : `${t.direction === "expense" ? "-" : "+"}${fmtCur(t.account_amount, t.account_currency)}`}
                 </td>
                 <td className="right actions">
                   {t.is_subscription_charge ? <span className="muted">🔒</span> : <>
@@ -403,6 +407,7 @@ export default function TransactionsPage() {
                   </div>
                 ))}
               </td>
+              <td />
               <td />
             </tr>
           </tfoot>

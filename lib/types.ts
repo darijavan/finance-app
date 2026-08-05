@@ -16,6 +16,8 @@ export interface Transaction {
   date: string; // YYYY-MM-DD
   note: string;
   account_id: number | null;
+  account_amount: number | null; // immutable account-currency amount on the transaction date
+  account_currency: Currency | null;
   subscription_id: number | null;
   is_subscription_charge: boolean;
   reimbursable: boolean;
