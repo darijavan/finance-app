@@ -151,8 +151,11 @@ dialog.modal::backdrop { background: rgba(0,0,0,.55); }
   .icon-btn { width: 36px; height: 36px; }
   .toast, .undo-snackbar { bottom: calc(18px + env(safe-area-inset-bottom)); }
   table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; }
-  .row .field { flex: 1 1 45%; min-width: 130px; }
-  .row .field input, .row .field select { width: 100%; }
+  /* iOS date controls have a wide intrinsic size; allow the field and control to
+     shrink so both columns remain aligned instead of overflowing the row. */
+  .row .field { flex: 1 1 calc(50% - 4px); min-width: 0; }
+  .row .field input, .row .field select { width: 100%; min-width: 0; }
+  .row .field input[type="date"] { max-width: 100%; }
   .row > .btn { flex: 1 1 100%; }
   .btn { padding: 12px 14px; }
   .btn.small { padding: 10px 12px; min-width: 40px; min-height: 40px; }
