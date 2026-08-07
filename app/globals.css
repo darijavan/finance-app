@@ -155,7 +155,10 @@ dialog.modal::backdrop { background: rgba(0,0,0,.55); }
      shrink so both columns remain aligned instead of overflowing the row. */
   .row .field { flex: 1 1 calc(50% - 4px); min-width: 0; }
   .row .field input, .row .field select { width: 100%; min-width: 0; }
-  .row .field input[type="date"] { max-width: 100%; }
+  .row .field input[type="date"] {
+    inline-size: 100%; max-inline-size: 100%; min-inline-size: 0;
+    -webkit-appearance: none; appearance: none;
+  }
   .currency-select { width: 100% !important; }
   .row > .btn { flex: 1 1 100%; }
   .btn { padding: 12px 14px; }
