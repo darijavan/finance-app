@@ -156,6 +156,7 @@ dialog.modal::backdrop { background: rgba(0,0,0,.55); }
   .row .field { flex: 1 1 calc(50% - 4px); min-width: 0; }
   .row .field input, .row .field select { width: 100%; min-width: 0; }
   .row .field input[type="date"] { max-width: 100%; }
+  .currency-select { width: 100% !important; }
   .row > .btn { flex: 1 1 100%; }
   .btn { padding: 12px 14px; }
   .btn.small { padding: 10px 12px; min-width: 40px; min-height: 40px; }

@@ -109,7 +109,7 @@ export default function SubscriptionsPage() {
         </div>
         <div className="field">
           <label>Currency</label>
-          <select value={sCur} onChange={(e) => setSCur(e.target.value)} style={{ width: 90 }}>
+          <select className="currency-select" value={sCur} onChange={(e) => setSCur(e.target.value)} style={{ width: 90 }}>
             {CURRENCIES.map((c) => (
               <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>
             ))}

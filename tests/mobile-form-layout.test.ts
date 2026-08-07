@@ -8,4 +8,5 @@ test("mobile form controls can shrink within a two-column row", () => {
 
   assert.match(mobileRules, /\.row \.field \{[^}]*min-width:\s*0/);
   assert.match(mobileRules, /\.row \.field input\[type="date"\]\s*\{[^}]*max-width:\s*100%/);
+  assert.match(mobileRules, /\.currency-select\s*\{[^}]*width:\s*100%/);
 });

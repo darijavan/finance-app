@@ -223,7 +223,7 @@ export default function TransactionsPage() {
         </div>
         <div className="field">
           <label>Currency</label>
-          <select value={tCur} onChange={(e) => setTCur(e.target.value as Currency)} style={{ width: 90 }}>
+          <select className="currency-select" value={tCur} onChange={(e) => setTCur(e.target.value as Currency)} style={{ width: 90 }}>
             {CURRENCIES.map((c) => (
               <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>
             ))}

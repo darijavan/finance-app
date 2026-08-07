@@ -242,7 +242,7 @@ export default function AccountsPage() {
         </div>
         <div className="field">
           <label>Currency</label>
-          <select value={aCur} onChange={(e) => setACur(e.target.value)} style={{ width: 90 }}>
+          <select className="currency-select" value={aCur} onChange={(e) => setACur(e.target.value)} style={{ width: 90 }}>
             {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>)}
           </select>
         </div>
@@ -281,7 +281,7 @@ export default function AccountsPage() {
         </div>
         <div className="field">
           <label>Currency</label>
-          <select value={tCur} onChange={(e) => setTCur(e.target.value)} style={{ width: 90 }}>
+          <select className="currency-select" value={tCur} onChange={(e) => setTCur(e.target.value)} style={{ width: 90 }}>
             {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>)}
           </select>
         </div>
