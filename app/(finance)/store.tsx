@@ -9,6 +9,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   API, getJSON, sendJSON, monthList, CURRENCIES, currentMonth,
 } from "@/lib/client";
+import { withQueryParam } from "@/lib/query";
 import type {
   Category, Transaction, Subscription, Budget, Summary, Settings, Account, Transfer,
 } from "@/lib/types";
@@ -80,7 +81,8 @@ function Chrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const month = searchParams.get("month") || currentMonth();
+  const urlMonth = searchParams.get("month") || currentMonth();
+  const [month, setSelectedMonth] = useState(urlMonth);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [settings, setSettings] = useState<Settings>({ currency: "ILS", currency_symbol: "₪" });
@@ -173,6 +175,7 @@ function Chrome({ children }: { children: ReactNode }) {
 
   // categories + settings (once)
   useEffect(() => { reloadCategories(); }, [reloadCategories]);
+  useEffect(() => { setSelectedMonth(urlMonth); }, [urlMonth]);
 
   const loadMonth = useCallback(async () => {
     try {
@@ -182,7 +185,7 @@ function Chrome({ children }: { children: ReactNode }) {
         getJSON<Budget[]>(`${API}/budgets?month=${month}`),
         getJSON<Summary>(`${API}/summary?month=${month}`),
         getJSON<Account[]>(`${API}/accounts?month=${month}`),
-        getJSON<Transfer[]>(`${API}/transfers?limit=50`),
+        getJSON<Transfer[]>(`${API}/transfers?month=${month}&limit=50`),
       ]);
       setTransactions(tx);
       setSubscriptions(subs);
@@ -198,9 +201,10 @@ function Chrome({ children }: { children: ReactNode }) {
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
   const setMonth = useCallback((m: string) => {
-    const qs = m ? `?month=${m}` : "";
-    router.replace(`${pathname}${qs}`);
-  }, [pathname, router]);
+    setSelectedMonth(m);
+    const qs = withQueryParam(searchParams.toString(), "month", m);
+    router.replace(`${pathname}${qs ? `?${qs}` : ""}`);
+  }, [pathname, router, searchParams]);
 
   const setCurrency = useCallback(async (code: string) => {
     const cur = CURRENCIES.find((c) => c.code === code) || CURRENCIES[0];

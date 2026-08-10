@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb, logActivity } from "@/lib/db";
 import type { Currency } from "@/lib/currency";
 import { snapshotConversion } from "@/lib/fx-historical";
-import { currency, isoDate } from "@/lib/validate";
+import { currency, isoDate, isoMonth } from "@/lib/validate";
 
 export const dynamic = "force-dynamic";
 
@@ -10,15 +10,23 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const db = getDb();
   const { searchParams } = new URL(req.url);
+  const requestedMonth = searchParams.get("month");
+  const month = isoMonth(requestedMonth);
+  if (requestedMonth != null && month == null) {
+
+    return NextResponse.json({ error: "valid month required" }, { status: 400 });
+  }
   const limit = Math.min(Number(searchParams.get("limit")) || 50, 200);
+  const where = month ? "WHERE substr(t.date,1,7)=?" : "";
+  const args = month ? [month, limit] : [limit];
   const rows = db.prepare(
     `SELECT t.*, f.name AS from_name, f.type AS from_type,
             g.name AS to_name, g.type AS to_type
      FROM transfers t
      LEFT JOIN accounts f ON t.from_account=f.id
      LEFT JOIN accounts g ON t.to_account=g.id
-     ORDER BY t.date DESC, t.id DESC LIMIT ?`,
-  ).all(limit) as any[];
+     ${where} ORDER BY t.date DESC, t.id DESC LIMIT ?`,
+  ).all(...args) as any[];
   
 
   return NextResponse.json(rows);

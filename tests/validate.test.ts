@@ -40,11 +40,12 @@ test("booleanParam accepts explicit query values only", () => {
   assert.equal(booleanParam("true"), undefined);
 });
 
-test("isoDate / isoMonth enforce shape", () => {
+test("isoDate / isoMonth enforce calendar shape", () => {
   assert.equal(isoDate("2026-07-21"), "2026-07-21");
   assert.equal(isoDate("21/07/2026"), null);
   assert.equal(isoMonth("2026-07"), "2026-07");
   assert.equal(isoMonth("2026-07-21"), null);
+  assert.equal(isoMonth("2026-13"), null);
 });
 
 test("optionalId: null-ish is null, integers pass, garbage is undefined", () => {
