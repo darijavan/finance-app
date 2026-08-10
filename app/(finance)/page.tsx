@@ -250,6 +250,35 @@ export default function DashboardPage() {
       </div>
 
       <div className="panel">
+        <h2>Reimburse next time</h2>
+        <p className="muted" style={{ fontSize: 12 }}>
+          Expense transactions marked reimbursable that have not yet been reimbursed.
+        </p>
+        {summary.reimbursable_expenses.length === 0 && <div className="empty">No reimbursements waiting.</div>}
+        {summary.reimbursable_expenses.length > 0 && (
+          <table>
+            <thead><tr><th className="date-cell">Date</th><th>Expense</th><th>Category</th><th className="right">Amount</th></tr></thead>
+            <tbody>
+              {summary.reimbursable_expenses.map((expense) => (
+                <tr key={expense.id}>
+                  <td className="date-cell muted">{expense.date}</td>
+                  <td>{expense.note || "Untitled expense"}</td>
+                  <td className="muted">{expense.category_name}</td>
+                  <td className="right amount-expense">-{fmtCur(expense.amount, expense.currency)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot className="table-total">
+              <tr>
+                <th colSpan={3} className="right">Total</th>
+                <td className="right amount-expense">-{fmt(summary.remaining_reimbursements, sym)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        )}
+      </div>
+
+      <div className="panel">
         <h2>Still due this month</h2>
         <p className="muted" style={{ fontSize: 12 }}>
           Unpaid expense subscriptions, including overdue items. Due subscriptions are charged automatically each night.

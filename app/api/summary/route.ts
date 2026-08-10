@@ -129,6 +129,15 @@ export async function GET(req: NextRequest) {
   const remaining_subscriptions = r2(due_subscriptions.reduce(
     (total, s) => total + toBase(s.amount, s.currency), 0,
   ));
+  const reimbursable_expenses = (db.prepare(
+    `SELECT t.id, t.date, t.note, t.amount, t.currency, COALESCE(c.name, 'Uncategorized') AS category_name
+     FROM transactions t LEFT JOIN categories c ON t.category_id=c.id
+     WHERE t.direction='expense' AND t.reimbursable=1 AND t.reimbursed_at IS NULL
+     ORDER BY t.date ASC, t.id ASC`,
+  ).all() as any[]).map((t) => ({ ...t, currency: t.currency || base }));
+  const remaining_reimbursements = r2(reimbursable_expenses.reduce(
+    (total, t) => total + toBase(t.amount, t.currency), 0,
+  ));
 
   return NextResponse.json({
     month,
@@ -140,6 +149,8 @@ export async function GET(req: NextRequest) {
     recurring_monthly,
     remaining_subscriptions,
     due_subscriptions,
+    reimbursable_expenses,
+    remaining_reimbursements,
     by_category,
     budgets: budgetRows,
   });
