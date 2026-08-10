@@ -294,7 +294,7 @@ export default function AccountsPage() {
       {transfers.length > 0 && (
         <table>
           <thead><tr>
-            <th className="date-cell">Date</th><th>From</th><th>To</th><th>Amount</th><th>Note</th><th></th>
+            <th className="date-cell">Date</th><th>From</th><th>To</th><th className="right">Amount</th><th className="right" title="Immutable debit in the origin account's currency">From amount</th><th>Note</th><th></th>
           </tr></thead>
           <tbody>
             {transfers.map((t: Transfer) => (
@@ -303,6 +303,7 @@ export default function AccountsPage() {
                 <td className="muted">{t.from_name || accName(t.from_account)}</td>
                 <td className="muted">{t.to_name || accName(t.to_account)}</td>
                 <td className="right">{fmtCur(t.amount, t.currency)}</td>
+                <td className="right">{t.from_amount == null || t.from_currency == null ? "—" : fmtCur(t.from_amount, t.from_currency)}</td>
                 <td className="muted">{t.note}</td>
                 <td className="right actions">
                   <button className="btn secondary small" title="Edit" aria-label={`Edit transfer of ${t.date}`}
