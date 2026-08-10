@@ -181,7 +181,7 @@ function Chrome({ children }: { children: ReactNode }) {
         getJSON<Subscription[]>(`${API}/subscriptions`),
         getJSON<Budget[]>(`${API}/budgets?month=${month}`),
         getJSON<Summary>(`${API}/summary?month=${month}`),
-        getJSON<Account[]>(`${API}/accounts`),
+        getJSON<Account[]>(`${API}/accounts?month=${month}`),
         getJSON<Transfer[]>(`${API}/transfers?limit=50`),
       ]);
       setTransactions(tx);

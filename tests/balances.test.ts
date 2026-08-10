@@ -32,3 +32,16 @@ test("transfers fall back to the entered amount without snapshots", () => {
   assert.equal(b.get(1), -50);
   assert.equal(b.get(2), 50);
 });
+
+test("month-end balances exclude later transactions and transfers", () => {
+  const b = nativeBalances(
+    [
+      { account_id: 1, amount: 100, account_amount: null, direction: "income", date: "2026-07-31" },
+      { account_id: 1, amount: 50, account_amount: null, direction: "income", date: "2026-08-01" },
+    ],
+    [{ from_account: 1, to_account: 2, amount: 20, from_amount: 20, to_amount: 20, date: "2026-08-01" }],
+    "2026-07-31",
+  );
+  assert.equal(b.get(1), 100);
+  assert.equal(b.get(2), undefined);
+});

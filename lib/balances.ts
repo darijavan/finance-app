@@ -7,6 +7,7 @@ export interface TxRow {
   amount: number;
   account_amount: number | null;
   direction: string;
+  date?: string;
 }
 
 export interface TransferRow {
@@ -15,16 +16,19 @@ export interface TransferRow {
   amount: number;
   from_amount: number | null;
   to_amount: number | null;
+  date?: string;
 }
 
-export function nativeBalances(txs: TxRow[], transfers: TransferRow[]): Map<number, number> {
+export function nativeBalances(txs: TxRow[], transfers: TransferRow[], through?: string): Map<number, number> {
   const native = new Map<number, number>();
   const bump = (id: number, v: number) => native.set(id, (native.get(id) || 0) + v);
   for (const t of txs) {
+    if (through && t.date && t.date > through) continue;
     const value = t.account_amount ?? t.amount;
     bump(t.account_id, t.direction === "expense" ? -value : value);
   }
   for (const x of transfers) {
+    if (through && x.date && x.date > through) continue;
     bump(x.from_account, -(x.from_amount ?? x.amount));
     bump(x.to_account, x.to_amount ?? x.amount);
   }
