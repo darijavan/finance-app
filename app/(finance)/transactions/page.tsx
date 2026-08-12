@@ -27,6 +27,7 @@ export default function TransactionsPage() {
   const [tNote, setTNote] = useState("");
   const [tAccount, setTAccount] = useState<string>("");
   const [tReimbursable, setTReimbursable] = useState(false);
+  const [tPostedAccountAmount, setTPostedAccountAmount] = useState("");
   const [tReceipt, setTReceipt] = useState<File | null>(null);
   const [editId, setEditId] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
@@ -132,6 +133,7 @@ export default function TransactionsPage() {
     setTCur(t.currency || settings.currency || "ILS");
     setTAccount(t.account_id != null ? String(t.account_id) : "");
     setTReimbursable(t.reimbursable);
+    setTPostedAccountAmount("");
     setTReceipt(null);
   };
 
@@ -143,6 +145,7 @@ export default function TransactionsPage() {
     setTCur(settings.currency || "ILS");
     setTAccount("");
     setTReimbursable(false);
+    setTPostedAccountAmount("");
     setTReceipt(null);
   };
 
@@ -174,6 +177,7 @@ export default function TransactionsPage() {
     const payload = {
       amount, direction: tDir, category_id: cid, date: tDate, note: tNote, currency: tCur,
       account_id: tAccount ? Number(tAccount) : null, reimbursable: tReimbursable,
+      ...(editId != null && tPostedAccountAmount !== "" ? { posted_account_amount: Number(tPostedAccountAmount) } : {}),
     };
     let transactionId = editId;
     if (editId != null) {
@@ -247,6 +251,12 @@ export default function TransactionsPage() {
             ))}
           </select>
         </div>
+        {editId != null && tAccount && (
+          <div className="field">
+            <label>Corrected posted debit (account currency)</label>
+            <input type="number" step="0.01" placeholder="Leave blank to keep current snapshot" value={tPostedAccountAmount} onChange={(e) => setTPostedAccountAmount(e.target.value)} />
+          </div>
+        )}
         <div className="field">
           <label>Date</label>
           <input type="date" value={tDate} onChange={(e) => setTDate(e.target.value)} />

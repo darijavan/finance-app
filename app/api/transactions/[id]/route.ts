@@ -18,6 +18,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "subscription charges are read-only" }, { status: 409 });
   }
   const body = await req.json();
+  const postedAccountAmount = "posted_account_amount" in body ? money(body.posted_account_amount) : undefined;
+  if ("posted_account_amount" in body && postedAccountAmount == null) {
+
+    return NextResponse.json({ error: "valid posted account amount required" }, { status: 400 });
+  }
   if ("reimbursable" in body && typeof body.reimbursable !== "boolean") {
 
     return NextResponse.json({ error: "reimbursable must be a boolean" }, { status: 400 });
@@ -61,13 +66,31 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     return NextResponse.json({ error: String(e) }, { status: 422 }); }
   }
+  let postedAccountCurrency: string | undefined;
+  if (postedAccountAmount != null) {
+    if (next.account_id == null) {
+
+      return NextResponse.json({ error: "an account is required for a posted debit correction" }, { status: 400 });
+    }
+    const account = db.prepare("SELECT currency FROM accounts WHERE id=?").get(next.account_id) as { currency: string } | undefined;
+    if (!account) {
+
+      return NextResponse.json({ error: "account not found" }, { status: 404 });
+    }
+    postedAccountCurrency = account.currency;
+    fields.push("account_amount=?", "account_currency=?", "account_fx_rate=?", "account_fx_date=?", "account_fx_source=?");
+    args.push(postedAccountAmount, account.currency, postedAccountAmount / next.amount, next.date, "provider_statement");
+  }
   if (!fields.length) 
 
   return NextResponse.json(before);
   args.push(id);
   db.prepare(`UPDATE transactions SET ${fields.join(", ")} WHERE id=?`).run(...args);
   const row = db.prepare("SELECT * FROM transactions WHERE id=?").get(id);
-  logActivity(db, "transaction", "update", id, `Updated transaction #${id} (${fields.join(", ")})`);
+  logActivity(db, "transaction", "update", id, postedAccountAmount === undefined
+    ? `Updated transaction #${id} (${fields.join(", ")})`
+    : `Corrected transaction #${id} posted debit from ${before.account_amount ?? "—"} ${before.account_currency ?? ""} to ${postedAccountAmount} ${postedAccountCurrency}`,
+    postedAccountAmount === undefined ? undefined : { before_account_amount: before.account_amount, posted_account_amount: postedAccountAmount, account_currency: postedAccountCurrency, account_fx_source: "provider_statement" });
   
 
   return NextResponse.json(row);

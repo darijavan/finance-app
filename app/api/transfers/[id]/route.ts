@@ -16,6 +16,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   return NextResponse.json({ error: "transfer not found" }, { status: 404 });
 
   const body = await req.json();
+  const postedFromAmount = "posted_from_amount" in body ? Math.abs(Number(body.posted_from_amount)) : undefined;
+  if ("posted_from_amount" in body && (postedFromAmount == null || !Number.isFinite(postedFromAmount) || postedFromAmount <= 0)) {
+
+    return NextResponse.json({ error: "valid posted origin debit required" }, { status: 400 });
+  }
   const amount = Math.abs(Number(body.amount));
   const from_account = Number(body.from_account);
   const to_account = Number(body.to_account);
@@ -37,15 +42,30 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       snapshotConversion(amount, cur, from.currency, date),
       snapshotConversion(amount, cur, to.currency, date),
     ]);
+    const hasPostedFromAmount = postedFromAmount != null;
+    const fromSource = !hasPostedFromAmount ? fromFx.source : `provider_statement|${fromFx.source}`;
+    const fromAmount = hasPostedFromAmount ? postedFromAmount : fromFx.amount;
+    const fromRate = !hasPostedFromAmount ? fromFx.rate : postedFromAmount / amount;
+    const previousDate = String(before.fx_rate_date ?? "").split("|")[1] || toFx.rate_date;
+    const previousSource = String(before.fx_source ?? "").split("|")[1] || toFx.source;
+    // Provider statements correct only the origin debit; retain the destination's immutable credit.
+    const toAmount = !hasPostedFromAmount ? toFx.amount : before.to_amount;
+    const toCurrency = !hasPostedFromAmount ? to.currency : before.to_currency;
+    const toRate = !hasPostedFromAmount ? toFx.rate : before.to_fx_rate;
+    const toDate = !hasPostedFromAmount ? toFx.rate_date : previousDate;
+    const toSource = !hasPostedFromAmount ? toFx.source : previousSource;
     db.prepare(`UPDATE transfers SET amount=?, currency=?, from_account=?, to_account=?, date=?, note=?,
       from_amount=?, from_currency=?, to_amount=?, to_currency=?, from_fx_rate=?, to_fx_rate=?, fx_rate_date=?, fx_source=?
       WHERE id=?`).run(
       amount, cur, from_account, to_account, date, String(body.note ?? ""),
-      fromFx.amount, from.currency, toFx.amount, to.currency, fromFx.rate, toFx.rate,
-      `${fromFx.rate_date}|${toFx.rate_date}`, `${fromFx.source}|${toFx.source}`, id,
+      fromAmount, from.currency, toAmount, toCurrency, fromRate, toRate,
+      `${fromFx.rate_date}|${toDate}`, `${fromSource}|${toSource}`, id,
     );
     const row = db.prepare("SELECT * FROM transfers WHERE id=?").get(id);
-    logActivity(db, "transfer", "update", id, `Updated transfer #${id}`);
+    logActivity(db, "transfer", "update", id, postedFromAmount === undefined
+      ? `Updated transfer #${id}`
+      : `Corrected transfer #${id} origin debit from ${before.from_amount ?? "—"} ${before.from_currency ?? ""} to ${postedFromAmount} ${from.currency}`,
+      postedFromAmount === undefined ? undefined : { before_from_amount: before.from_amount, posted_from_amount: postedFromAmount, from_currency: from.currency, from_fx_source: fromSource });
     
 
     return NextResponse.json(row);

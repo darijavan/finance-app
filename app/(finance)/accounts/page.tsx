@@ -30,6 +30,7 @@ export default function AccountsPage() {
   const [tDate, setTDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [tNote, setTNote] = useState("");
   const [tCur, setTCur] = useState<string>(settings.currency || "ILS");
+  const [tPostedFromAmount, setTPostedFromAmount] = useState("");
   const [tEditId, setTEditId] = useState<number | null>(null);
 
   const total = accounts.reduce((acc, a) => acc + (a.base_balance || 0), 0);
@@ -103,6 +104,7 @@ export default function AccountsPage() {
     const payload = {
       amount, from_account: Number(tFrom), to_account: Number(tTo),
       date: tDate, note: tNote, currency: tCur,
+      ...(tEditId != null && tPostedFromAmount !== "" ? { posted_from_amount: Number(tPostedFromAmount) } : {}),
     };
     await sendJSON(tEditId != null ? `${API}/transfers/${tEditId}` : `${API}/transfers`, tEditId != null ? "PUT" : "POST", payload);
     notify(tEditId != null ? "Transfer updated" : "Transfer recorded");
@@ -114,12 +116,14 @@ export default function AccountsPage() {
     setTEditId(t.id);
     setTAmount(String(t.amount)); setTFrom(String(t.from_account)); setTTo(String(t.to_account));
     setTDate(t.date); setTNote(t.note || ""); setTCur(t.currency || settings.currency || "ILS");
+    setTPostedFromAmount("");
   };
 
   const cancelTransferEdit = () => {
     setTEditId(null);
     setTAmount(""); setTNote(""); setTFrom(""); setTTo("");
     setTDate(new Date().toISOString().slice(0, 10)); setTCur(settings.currency || "ILS");
+    setTPostedFromAmount("");
   };
 
   const deleteTransfer = async (id: number) => {
@@ -285,6 +289,12 @@ export default function AccountsPage() {
             {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>)}
           </select>
         </div>
+        {tEditId != null && tFrom && (
+          <div className="field">
+            <label>Corrected posted origin debit</label>
+            <input type="number" step="0.01" placeholder="Leave blank to keep current snapshot" value={tPostedFromAmount} onChange={(e) => setTPostedFromAmount(e.target.value)} />
+          </div>
+        )}
         <button className="btn" onClick={saveTransfer}>{tEditId != null ? "Update" : "Transfer"}</button>
         {tEditId != null && <button className="btn secondary" onClick={cancelTransferEdit}>Cancel</button>}
       </div>
