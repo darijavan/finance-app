@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getConverter } from "@/lib/fx";
 import { scheduledDateInMonth } from "@/lib/subscription-due";
+import { observations } from "@/lib/insights";
 
 export const dynamic = "force-dynamic";
 
@@ -26,14 +27,14 @@ export async function GET(req: NextRequest) {
 
   let spent = 0;
   let earned = 0;
-  const byCatMap = new Map<string, { name: string; color: string; total: number }>();
+  const byCatMap = new Map<string, { id: number | null; name: string; color: string; total: number }>();
   const spentByCatId = new Map<number, number>();
   for (const t of txRows) {
     const val = toBase(t.amount, t.currency || base);
     if (t.direction === "expense") {
       spent += val;
       const key = t.category_id == null ? "null" : String(t.category_id);
-      const cur = byCatMap.get(key) || { name: t.cat_name, color: t.cat_color, total: 0 };
+      const cur = byCatMap.get(key) || { id: t.category_id, name: t.cat_name, color: t.cat_color, total: 0 };
       cur.total += val;
       byCatMap.set(key, cur);
       if (t.category_id != null) {
@@ -49,6 +50,28 @@ export async function GET(req: NextRequest) {
   const by_category = [...byCatMap.values()]
     .map((r) => ({ name: r.name, color: r.color, total: r2(r.total) }))
     .sort((a, b) => b.total - a.total);
+
+  const previousMonths = Array.from({ length: 3 }, (_, index) => {
+    const [year, monthNumber] = month.split("-").map(Number);
+    const date = new Date(year, monthNumber - 2 - index, 1);
+
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const priorRows = db.prepare(
+    `SELECT substr(date,1,7) AS month, category_id, amount, currency
+     FROM transactions
+     WHERE direction='expense' AND substr(date,1,7) IN (${previousMonths.map(() => "?").join(",")})`,
+  ).all(...previousMonths) as any[];
+  const previousSpent = new Map(previousMonths.map((previousMonth) => [previousMonth, 0]));
+  const previousCategories = new Map<string, Map<string, number>>();
+  for (const row of priorRows) {
+    const value = toBase(row.amount, row.currency || base);
+    const key = row.category_id == null ? "null" : String(row.category_id);
+    const totals = previousCategories.get(key) || new Map(previousMonths.map((previousMonth) => [previousMonth, 0]));
+    totals.set(row.month, (totals.get(row.month) || 0) + value);
+    previousCategories.set(key, totals);
+    previousSpent.set(row.month, (previousSpent.get(row.month) || 0) + value);
+  }
 
   // Rollover budgets: unused amount from the previous month's budget carries forward.
   const spentInMonth = (catId: number | null, m: string): number => {
@@ -139,18 +162,49 @@ export async function GET(req: NextRequest) {
     (total, t) => total + toBase(t.amount, t.currency), 0,
   ));
 
+  const net = r2(earned - spent);
+  const insights = observations({
+    month,
+    today,
+    currency: base,
+    spent,
+    earned,
+    net,
+    previousSpent: previousMonths.map((previousMonth) => r2(previousSpent.get(previousMonth) || 0)),
+    recurringMonthly: recurring_monthly,
+    remainingSubscriptions: remaining_subscriptions,
+    categories: [...byCatMap.values()].map((category) => {
+      const key = category.id == null ? "null" : String(category.id);
+      const totals = previousCategories.get(key);
+
+      return {
+        id: category.id,
+        name: category.name,
+        total: r2(category.total),
+        previousTotals: previousMonths.map((previousMonth) => r2(totals?.get(previousMonth) || 0)),
+      };
+    }),
+    budgets: budgetRows.map((budget) => ({
+      categoryId: budget.category_id,
+      categoryName: budget.category_name,
+      budget: budget.budget,
+      actual: budget.actual,
+    })),
+  });
+
   return NextResponse.json({
     month,
     base,
     spent,
     earned,
-    net: r2(earned - spent),
-    remaining: r2(earned - spent),
+    net,
+    remaining: net,
     recurring_monthly,
     remaining_subscriptions,
     due_subscriptions,
     reimbursable_expenses,
     remaining_reimbursements,
+    insights,
     by_category,
     budgets: budgetRows,
   });

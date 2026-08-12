@@ -181,6 +181,24 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      <section className="panel observations" aria-labelledby="money-observations">
+        <h2 id="money-observations">Money observations</h2>
+        {summary.insights.length === 0 && (
+          <div className="empty">Add a little more history to receive observations.</div>
+        )}
+        <div className="observation-list">
+          {summary.insights.map((insight) => (
+            <div key={insight.id} className={`observation ${insight.tone}`}>
+              <div>
+                <strong>{insight.title}</strong>
+                <p>{insight.detail}</p>
+              </div>
+              <Link className="linkbtn" href={insight.href}>{insight.action} →</Link>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <div className="grid2">
         <div className="panel">
           <h2>Net worth — last 12 months</h2>

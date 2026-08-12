@@ -1,4 +1,5 @@
 import type { Currency } from "./currency.ts";
+import type { Insight } from "./insights.ts";
 
 export interface Category {
   id: number;
@@ -132,6 +133,7 @@ export interface Summary {
   due_subscriptions: { id: number; name: string; amount: number; currency: Currency; date: string; overdue: boolean }[];
   reimbursable_expenses: { id: number; date: string; note: string; category_name: string; amount: number; currency: Currency }[];
   remaining_reimbursements: number;
+  insights: Insight[];
   by_category: { name: string; color: string; total: number }[];
   budgets: {
     category_id: number | null;
