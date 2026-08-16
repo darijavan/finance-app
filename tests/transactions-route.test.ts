@@ -13,6 +13,8 @@ vi.mock("@/lib/fx-historical", () => ({ snapshotConversion: mocks.snapshotConver
 const { POST } = await import("../app/api/transactions/route");
 
 function request(body: unknown) {
+
+
   return new NextRequest("http://localhost/api/transactions", {
     method: "POST", body: JSON.stringify(body), headers: { "content-type": "application/json" },
   });
@@ -30,8 +32,12 @@ describe("POST /api/transactions", () => {
   it("records an immutable account-currency snapshot and activity", async () => {
     const insert = vi.fn(() => ({ lastInsertRowid: 14 }));
     mocks.db.prepare.mockImplementation((sql: string) => {
-      if (sql.includes("SELECT currency FROM accounts")) return { get: () => ({ currency: "USD" }) };
-      if (sql.startsWith("INSERT")) return { run: insert };
+      if (sql.includes("SELECT currency FROM accounts"))
+
+      return { get: () => ({ currency: "USD" }) };
+      if (sql.startsWith("INSERT"))
+
+      return { run: insert };
 
       return { get: () => ({ id: 14, amount: 25 }) };
     });

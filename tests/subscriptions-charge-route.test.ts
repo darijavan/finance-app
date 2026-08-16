@@ -31,10 +31,16 @@ describe("POST /api/subscriptions/charge", () => {
     const insert = vi.fn(() => ({ changes: 1 }));
     mocks.db.prepare.mockImplementation((sql: string) => {
       if (sql === "SELECT * FROM subscriptions WHERE active=1") {
+
+
         return { all: () => [{ id: 3, name: "Music", active: 1, amount: 20, currency: "ILS", direction: "expense", category_id: 2, day_of_month: 10, frequency: "monthly", start_date: null, account_id: null }] };
       }
-      if (sql.includes("SELECT 1 FROM transactions")) return { get: () => undefined };
-      if (sql.startsWith("INSERT OR IGNORE")) return { run: insert };
+      if (sql.includes("SELECT 1 FROM transactions"))
+
+      return { get: () => undefined };
+      if (sql.startsWith("INSERT OR IGNORE"))
+
+      return { run: insert };
 
       return { get: () => undefined };
     });

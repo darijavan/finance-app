@@ -13,6 +13,8 @@ vi.mock("@/lib/fx-historical", () => ({ snapshotConversion: mocks.snapshotConver
 const { POST } = await import("../app/api/transfers/route");
 
 function request(body: unknown) {
+
+
   return new NextRequest("http://localhost/api/transfers", {
     method: "POST", body: JSON.stringify(body), headers: { "content-type": "application/json" },
   });
@@ -31,9 +33,13 @@ describe("POST /api/transfers", () => {
     const insert = vi.fn(() => ({ lastInsertRowid: 11 }));
     mocks.db.prepare.mockImplementation((sql: string) => {
       if (sql.includes("SELECT currency FROM accounts")) {
+
+
         return { get: (id: number) => ({ currency: id === 1 ? "ILS" : "USD" }) };
       }
-      if (sql.startsWith("INSERT")) return { run: insert };
+      if (sql.startsWith("INSERT"))
+
+      return { run: insert };
 
       return { get: () => ({ id: 11 }) };
     });

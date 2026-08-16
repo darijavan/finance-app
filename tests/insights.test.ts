@@ -21,9 +21,9 @@ test("observations prioritize an over-budget category and link to its budget", (
     budgets: [{ categoryId: 4, categoryName: "Food", budget: 500, actual: 600 }],
   });
 
-  assert.equal(result[0]?.id, "budget-4");
-  assert.equal(result[0]?.tone, "urgent");
-  assert.equal(result[0]?.href, "/budgets?month=2026-08");
+  assert.strictEqual(result[0]?.id, "budget-4");
+  assert.strictEqual(result[0]?.tone, "urgent");
+  assert.strictEqual(result[0]?.href, "/budgets?month=2026-08");
 });
 
 test("observations require sufficient history before flagging category spending", () => {
@@ -31,7 +31,7 @@ test("observations require sufficient history before flagging category spending"
   const result = observations({ ...base, categories: [category] });
 
   assert.ok(result.some((insight) => insight.id === "spending-7"));
-  assert.equal(observations({ ...base, categories: [{ ...category, previousTotals: [100] }] }).length, 0);
+  assert.strictEqual(observations({ ...base, categories: [{ ...category, previousTotals: [100] }] }).length, 0);
 });
 
 test("observations warn when unpaid subscriptions erase the current surplus", () => {

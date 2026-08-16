@@ -13,6 +13,8 @@ vi.mock("@/lib/fx-historical", () => ({ snapshotConversion: mocks.snapshotConver
 const { POST } = await import("../app/api/transactions/import/route");
 
 function request(body: unknown) {
+
+
   return new NextRequest("http://localhost/api/transactions/import", {
     method: "POST",
     body: JSON.stringify(body),
@@ -32,8 +34,12 @@ describe("POST /api/transactions/import", () => {
     const duplicate = vi.fn((_: string, __: number, ___: string, note: string) => note === "Already there");
     const insert = vi.fn();
     mocks.db.prepare.mockImplementation((sql: string) => {
-      if (sql.includes("SELECT currency FROM accounts")) return { get: () => ({ currency: "USD" }) };
-      if (sql.includes("SELECT 1 FROM transactions")) return { get: duplicate };
+      if (sql.includes("SELECT currency FROM accounts"))
+
+      return { get: () => ({ currency: "USD" }) };
+      if (sql.includes("SELECT 1 FROM transactions"))
+
+      return { get: duplicate };
 
       return { run: insert };
     });

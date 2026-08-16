@@ -2,7 +2,7 @@ import { assert, test } from "vitest";
 import { classifyRows, normaliseMerchant, sourceFingerprint } from "../lib/statement-import.ts";
 
 test("normaliseMerchant removes statement noise without changing words", () => {
-  assert.equal(normaliseMerchant("  Foo   Store  * 1234  "), "FOO STORE");
+  assert.strictEqual(normaliseMerchant("  Foo   Store  * 1234  "), "FOO STORE");
 });
 
 test("classifyRows distinguishes exact and possible duplicates", () => {
@@ -12,10 +12,10 @@ test("classifyRows distinguishes exact and possible duplicates", () => {
     { date: "2026-07-17", amount: 8, direction: "expense" as const, note: "Groceries" },
   ];
   const existing = [{ id: 9, date: "2026-07-16", amount: 12.5, direction: "expense" as const, note: "ADOBE" }];
-  assert.deepEqual(classifyRows(rows, existing).map((row) => row.status), ["exact_duplicate", "possible_duplicate", "new"]);
+  assert.deepStrictEqual(classifyRows(rows, existing).map((row) => row.status), ["exact_duplicate", "possible_duplicate", "new"]);
 });
 
 test("sourceFingerprint is deterministic and account-specific", async () => {
-  assert.equal(await sourceFingerprint(2, "fixture"), await sourceFingerprint(2, "fixture"));
-  assert.notEqual(await sourceFingerprint(2, "fixture"), await sourceFingerprint(3, "fixture"));
+  assert.strictEqual(await sourceFingerprint(2, "fixture"), await sourceFingerprint(2, "fixture"));
+  assert.notStrictEqual(await sourceFingerprint(2, "fixture"), await sourceFingerprint(3, "fixture"));
 });
