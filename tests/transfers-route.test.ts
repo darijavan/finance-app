@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/db", () => ({ getDb: () => mocks.db, logActivity: mocks.logActivity }));
 vi.mock("@/lib/fx-historical", () => ({ snapshotConversion: mocks.snapshotConversion }));
 
-const { POST } = await import("../app/api/transfers/route");
+const { GET, POST } = await import("../app/api/transfers/route");
 
 function request(body: unknown) {
 
@@ -19,6 +19,30 @@ function request(body: unknown) {
     method: "POST", body: JSON.stringify(body), headers: { "content-type": "application/json" },
   });
 }
+
+describe("GET /api/transfers", () => {
+  it("returns transfers where the filtered account is either endpoint", async () => {
+    const all = vi.fn(() => []);
+    mocks.db.prepare.mockReturnValue({ all });
+
+    const response = await GET(new NextRequest("http://localhost/api/transfers?account_id=7"));
+
+    expect(response.status).toBe(200);
+    expect(mocks.db.prepare).toHaveBeenCalledWith(expect.stringContaining("(t.from_account=? OR t.to_account=?)"));
+    expect(all).toHaveBeenCalledWith(7, 7, 50);
+  });
+
+  it("applies date boundaries with the account endpoint filter", async () => {
+    const all = vi.fn(() => []);
+    mocks.db.prepare.mockReturnValue({ all });
+
+    const response = await GET(new NextRequest("http://localhost/api/transfers?account_id=7&from=2026-07-01&to=2026-07-31"));
+
+    expect(response.status).toBe(200);
+    expect(mocks.db.prepare).toHaveBeenCalledWith(expect.stringContaining("t.date>=? AND t.date<=? AND (t.from_account=? OR t.to_account=?)"));
+    expect(all).toHaveBeenCalledWith("2026-07-01", "2026-07-31", 7, 7, 50);
+  });
+});
 
 describe("POST /api/transfers", () => {
   it("rejects zero amounts and transfers to the same account", async () => {

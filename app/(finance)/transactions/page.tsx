@@ -6,7 +6,7 @@ import { useFinance } from "../store";
 import { API, getJSON, sendJSON, fmtCur, catName, catColor, CURRENCIES } from "@/lib/client";
 import { parseCSV, toCSV, normalizeDate, normalizeAmount, type DateFormat } from "@/lib/csv";
 import type { Currency } from "@/lib/currency";
-import type { Transaction } from "@/lib/types";
+import type { Transaction, Transfer } from "@/lib/types";
 import { useSort, useSorted, SortHeader } from "@/lib/sort";
 import { withQueryParam } from "@/lib/query";
 import { withReceiptName } from "@/lib/receipt-state";
@@ -43,6 +43,8 @@ export default function TransactionsPage() {
   const [fMax, setFMax] = useState(() => searchParams.get("max") || "");
   const [fReimbursable, setFReimbursable] = useState(() => searchParams.get("reimbursable") || "");
   const [filtered, setFiltered] = useState<Transaction[] | null>(null);
+  const [filteredTransfers, setFilteredTransfers] = useState<Transfer[] | null>(null);
+  const transferRequest = useRef(0);
   const filterActive = !!(fQ || fAccount || fCat || fFrom || fTo || fMin || fMax || fReimbursable);
 
   useEffect(() => {
@@ -76,11 +78,27 @@ export default function TransactionsPage() {
     return () => clearTimeout(t);
   }, [filterActive, fQ, fAccount, fCat, fFrom, fTo, fMin, fMax, fReimbursable, reloadKey, notify]);
 
+  useEffect(() => {
+    const request = ++transferRequest.current;
+    if (!fAccount) {
+      setFilteredTransfers(null);
+
+      return;
+    }
+    const params = new URLSearchParams({ account_id: fAccount });
+    if (fFrom) params.set("from", fFrom);
+    if (fTo) params.set("to", fTo);
+    getJSON<Transfer[]>(`${API}/transfers?${params}`)
+      .then((transfers) => { if (transferRequest.current === request) setFilteredTransfers(transfers); })
+      .catch((e) => { if (transferRequest.current === request) notify("Transfer search failed: " + String(e)); });
+  }, [fAccount, fFrom, fTo, reloadKey, notify]);
+
   const clearFilters = () => {
     setFQ(""); setFAccount(""); setFCat(""); setFFrom(""); setFTo(""); setFMin(""); setFMax(""); setFReimbursable("");
   };
 
   const rows = filterActive ? (filtered ?? []) : transactions;
+  const filteredAccountName = accounts.find((account) => String(account.id) === fAccount)?.name || "selected account";
 
   const sort = useSort<"date" | "category" | "note" | "amount">("date", "desc");
   const sortedTx = useSorted(rows, sort, {
@@ -424,6 +442,32 @@ export default function TransactionsPage() {
         </table>
       )}
     </div>
+
+    {fAccount && filteredTransfers && (
+      <div className="panel">
+        <h2>Transfers involving {filteredAccountName}</h2>
+        <p className="muted">Transfers are account movements, not transactions.</p>
+        {filteredTransfers.length === 0 ? <div className="empty">No transfers involving this account.</div> : (
+          <table>
+            <thead><tr><th className="date-cell">Date</th><th>Route</th><th>Note</th><th className="right">Amount</th></tr></thead>
+            <tbody>
+              {filteredTransfers.map((transfer) => {
+                const incoming = transfer.to_account === Number(fAccount);
+
+                return (
+                  <tr key={transfer.id}>
+                    <td className="date-cell">{transfer.date}</td>
+                    <td>{transfer.from_name || transfer.from_account} → {transfer.to_name || transfer.to_account}</td>
+                    <td className="muted">{transfer.note || "—"}</td>
+                    <td className={`right ${incoming ? "amount-income" : "amount-expense"}`}>{incoming ? "+" : "-"}{fmtCur(transfer.amount, transfer.currency)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+    )}
     </>
   );
 }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb, logActivity } from "@/lib/db";
 import type { Currency } from "@/lib/currency";
 import { snapshotConversion } from "@/lib/fx-historical";
-import { currency, isoDate, isoMonth } from "@/lib/validate";
+import { currency, isoDate, isoMonth, optionalId } from "@/lib/validate";
 
 export const dynamic = "force-dynamic";
 
@@ -16,9 +16,40 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ error: "valid month required" }, { status: 400 });
   }
+  const fromParam = searchParams.get("from");
+  const toParam = searchParams.get("to");
+  const from = isoDate(fromParam);
+  const to = isoDate(toParam);
+  if ((fromParam != null && from == null) || (toParam != null && to == null)) {
+
+    return NextResponse.json({ error: "valid date range required" }, { status: 400 });
+  }
   const limit = Math.min(Number(searchParams.get("limit")) || 50, 200);
-  const where = month ? "WHERE substr(t.date,1,7)=?" : "";
-  const args = month ? [month, limit] : [limit];
+  const wheres: string[] = [];
+  const args: (number | string)[] = [];
+  if (month) {
+    wheres.push("substr(t.date,1,7)=?");
+    args.push(month);
+  }
+  if (from) {
+    wheres.push("t.date>=?");
+    args.push(from);
+  }
+  if (to) {
+    wheres.push("t.date<=?");
+    args.push(to);
+  }
+  const accountId = optionalId(searchParams.get("account_id"));
+  if (accountId === undefined) {
+
+    return NextResponse.json({ error: "valid account_id required" }, { status: 400 });
+  }
+  if (accountId != null) {
+    wheres.push("(t.from_account=? OR t.to_account=?)");
+    args.push(accountId, accountId);
+  }
+  const where = wheres.length ? `WHERE ${wheres.join(" AND ")}` : "";
+  args.push(limit);
   const rows = db.prepare(
     `SELECT t.*, f.name AS from_name, f.type AS from_type,
             g.name AS to_name, g.type AS to_type
