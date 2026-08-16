@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { assert, test } from "vitest";
 import { booleanParam, money, moneyOrZero, currency, oneOf, isoDate, isoMonth, optionalId, intInRange } from "../lib/validate.ts";
 
 test("money accepts finite positive values, absolutizes, rejects garbage", () => {

@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import { test } from "node:test";
+import { assert, test } from "vitest";
 import { withQueryParam } from "../lib/query.ts";
 
 test("query filters preserve unrelated state and omit empty filters", () => {

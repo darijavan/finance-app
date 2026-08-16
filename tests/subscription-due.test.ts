@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { assert, test } from "vitest";
 import { chargeDate, cutoffDay, nextChargeDate, scheduledDateInMonth } from "../lib/subscription-due.ts";
 
 const monthly = { frequency: "monthly", day_of_month: 10, month_of_year: null, start_date: null };

@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import { test } from "node:test";
+import { assert, test } from "vitest";
 import { MAX_RECEIPT_BYTES, receiptMime, receiptName, validReceipt } from "../lib/receipts.ts";
 
 test("receipts accept only non-empty PDFs and images within the size limit", () => {

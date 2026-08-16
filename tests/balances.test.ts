@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { assert, test } from "vitest";
 import { nativeBalances } from "../lib/balances.ts";
 
 test("income adds, expense subtracts", () => {

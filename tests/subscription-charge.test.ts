@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import { test } from "node:test";
+import { assert, test } from "vitest";
 import { isSubscriptionCharge } from "../lib/subscription-charge.ts";
 
 test("subscription-linked transactions are special charges", () => {

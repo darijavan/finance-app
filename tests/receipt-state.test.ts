@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import { test } from "node:test";
+import { assert, test } from "vitest";
 import { withReceiptName } from "../lib/receipt-state.ts";
 
 test("receipt upload updates the matching visible transaction immediately", () => {

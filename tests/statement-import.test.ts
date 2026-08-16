@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { assert, test } from "vitest";
 import { classifyRows, normaliseMerchant, sourceFingerprint } from "../lib/statement-import.ts";
 
 test("normaliseMerchant removes statement noise without changing words", () => {

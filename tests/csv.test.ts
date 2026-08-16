@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { assert, test } from "vitest";
 import { parseCSV, toCSV, normalizeDate, normalizeAmount } from "../lib/csv.ts";
 
 test("parseCSV handles quotes, embedded commas and newlines", () => {

@@ -1,6 +1,5 @@
-import assert from "node:assert/strict";
+import { assert, test } from "vitest";
 import { readFileSync } from "node:fs";
-import { test } from "node:test";
 
 test("mobile form controls can shrink within a two-column row", () => {
   const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
