@@ -16,14 +16,16 @@ export async function GET() {
   ).all() as any[];
   // Latest automatic charge per subscription — the UI flags a price change when
   // the current amount differs from what was last actually charged.
-  const lastCharges = new Map<number, number>();
+  const lastCharges = new Map<number, { amount: number; currency: string }>();
   for (const r of db.prepare(
-    `SELECT subscription_id, amount FROM transactions
+    `SELECT subscription_id, amount, currency FROM transactions
      WHERE id IN (SELECT MAX(id) FROM transactions WHERE subscription_id IS NOT NULL GROUP BY subscription_id)`
-  ).all() as any[]) lastCharges.set(r.subscription_id, r.amount);
+  ).all() as any[]) lastCharges.set(r.subscription_id, { amount: r.amount, currency: r.currency });
   for (const s of rows) {
     s.monthly_equivalent = s.frequency === "monthly" ? Math.round(s.amount * 100) / 100 : null;
-    s.last_charge_amount = lastCharges.get(s.id) ?? null;
+    const lastCharge = lastCharges.get(s.id);
+    s.last_charge_amount = lastCharge?.amount ?? null;
+    s.last_charge_currency = lastCharge?.currency ?? null;
   }
   
 

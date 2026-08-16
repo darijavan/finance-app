@@ -199,9 +199,9 @@ export default function SubscriptionsPage() {
                 <td>{s.name}</td>
                 <td className={s.direction === "expense" ? "amount-expense" : "amount-income"}>
                   {s.direction === "expense" ? "-" : "+"}{fmtCur(s.amount, s.currency || settings.currency)}
-                  {s.last_charge_amount != null && s.last_charge_amount !== s.amount && (
-                    <span className="muted" title="Price changed since the last charge" style={{ marginLeft: 6, fontSize: 12 }}>
-                      ⚠ was {fmtCur(s.last_charge_amount, s.currency || settings.currency)}
+                  {s.last_charge_amount != null && (s.last_charge_amount !== s.amount || s.last_charge_currency !== s.currency) && (
+                    <span className="muted" title="Price or currency changed since the last charge" style={{ marginLeft: 6, fontSize: 12 }}>
+                      ⚠ was {fmtCur(s.last_charge_amount, s.last_charge_currency || s.currency || settings.currency)}
                     </span>
                   )}
                 </td>
