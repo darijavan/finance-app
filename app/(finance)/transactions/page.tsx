@@ -16,7 +16,7 @@ const FILTER_KEYS = ["q", "account_id", "category_id", "from", "to", "min", "max
 export default function TransactionsPage() {
   const searchParams = useSearchParams();
   const {
-    month, settings, categories, accounts, transactions, expenseCats, incomeCats, reload, notify, confirm, undo,
+    month, settings, categories, accounts, transactions, expenseCats, incomeCats, reloadKey, reload, notify, confirm, undo,
   } = useFinance();
 
   const [tAmount, setTAmount] = useState("");
@@ -74,7 +74,7 @@ export default function TransactionsPage() {
     
 
     return () => clearTimeout(t);
-  }, [filterActive, fQ, fAccount, fCat, fFrom, fTo, fMin, fMax, fReimbursable, notify]);
+  }, [filterActive, fQ, fAccount, fCat, fFrom, fTo, fMin, fMax, fReimbursable, reloadKey, notify]);
 
   const clearFilters = () => {
     setFQ(""); setFAccount(""); setFCat(""); setFFrom(""); setFTo(""); setFMin(""); setFMax(""); setFReimbursable("");

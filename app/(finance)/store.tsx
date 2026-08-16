@@ -44,6 +44,7 @@ interface FinanceCtx {
   incomeCats: Category[];
   accounts: Account[];
   transfers: Transfer[];
+  reloadKey: number;
   reload: () => void;
   reloadCategories: () => void;
   notify: (m: string) => void;
@@ -222,7 +223,7 @@ function Chrome({ children }: { children: ReactNode }) {
 
   const ctx: FinanceCtx = {
     month, setMonth, categories, settings, transactions, subscriptions,
-    budgets, summary, sym, expenseCats, incomeCats, accounts, transfers, reload, reloadCategories, notify, toast, confirm, undo,
+    budgets, summary, sym, expenseCats, incomeCats, accounts, transfers, reloadKey, reload, reloadCategories, notify, toast, confirm, undo,
   };
 
   return (
