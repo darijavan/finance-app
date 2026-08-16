@@ -17,7 +17,9 @@ and a full activity history with undo.
 nvm use            # picks Node 24 from .nvmrc
 pnpm install
 pnpm dev           # http://localhost:3000
-pnpm test          # unit tests (node --test, no framework)
+pnpm test          # Vitest unit, route, and component tests
+pnpm test:watch    # Vitest watch mode
+pnpm test:coverage # V8 coverage report
 # production:
 pnpm build && pnpm start
 ```
