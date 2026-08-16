@@ -12,6 +12,7 @@ const categories = await import("../app/api/categories/route");
 const category = await import("../app/api/categories/[id]/route");
 
 function request(method: string, body?: unknown) {
+
   return new NextRequest("http://localhost/api/categories", {
     method,
     body: body === undefined ? undefined : JSON.stringify(body),

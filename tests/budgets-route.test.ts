@@ -12,6 +12,7 @@ const budgets = await import("../app/api/budgets/route");
 const budget = await import("../app/api/budgets/[id]/route");
 
 function request(method: string, body?: unknown) {
+
   return new NextRequest("http://localhost/api/budgets", {
     method,
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -48,8 +49,14 @@ describe("/api/budgets", () => {
     const remove = vi.fn();
     const insert = vi.fn();
     mocks.db.prepare.mockImplementation((sql: string) => {
-      if (sql.startsWith("DELETE FROM budgets WHERE month")) return { run: remove };
-      if (sql.startsWith("INSERT INTO budgets")) return { run: insert };
+      if (sql.startsWith("DELETE FROM budgets WHERE month")) {
+
+        return { run: remove };
+      }
+      if (sql.startsWith("INSERT INTO budgets")) {
+
+        return { run: insert };
+      }
 
       return { get: () => ({ id: 21 }) };
     });

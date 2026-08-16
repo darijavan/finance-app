@@ -15,6 +15,7 @@ const account = await import("../app/api/accounts/[id]/route");
 const reorder = await import("../app/api/accounts/reorder/route");
 
 function request(url: string, method: string, body?: unknown) {
+
   return new NextRequest(url, {
     method,
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -38,11 +39,17 @@ describe("/api/accounts", () => {
   it("returns balances through the requested historical month", async () => {
     mocks.getConverter.mockResolvedValue({ toBase: (amount: number) => amount * 2 });
     mocks.db.prepare.mockImplementation((sql: string) => {
-      if (sql.startsWith("SELECT * FROM accounts")) return { all: () => [{ id: 1, currency: "ILS", name: "Bank" }] };
-      if (sql.includes("FROM transactions")) return { all: () => [
-        { account_id: 1, amount: 100, account_amount: 100, direction: "income", date: "2026-05-10" },
-        { account_id: 1, amount: 30, account_amount: 30, direction: "expense", date: "2026-06-01" },
-      ] };
+      if (sql.startsWith("SELECT * FROM accounts")) {
+
+        return { all: () => [{ id: 1, currency: "ILS", name: "Bank" }] };
+      }
+      if (sql.includes("FROM transactions")) {
+
+        return { all: () => [
+          { account_id: 1, amount: 100, account_amount: 100, direction: "income", date: "2026-05-10" },
+          { account_id: 1, amount: 30, account_amount: 30, direction: "expense", date: "2026-06-01" },
+        ] };
+      }
 
       return { all: () => [{ from_account: 1, to_account: 2, amount: 50, from_amount: 50, to_amount: 50, date: "2026-05-20" }] };
     });

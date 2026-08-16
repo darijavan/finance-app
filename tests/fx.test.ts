@@ -12,8 +12,14 @@ afterEach(() => {
 
 function rates(rows: unknown[], base = "ILS") {
   mocks.db.prepare.mockImplementation((sql: string) => {
-    if (sql.includes("FROM settings")) return { get: () => ({ value: base }) };
-    if (sql.includes("FROM fx_rates")) return { all: () => rows };
+    if (sql.includes("FROM settings")) {
+
+      return { get: () => ({ value: base }) };
+    }
+    if (sql.includes("FROM fx_rates")) {
+
+      return { all: () => rows };
+    }
 
     return { run: vi.fn() };
   });
@@ -34,8 +40,14 @@ describe("FX cache and conversion", () => {
     rates([{ code: "ILS", rate: 1, updated_at: new Date().toISOString() }], "USD");
     const run = vi.fn();
     mocks.db.prepare.mockImplementation((sql: string) => {
-      if (sql.includes("FROM settings")) return { get: () => ({ value: "USD" }) };
-      if (sql.includes("FROM fx_rates")) return { all: () => [{ code: "ILS", rate: 1, updated_at: new Date().toISOString() }] };
+      if (sql.includes("FROM settings")) {
+
+        return { get: () => ({ value: "USD" }) };
+      }
+      if (sql.includes("FROM fx_rates")) {
+
+        return { all: () => [{ code: "ILS", rate: 1, updated_at: new Date().toISOString() }] };
+      }
 
       return { run };
     });

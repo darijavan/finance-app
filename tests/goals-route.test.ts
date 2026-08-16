@@ -12,6 +12,7 @@ const goals = await import("../app/api/goals/route");
 const goal = await import("../app/api/goals/[id]/route");
 
 function request(method: string, body?: unknown) {
+
   return new NextRequest("http://localhost/api/goals", {
     method,
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -26,8 +27,14 @@ beforeEach(() => {
 describe("/api/goals", () => {
   it("returns linked-account goals with native ledger progress", async () => {
     mocks.db.prepare.mockImplementation((sql: string) => {
-      if (sql.includes("FROM goals")) return { all: () => [{ id: 5, account_id: 1, name: "Emergency", target_amount: 1000 }] };
-      if (sql.includes("FROM transactions")) return { all: () => [{ account_id: 1, amount: 120, account_amount: 120, direction: "income" }] };
+      if (sql.includes("FROM goals")) {
+
+        return { all: () => [{ id: 5, account_id: 1, name: "Emergency", target_amount: 1000 }] };
+      }
+      if (sql.includes("FROM transactions")) {
+
+        return { all: () => [{ account_id: 1, amount: 120, account_amount: 120, direction: "income" }] };
+      }
 
       return { all: () => [{ from_account: 1, to_account: 2, amount: 20, from_amount: 20, to_amount: 20 }] };
     });
