@@ -1,14 +1,16 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 const mocks = vi.hoisted(() => ({
-  db: { prepare: vi.fn() },
+  db: { exec: vi.fn(), prepare: vi.fn() },
   logActivity: vi.fn(),
   snapshotConversion: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({ getDb: () => mocks.db, logActivity: mocks.logActivity }));
 vi.mock("@/lib/fx-historical", () => ({ snapshotConversion: mocks.snapshotConversion }));
+
+afterEach(() => vi.clearAllMocks());
 
 const { POST } = await import("../app/api/transactions/import/route");
 
@@ -61,5 +63,31 @@ describe("POST /api/transactions/import", () => {
     expect(mocks.snapshotConversion).toHaveBeenCalledWith(10, "ILS", "USD", "2026-08-10");
     expect(insert).toHaveBeenCalledWith(10, "ILS", "expense", 3, "2026-08-10", "Groceries", 7, 3.2, "USD", 0.32, "2026-08-10", "frankfurter", expect.any(String));
     expect(mocks.logActivity).toHaveBeenCalledWith(mocks.db, "transaction", "create", null, "Imported 1 transaction(s) from CSV");
+  });
+
+  it("rolls back every row when an import write fails", async () => {
+    const insert = vi.fn(() => { throw new Error("disk full"); });
+    mocks.db.prepare.mockImplementation((sql: string) => {
+      if (sql.includes("SELECT currency FROM accounts"))
+
+      return { get: () => ({ currency: "ILS" }) };
+      if (sql.includes("SELECT 1 FROM transactions"))
+
+      return { get: () => undefined };
+
+      return { run: insert };
+    });
+    mocks.snapshotConversion.mockResolvedValue({ amount: 10, rate: 1, rate_date: "2026-08-10", source: "identity" });
+
+    const response = await POST(request({
+      currency: "ILS",
+      account_id: 7,
+      rows: [{ date: "2026-08-10", amount: 10, direction: "expense", note: "Groceries" }],
+    }));
+
+    expect(response.status).toBe(500);
+    expect(mocks.db.exec).toHaveBeenNthCalledWith(1, "BEGIN IMMEDIATE");
+    expect(mocks.db.exec).toHaveBeenLastCalledWith("ROLLBACK");
+    expect(mocks.logActivity).not.toHaveBeenCalled();
   });
 });

@@ -47,8 +47,9 @@ export async function POST(req: NextRequest) {
      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`
   );
 
-  let created = 0, skipped = 0, invalid = 0;
+  let skipped = 0, invalid = 0;
   const now = new Date().toISOString();
+  const candidates: Array<{ amount: number; date: string; direction: "expense" | "income"; note: string; snap: any }> = [];
   for (const r of b.rows) {
     const amount = money(r.amount);
     const date = isoDate(r.date);
@@ -61,14 +62,26 @@ export async function POST(req: NextRequest) {
       const fx = await snapshotConversion(amount, cur, accountCurrency, date);
       snap = { amount: fx.amount, currency: accountCurrency, rate: fx.rate, rate_date: fx.rate_date, source: fx.source };
     }
-    insert.run(amount, cur, direction, category_id, date, note, account_id,
-      snap.amount, snap.currency, snap.rate, snap.rate_date, snap.source, now);
-    created++;
+    candidates.push({ amount, date, direction, note, snap });
   }
-  if (created > 0) {
-    logActivity(db, "transaction", "create", null, `Imported ${created} transaction(s) from CSV`);
-  }
-  
+  let created = 0;
+  try {
+    db.exec("BEGIN IMMEDIATE");
+    for (const { amount, date, direction, note, snap } of candidates) {
+      if (dupe.get(date, amount, direction, note, account_id)) { skipped++; continue; }
+      insert.run(amount, cur, direction, category_id, date, note, account_id,
+        snap.amount, snap.currency, snap.rate, snap.rate_date, snap.source, now);
+      created++;
+    }
+    if (created > 0) {
+      logActivity(db, "transaction", "create", null, `Imported ${created} transaction(s) from CSV`);
+    }
+    db.exec("COMMIT");
 
-  return NextResponse.json({ created, skipped, invalid });
+    return NextResponse.json({ created, skipped, invalid });
+  } catch (error) {
+    try { db.exec("ROLLBACK"); } catch { /* no transaction to roll back */ }
+
+    return NextResponse.json({ error: String(error) }, { status: 500 });
+  }
 }
