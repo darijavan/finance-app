@@ -82,14 +82,22 @@ export default function TransactionsPage() {
   const [filtered, setFiltered] = useState<Transaction[] | null>(null);
   const [filteredTransfers, setFilteredTransfers] = useState<Transfer[] | null>(null);
   const transferRequest = useRef(0);
+  const previousMonth = useRef(month);
   const dateSearchActive = !followsMonthFrom.current || !followsMonthTo.current;
   const filterActive = !!(dateSearchActive || fQ || fAccount || fCat || fFrom || fTo || fMin || fMax || fReimbursable);
   const dateContext = dateFilterContext(fFrom, fTo);
 
   useEffect(() => {
-    if (followsMonthFrom.current) setFFrom(monthFrom);
-    if (followsMonthTo.current) setFTo(monthTo);
-  }, [monthFrom, monthTo]);
+    if (previousMonth.current === month) {
+
+      return;
+    }
+    previousMonth.current = month;
+    followsMonthFrom.current = true;
+    followsMonthTo.current = true;
+    setFFrom(monthFrom);
+    setFTo(monthTo);
+  }, [month, monthFrom, monthTo]);
 
   useEffect(() => {
     let query = window.location.search;

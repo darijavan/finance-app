@@ -74,9 +74,10 @@ it("defaults dates to the selected month and follows later month changes", async
   expect(mocks.getJSON).toHaveBeenCalledWith("/api/transactions?from=2026-07-01&to=2026-07-31");
 });
 
-it("keeps manually changed date bounds when the month changes", async () => {
+it("resets explicit date bounds when the month changes", async () => {
   vi.useFakeTimers();
-  mocks.search = "";
+  mocks.search = "from=2026-07-01";
+  mocks.context.month = "2026-07";
   mocks.getJSON.mockResolvedValue([]);
 
   const view = render(<TransactionsPage />);
@@ -84,13 +85,12 @@ it("keeps manually changed date bounds when the month changes", async () => {
   const toInput = screen.getByText("To", { selector: "label" }).parentElement?.querySelector("input");
   expect(fromInput).toBeTruthy();
   expect(toInput).toBeTruthy();
-  fireEvent.change(fromInput!, { target: { value: "2026-08-15" } });
-  mocks.context.month = "2026-07";
+  mocks.context.month = "2026-08";
   view.rerender(<TransactionsPage />);
   await act(async () => { await vi.advanceTimersByTimeAsync(250); });
 
-  expect((fromInput as HTMLInputElement).value).toBe("2026-08-15");
-  expect((toInput as HTMLInputElement).value).toBe("2026-07-31");
+  expect((fromInput as HTMLInputElement).value).toBe("2026-08-01");
+  expect((toInput as HTMLInputElement).value).toBe("2026-08-31");
 });
 
 it("searches all months when both date bounds are cleared", async () => {
