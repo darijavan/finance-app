@@ -13,6 +13,33 @@ import { withReceiptName } from "@/lib/receipt-state";
 
 const FILTER_KEYS = ["q", "account_id", "category_id", "from", "to", "min", "max", "reimbursable"];
 
+function formatFilterDate(date: string) {
+
+  return new Intl.DateTimeFormat("en", {
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+    year: "numeric",
+  }).format(new Date(`${date}T00:00:00Z`));
+}
+
+function dateFilterContext(from: string, to: string) {
+  if (from && to) {
+
+    return `${formatFilterDate(from)} to ${formatFilterDate(to)}`;
+  }
+  if (from) {
+
+    return `from ${formatFilterDate(from)}`;
+  }
+  if (to) {
+
+    return `through ${formatFilterDate(to)}`;
+  }
+
+  return "all months";
+}
+
 export default function TransactionsPage() {
   const searchParams = useSearchParams();
   const {
@@ -46,6 +73,7 @@ export default function TransactionsPage() {
   const [filteredTransfers, setFilteredTransfers] = useState<Transfer[] | null>(null);
   const transferRequest = useRef(0);
   const filterActive = !!(fQ || fAccount || fCat || fFrom || fTo || fMin || fMax || fReimbursable);
+  const dateContext = dateFilterContext(fFrom, fTo);
 
   useEffect(() => {
     let query = window.location.search;
@@ -300,7 +328,7 @@ export default function TransactionsPage() {
     <div className="panel">
       {/* Collapsed by default so the list stays close to the top of the page. */}
       <details className="filters" open={filterActive || undefined}>
-        <summary>Search &amp; filter{filterActive ? ` — ${rows.length} match(es), all months` : ""}</summary>
+        <summary>Search &amp; filter{filterActive ? ` — ${rows.length} match(es), ${dateContext}` : ""}</summary>
         <div className="row">
         <div className="field">
           <label>Text</label>
@@ -350,7 +378,7 @@ export default function TransactionsPage() {
 
       <div className="row" style={{ marginTop: 16, justifyContent: "space-between" }}>
         <h2 style={{ margin: 0 }}>
-          {filterActive ? `Search results (${rows.length}, all months)` : "This month"}
+          {filterActive ? `Search results (${rows.length}, ${dateContext})` : "This month"}
         </h2>
         <div>
           <button className="btn secondary small" onClick={exportCSV} disabled={sortedTx.length === 0}>⬇ Export CSV</button>{" "}

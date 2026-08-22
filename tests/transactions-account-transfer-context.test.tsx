@@ -57,6 +57,18 @@ it("shows account transfers separately from filtered transaction results", async
   expect(screen.getByText("Transfers are account movements, not transactions.")).toBeTruthy();
 });
 
+it("describes the selected date range in filtered result headings", async () => {
+  vi.useFakeTimers();
+  mocks.search = "from=2026-08-01";
+  mocks.getJSON.mockResolvedValue([{ id: 1, date: "2026-08-22", direction: "expense", amount: 50, currency: "ILS", category_id: null, account_id: null, reimbursable: false }]);
+
+  render(<TransactionsPage />);
+  await act(async () => { await vi.advanceTimersByTimeAsync(250); });
+
+  expect(screen.getByText("Search & filter — 1 match(es), from Aug 1, 2026")).toBeTruthy();
+  expect(screen.getByText("Search results (1, from Aug 1, 2026)")).toBeTruthy();
+});
+
 it("marks transfers into the filtered account as positive", async () => {
   vi.useFakeTimers();
   mocks.getJSON.mockImplementation((url: string) => Promise.resolve(url.includes("/transfers")
