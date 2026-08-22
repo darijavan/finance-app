@@ -34,7 +34,7 @@ it("re-fetches active all-month filters after the provider reloads", async () =>
 
   await act(async () => { await vi.advanceTimersByTimeAsync(250); });
   expect(mocks.getJSON).toHaveBeenCalledTimes(1);
-  expect(mocks.getJSON).toHaveBeenLastCalledWith("/api/transactions?q=rent");
+  expect(mocks.getJSON).toHaveBeenLastCalledWith("/api/transactions?q=rent&from=2026-08-01&to=2026-08-31");
 
   mocks.context.reloadKey = 1;
   view.rerender(<TransactionsPage />);

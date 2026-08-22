@@ -40,6 +40,13 @@ function dateFilterContext(from: string, to: string) {
   return "all months";
 }
 
+function monthDateRange(month: string) {
+  const [, monthNumber] = month.split("-").map(Number);
+  const lastDay = new Date(Date.UTC(Number(month.slice(0, 4)), monthNumber, 0)).getUTCDate();
+
+  return [`${month}-01`, `${month}-${String(lastDay).padStart(2, "0")}`] as const;
+}
+
 export default function TransactionsPage() {
   const searchParams = useSearchParams();
   const {
@@ -58,14 +65,17 @@ export default function TransactionsPage() {
   const [tReceipt, setTReceipt] = useState<File | null>(null);
   const [editId, setEditId] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
+  const [monthFrom, monthTo] = monthDateRange(month);
+  const followsMonthFrom = useRef(!searchParams.get("from"));
+  const followsMonthTo = useRef(!searchParams.get("to"));
 
   // Search / filters. When any filter is set, results come from the API across
   // all months instead of the month view.
   const [fQ, setFQ] = useState(() => searchParams.get("q") || "");
   const [fAccount, setFAccount] = useState(() => searchParams.get("account_id") || "");
   const [fCat, setFCat] = useState(() => searchParams.get("category_id") || "");
-  const [fFrom, setFFrom] = useState(() => searchParams.get("from") || "");
-  const [fTo, setFTo] = useState(() => searchParams.get("to") || "");
+  const [fFrom, setFFrom] = useState(() => searchParams.get("from") || monthFrom);
+  const [fTo, setFTo] = useState(() => searchParams.get("to") || monthTo);
   const [fMin, setFMin] = useState(() => searchParams.get("min") || "");
   const [fMax, setFMax] = useState(() => searchParams.get("max") || "");
   const [fReimbursable, setFReimbursable] = useState(() => searchParams.get("reimbursable") || "");
@@ -74,6 +84,11 @@ export default function TransactionsPage() {
   const transferRequest = useRef(0);
   const filterActive = !!(fQ || fAccount || fCat || fFrom || fTo || fMin || fMax || fReimbursable);
   const dateContext = dateFilterContext(fFrom, fTo);
+
+  useEffect(() => {
+    if (followsMonthFrom.current) setFFrom(monthFrom);
+    if (followsMonthTo.current) setFTo(monthTo);
+  }, [monthFrom, monthTo]);
 
   useEffect(() => {
     let query = window.location.search;
@@ -122,7 +137,9 @@ export default function TransactionsPage() {
   }, [fAccount, fFrom, fTo, reloadKey, notify]);
 
   const clearFilters = () => {
-    setFQ(""); setFAccount(""); setFCat(""); setFFrom(""); setFTo(""); setFMin(""); setFMax(""); setFReimbursable("");
+    followsMonthFrom.current = true;
+    followsMonthTo.current = true;
+    setFQ(""); setFAccount(""); setFCat(""); setFFrom(monthFrom); setFTo(monthTo); setFMin(""); setFMax(""); setFReimbursable("");
   };
 
   const rows = filterActive ? (filtered ?? []) : transactions;
@@ -350,11 +367,11 @@ export default function TransactionsPage() {
         </div>
         <div className="field">
           <label>From</label>
-          <input type="date" value={fFrom} onChange={(e) => setFFrom(e.target.value)} />
+          <input type="date" value={fFrom} onChange={(e) => { followsMonthFrom.current = false; setFFrom(e.target.value); }} />
         </div>
         <div className="field">
           <label>To</label>
-          <input type="date" value={fTo} onChange={(e) => setFTo(e.target.value)} />
+          <input type="date" value={fTo} onChange={(e) => { followsMonthTo.current = false; setFTo(e.target.value); }} />
         </div>
         <div className="field">
           <label>Min</label>

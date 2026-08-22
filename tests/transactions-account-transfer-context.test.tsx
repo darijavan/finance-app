@@ -36,6 +36,7 @@ const { default: TransactionsPage } = await import("../app/(finance)/transaction
 afterEach(() => {
   cleanup();
   mocks.search = "account_id=7";
+  mocks.context.month = "2026-08";
   vi.clearAllMocks();
   vi.useRealTimers();
 });
@@ -49,12 +50,47 @@ it("shows account transfers separately from filtered transaction results", async
   render(<TransactionsPage />);
   await act(async () => { await vi.advanceTimersByTimeAsync(250); });
 
-  expect(mocks.getJSON).toHaveBeenCalledWith("/api/transfers?account_id=7");
-  expect(screen.getByText("Search results (1, all months)")).toBeTruthy();
+  expect(mocks.getJSON).toHaveBeenCalledWith("/api/transfers?account_id=7&from=2026-08-01&to=2026-08-31");
+  expect(screen.getByText("Search results (1, Aug 1, 2026 to Aug 31, 2026)")).toBeTruthy();
   expect(screen.getByText("Transfers involving Checking")).toBeTruthy();
   expect(screen.getByText("Checking → Cash")).toBeTruthy();
   expect(screen.getByText("-100").className).toContain("amount-expense");
   expect(screen.getByText("Transfers are account movements, not transactions.")).toBeTruthy();
+});
+
+it("defaults dates to the selected month and follows later month changes", async () => {
+  vi.useFakeTimers();
+  mocks.search = "";
+  mocks.context.month = "2026-08";
+  mocks.getJSON.mockResolvedValue([]);
+
+  const view = render(<TransactionsPage />);
+  await act(async () => { await vi.advanceTimersByTimeAsync(250); });
+  expect(mocks.getJSON).toHaveBeenCalledWith("/api/transactions?from=2026-08-01&to=2026-08-31");
+
+  mocks.context.month = "2026-07";
+  view.rerender(<TransactionsPage />);
+  await act(async () => { await vi.advanceTimersByTimeAsync(250); });
+  expect(mocks.getJSON).toHaveBeenCalledWith("/api/transactions?from=2026-07-01&to=2026-07-31");
+});
+
+it("keeps manually changed date bounds when the month changes", async () => {
+  vi.useFakeTimers();
+  mocks.search = "";
+  mocks.getJSON.mockResolvedValue([]);
+
+  const view = render(<TransactionsPage />);
+  const fromInput = screen.getByText("From", { selector: "label" }).parentElement?.querySelector("input");
+  const toInput = screen.getByText("To", { selector: "label" }).parentElement?.querySelector("input");
+  expect(fromInput).toBeTruthy();
+  expect(toInput).toBeTruthy();
+  fireEvent.change(fromInput!, { target: { value: "2026-08-15" } });
+  mocks.context.month = "2026-07";
+  view.rerender(<TransactionsPage />);
+  await act(async () => { await vi.advanceTimersByTimeAsync(250); });
+
+  expect((fromInput as HTMLInputElement).value).toBe("2026-08-15");
+  expect((toInput as HTMLInputElement).value).toBe("2026-07-31");
 });
 
 it("describes the selected date range in filtered result headings", async () => {
@@ -65,8 +101,8 @@ it("describes the selected date range in filtered result headings", async () => 
   render(<TransactionsPage />);
   await act(async () => { await vi.advanceTimersByTimeAsync(250); });
 
-  expect(screen.getByText("Search & filter — 1 match(es), from Aug 1, 2026")).toBeTruthy();
-  expect(screen.getByText("Search results (1, from Aug 1, 2026)")).toBeTruthy();
+  expect(screen.getByText("Search & filter — 1 match(es), Aug 1, 2026 to Aug 31, 2026")).toBeTruthy();
+  expect(screen.getByText("Search results (1, Aug 1, 2026 to Aug 31, 2026)")).toBeTruthy();
 });
 
 it("marks transfers into the filtered account as positive", async () => {
@@ -85,11 +121,11 @@ it("ignores an older account transfer response after the filter changes", async 
   let resolveChecking!: (rows: Array<Record<string, unknown>>) => void;
   let resolveSavings!: (rows: Array<Record<string, unknown>>) => void;
   mocks.getJSON.mockImplementation((url: string) => {
-    if (url === "/api/transfers?account_id=7") {
+    if (url === "/api/transfers?account_id=7&from=2026-08-01&to=2026-08-31") {
 
       return new Promise((resolve) => { resolveChecking = resolve; });
     }
-    if (url === "/api/transfers?account_id=8") {
+    if (url === "/api/transfers?account_id=8&from=2026-08-01&to=2026-08-31") {
 
       return new Promise((resolve) => { resolveSavings = resolve; });
     }
