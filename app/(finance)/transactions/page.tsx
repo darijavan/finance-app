@@ -82,7 +82,8 @@ export default function TransactionsPage() {
   const [filtered, setFiltered] = useState<Transaction[] | null>(null);
   const [filteredTransfers, setFilteredTransfers] = useState<Transfer[] | null>(null);
   const transferRequest = useRef(0);
-  const filterActive = !!(fQ || fAccount || fCat || fFrom || fTo || fMin || fMax || fReimbursable);
+  const dateSearchActive = !followsMonthFrom.current || !followsMonthTo.current;
+  const filterActive = !!(dateSearchActive || fQ || fAccount || fCat || fFrom || fTo || fMin || fMax || fReimbursable);
   const dateContext = dateFilterContext(fFrom, fTo);
 
   useEffect(() => {
