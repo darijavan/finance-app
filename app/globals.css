@@ -368,29 +368,42 @@ dialog.modal::backdrop { background: rgba(0,0,0,.55); }
 /* Mobile: sidebar collapses into a horizontal, scrollable top nav — same
    behavior as the rest of the app's small-screen layout. */
 @media (max-width: 860px) {
-  .app[data-design="v2"] { flex-direction: column; }
+  .app[data-design="v2"] { flex-direction: column; width: 100%; max-width: 100%; overflow-x: clip; }
   .app[data-design="v2"] .sidebar { position: sticky; top: 0; z-index: 20; width: auto; min-height: 0;
-    flex-direction: row; align-items: center; justify-content: space-between; gap: 12px;
+    flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 10px;
     padding: 14px max(14px, env(safe-area-inset-right)) 14px max(14px, env(safe-area-inset-left));
     border-right: 0; border-bottom: 1px solid var(--border); }
+  /* Desktop uses align-self:flex-start for the fixed rail. Reset it here:
+     otherwise this collapses to the nav's intrinsic (unscrolled) width and
+     makes the entire document horizontally scrollable. */
+  .app[data-design="v2"] .sidebar { flex: 0 0 auto; width: 100%; max-width: 100%; align-self: stretch; }
   /* The brand+nav wrapper is itself a flex item of the row above — without
      min-width: 0 it refuses to shrink below the nav's full content width and
      pushes the whole page into horizontal overflow instead of letting the
      nav scroll internally. */
-  .app[data-design="v2"] .sidebar-head { display: flex; align-items: center; gap: 12px;
-    min-width: 0; flex: 1 1 auto; }
-  .app[data-design="v2"] .sidebar .nav { flex: 1 1 auto; min-width: 0;
+  .app[data-design="v2"] .sidebar-head { display: flex; flex-direction: column; gap: 10px;
+    min-width: 0; width: 100%; }
+  .app[data-design="v2"] .sidebar .brand { min-height: 44px; padding-right: 44px; }
+  .app[data-design="v2"] .sidebar .nav { flex: 0 0 auto; min-width: 0; width: 100%;
     flex-direction: row; margin: 0; overflow-x: auto; }
   .app[data-design="v2"] .sidebar .nav a { flex: 0 0 auto; white-space: nowrap; min-height: 44px; }
-  .app[data-design="v2"] .user-profile { flex: 0 0 auto; }
+  .app[data-design="v2"] .user-profile { position: absolute; top: 18px; right: max(14px, env(safe-area-inset-right)); }
   .app[data-design="v2"] .user-info { display: none; }
-  .app[data-design="v2"] .content-area { padding: 16px max(14px, env(safe-area-inset-right))
+  .app[data-design="v2"] .content-area { min-width: 0; max-width: 100%; padding: 16px max(14px, env(safe-area-inset-right))
     calc(24px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
   .app[data-design="v2"] .topbar { flex-wrap: wrap; row-gap: 12px; margin-bottom: 16px; padding-bottom: 16px; }
   .app[data-design="v2"] .topbar h1 { font-size: 18px; }
-  .app[data-design="v2"] .month-picker { width: 100%; flex-wrap: wrap; }
-  .app[data-design="v2"] .selector { height: auto; min-height: 44px; }
-  .app[data-design="v2"] .design-toggle { height: auto; min-height: 44px; }
+  .app[data-design="v2"] .month-picker { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
+    width: 100%; gap: 8px; }
+  .app[data-design="v2"] .selector { min-width: 0; height: auto; min-height: 44px; padding-inline: 8px; gap: 4px; }
+  .app[data-design="v2"] .selector label { white-space: nowrap; }
+  .app[data-design="v2"] .selector select { min-width: 0; width: 100%; padding-right: 12px; }
+  .app[data-design="v2"] .design-toggle { width: 44px; height: auto; min-height: 44px; padding: 0; justify-content: center; }
+  .app[data-design="v2"] .design-toggle-copy { display: none; }
+  .app[data-design="v2"] .dash-right { flex: 0 1 auto; max-width: 100%; }
+  .app[data-design="v2"] .finance-content, .app[data-design="v2"] .dash-split,
+  .app[data-design="v2"] .dash-left, .app[data-design="v2"] .panel,
+  .app[data-design="v2"] .net-worth-hero { min-width: 0; max-width: 100%; }
   .app[data-design="v2"] .panel { padding: 16px; border-radius: 14px; }
   .app[data-design="v2"] .net-worth-hero { padding: 20px; }
 }

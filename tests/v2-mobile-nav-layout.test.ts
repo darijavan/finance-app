@@ -10,9 +10,11 @@ test("v2 mobile sidebar-head and nav can shrink instead of overflowing the page"
   const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
   const mobileRules = css.slice(css.indexOf('@media (max-width: 860px)'));
 
+  assert.match(mobileRules, /\.sidebar\s*\{[^}]*width:\s*100%[^}]*align-self:\s*stretch/);
   assert.match(mobileRules, /\.sidebar-head\s*\{[^}]*min-width:\s*0/);
-  assert.match(mobileRules, /\.sidebar \.nav\s*\{[^}]*min-width:\s*0/);
+  assert.match(mobileRules, /\.sidebar \.nav\s*\{[^}]*min-width:\s*0[^}]*width:\s*100%/);
   // Nav links and the currency/month/beta controls must meet the 44px touch target.
   assert.match(mobileRules, /\.sidebar \.nav a\s*\{[^}]*min-height:\s*44px/);
   assert.match(mobileRules, /\.selector\s*\{[^}]*min-height:\s*44px/);
+  assert.match(mobileRules, /\.month-picker\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 1fr\) 44px/);
 });
