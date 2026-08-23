@@ -52,6 +52,7 @@ interface FinanceCtx {
   toast: string | null;
   confirm: (opts: ConfirmOpts) => Promise<boolean>;
   undo: (state: UndoState) => void;
+  betaDesign: boolean;
 }
 
 const Ctx = createContext<FinanceCtx | null>(null);
@@ -71,12 +72,12 @@ function monthLabel(m: string): string {
 }
 
 const TABS = [
-  { key: "", label: "Dashboard", icon: "⌂", href: "/" },
-  { key: "transactions", label: "Transactions", icon: "↕", href: "/transactions" },
-  { key: "subscriptions", label: "Subscriptions", icon: "↻", href: "/subscriptions" },
-  { key: "accounts", label: "Accounts", icon: "▣", href: "/accounts" },
-  { key: "budgets", label: "Budgets", icon: "◎", href: "/budgets" },
-  { key: "activity", label: "Activity", icon: "◷", href: "/activity" },
+  { key: "", label: "Dashboard", v2Title: "💰 Financial Dashboard", href: "/" },
+  { key: "transactions", label: "Transactions", v2Title: "📊 Transactions Ledger", href: "/transactions" },
+  { key: "subscriptions", label: "Subscriptions", v2Title: "📅 Recurring & Subscriptions", href: "/subscriptions" },
+  { key: "accounts", label: "Accounts", v2Title: "🏦 Accounts & Savings", href: "/accounts" },
+  { key: "budgets", label: "Budgets", v2Title: "🎯 Budgets & Categories", href: "/budgets" },
+  { key: "activity", label: "Activity", v2Title: "📋 System Activity & Audit Trail", href: "/activity" },
 ];
 
 function Chrome({ children }: { children: ReactNode }) {
@@ -231,70 +232,128 @@ function Chrome({ children }: { children: ReactNode }) {
 
   const expenseCats = useMemo(() => categories.filter((c) => c.direction === "expense"), [categories]);
   const incomeCats = useMemo(() => categories.filter((c) => c.direction === "income"), [categories]);
+  const activeTab = TABS.find((t) => (t.key === "" ? pathname === "/" : pathname === t.href)) || TABS[0];
 
   const ctx: FinanceCtx = {
     month, setMonth, categories, settings, transactions, subscriptions,
-    budgets, summary, sym, expenseCats, incomeCats, accounts, transfers, reloadKey, reload, reloadCategories, notify, toast, confirm, undo,
+    budgets, summary, sym, expenseCats, incomeCats, accounts, transfers, reloadKey, reload, reloadCategories,
+    notify, toast, confirm, undo, betaDesign,
   };
+
+  const designToggleBtn = (
+    <button
+      type="button"
+      className="design-toggle"
+      role="switch"
+      aria-checked={betaDesign}
+      aria-label={`Design Language v2 beta is ${betaDesign ? "on" : "off"}. Switch to ${betaDesign ? "current design" : "beta design"}`}
+      onClick={toggleBetaDesign}
+    >
+      <span className="design-toggle-copy">
+        <strong>Design v2</strong>
+        <small>{betaDesign ? "Beta on" : "Try beta"}</small>
+      </span>
+      <span className="switch-track" aria-hidden="true"><span /></span>
+    </button>
+  );
 
   return (
     <Ctx.Provider value={ctx}>
-      <div className="app" data-design={betaDesign ? "v2" : "current"}>
-        <div className="topbar">
-          <div className="brand">
-            <span className="brand-mark" aria-hidden="true">F</span>
+      {betaDesign ? (
+        <div className="app" data-design="v2">
+          <aside className="sidebar">
             <div>
-              <h1><span className="legacy-logo" aria-hidden="true">💰 </span>Finance</h1>
-              <span className="beta-kicker">Personal finance, clearly</span>
+              <div className="brand">
+                <span className="brand-mark" aria-hidden="true">F</span>
+                <span className="brand-name">Finance</span>
+              </div>
+              <nav className="nav" aria-label="Primary">
+                {TABS.map((t) => {
+                  const active = t.key === "" ? pathname === "/" : pathname === t.href;
+
+                  return (
+                    <Link key={t.key} href={`${t.href}?month=${month}`} className={active ? "active" : ""}
+                      aria-current={active ? "page" : undefined}>
+                      <span className="nav-dot" aria-hidden="true" />
+                      {t.label}
+                    </Link>
+                  );
+                })}
+              </nav>
             </div>
-          </div>
-          <div className="month-picker">
-            <label className="muted" htmlFor="pick-currency">Currency</label>
-            <select id="pick-currency" value={settings.currency} onChange={(e) => setCurrency(e.target.value)}>
-              {CURRENCIES.map((c) => (
-                <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>
-              ))}
-            </select>
-            <label className="muted" htmlFor="pick-month">Month</label>
-            <select id="pick-month" value={month} onChange={(e) => setMonth(e.target.value)}>
-              {monthList().map((m) => (
-                <option key={m} value={m}>{monthLabel(m)}</option>
-              ))}
-            </select>
-            <button
-              type="button"
-              className="design-toggle"
-              role="switch"
-              aria-checked={betaDesign}
-              aria-label={`Design Language v2 beta is ${betaDesign ? "on" : "off"}. Switch to ${betaDesign ? "current design" : "beta design"}`}
-              onClick={toggleBetaDesign}
-            >
-              <span className="design-toggle-copy">
-                <strong>Design v2</strong>
-                <small>{betaDesign ? "Beta on" : "Try beta"}</small>
+            <div className="user-profile">
+              <span className="avatar" aria-hidden="true">F</span>
+              <span className="user-info">
+                <strong>Personal Finance</strong>
+                <small>Local &amp; private</small>
               </span>
-              <span className="switch-track" aria-hidden="true"><span /></span>
-            </button>
+            </div>
+          </aside>
+
+          <div className="content-area">
+            <div className="topbar">
+              <h1>{activeTab.v2Title}</h1>
+              <div className="month-picker">
+                <span className="selector">
+                  <label htmlFor="pick-currency">Currency</label>
+                  <select id="pick-currency" value={settings.currency} onChange={(e) => setCurrency(e.target.value)}>
+                    {CURRENCIES.map((c) => (
+                      <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>
+                    ))}
+                  </select>
+                </span>
+                <span className="selector">
+                  <label htmlFor="pick-month">Month</label>
+                  <select id="pick-month" value={month} onChange={(e) => setMonth(e.target.value)}>
+                    {monthList().map((m) => (
+                      <option key={m} value={m}>{monthLabel(m)}</option>
+                    ))}
+                  </select>
+                </span>
+                {designToggleBtn}
+              </div>
+            </div>
+
+            <main className="finance-content">{children}</main>
           </div>
         </div>
+      ) : (
+        <div className="app" data-design="current">
+          <div className="topbar">
+            <h1>💰 Finance</h1>
+            <div className="month-picker">
+              <label className="muted" htmlFor="pick-currency">Currency</label>
+              <select id="pick-currency" value={settings.currency} onChange={(e) => setCurrency(e.target.value)}>
+                {CURRENCIES.map((c) => (
+                  <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>
+                ))}
+              </select>
+              <label className="muted" htmlFor="pick-month">Month</label>
+              <select id="pick-month" value={month} onChange={(e) => setMonth(e.target.value)}>
+                {monthList().map((m) => (
+                  <option key={m} value={m}>{monthLabel(m)}</option>
+                ))}
+              </select>
+              {designToggleBtn}
+            </div>
+          </div>
 
-        <nav className="nav" aria-label="Primary">
-          {TABS.map((t) => {
-            const active = t.key === "" ? pathname === "/" : pathname === t.href;
-            
+          <nav className="nav" aria-label="Primary">
+            {TABS.map((t) => {
+              const active = t.key === "" ? pathname === "/" : pathname === t.href;
 
-            return (
-              <Link key={t.key} href={`${t.href}?month=${month}`} className={active ? "active" : ""}
-                aria-current={active ? "page" : undefined}>
-                <span className="nav-icon" aria-hidden="true">{t.icon}</span>
-                {t.label}
-              </Link>
-            );
-          })}
-        </nav>
+              return (
+                <Link key={t.key} href={`${t.href}?month=${month}`} className={active ? "active" : ""}
+                  aria-current={active ? "page" : undefined}>
+                  {t.label}
+                </Link>
+              );
+            })}
+          </nav>
 
-        <main className="finance-content">{children}</main>
-      </div>
+          <main className="finance-content">{children}</main>
+        </div>
+      )}
 
       {toast && <div className="toast" role="status">{toast}</div>}
 
