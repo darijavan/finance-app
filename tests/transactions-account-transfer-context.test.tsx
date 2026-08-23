@@ -44,7 +44,7 @@ afterEach(() => {
 it("shows account transfers separately from filtered transaction results", async () => {
   vi.useFakeTimers();
   mocks.getJSON.mockImplementation((url: string) => Promise.resolve(url.includes("/transfers")
-    ? [{ id: 8, date: "2026-07-15", from_account: 7, to_account: 2, from_name: "Checking", to_name: "Cash", amount: 100, currency: "ILS", note: "ATM" }]
+    ? [{ id: 8, date: "2026-07-15", from_account: 7, to_account: 2, from_name: "Checking", to_name: "Cash", amount: 100, currency: "ILS", from_amount: 120, from_currency: "USD", note: "ATM" }]
     : [{ id: 1, date: "2026-07-16", direction: "expense", amount: 50, currency: "ILS", category_id: null, account_id: 7, reimbursable: false }]));
 
   render(<TransactionsPage />);
@@ -55,6 +55,8 @@ it("shows account transfers separately from filtered transaction results", async
   expect(screen.getByText("Transfers involving Checking")).toBeTruthy();
   expect(screen.getByText("Checking → Cash")).toBeTruthy();
   expect(screen.getByText("-100").className).toContain("amount-expense");
+  expect(screen.getAllByText("Account amount")).toHaveLength(2);
+  expect(screen.getByText("-120").className).toContain("amount-expense");
   expect(screen.getByText("Transfers are account movements, not transactions.")).toBeTruthy();
 });
 
@@ -126,13 +128,14 @@ it("describes the selected date range in filtered result headings", async () => 
 it("marks transfers into the filtered account as positive", async () => {
   vi.useFakeTimers();
   mocks.getJSON.mockImplementation((url: string) => Promise.resolve(url.includes("/transfers")
-    ? [{ id: 10, date: "2026-07-17", from_account: 2, to_account: 7, from_name: "Cash", to_name: "Checking", amount: 120, currency: "ILS", note: "Deposit" }]
+    ? [{ id: 10, date: "2026-07-17", from_account: 2, to_account: 7, from_name: "Cash", to_name: "Checking", amount: 120, currency: "ILS", to_amount: 95, to_currency: "USD", note: "Deposit" }]
     : []));
 
   render(<TransactionsPage />);
   await act(async () => { await vi.advanceTimersByTimeAsync(250); });
 
   expect(screen.getByText("+120").className).toContain("amount-income");
+  expect(screen.getByText("+95").className).toContain("amount-income");
 });
 
 it("ignores an older account transfer response after the filter changes", async () => {

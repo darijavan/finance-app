@@ -55,6 +55,8 @@ export interface Transfer {
   created_at: string;
   from_amount: number | null; // immutable debit in the origin account's currency
   from_currency: Currency | null;
+  to_amount: number | null; // immutable credit in the destination account's currency
+  to_currency: Currency | null;
   from_name?: string;
   to_name?: string;
 }
