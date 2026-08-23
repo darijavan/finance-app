@@ -10,6 +10,7 @@ import {
   API, getJSON, sendJSON, monthList, CURRENCIES, currentMonth,
 } from "@/lib/client";
 import { withQueryParam } from "@/lib/query";
+import { readBetaDesign, writeBetaDesign } from "@/lib/design-preference";
 import type {
   Category, Transaction, Subscription, Budget, Summary, Settings, Account, Transfer, Goal,
 } from "@/lib/types";
@@ -71,12 +72,12 @@ function monthLabel(m: string): string {
 }
 
 const TABS = [
-  { key: "", label: "Dashboard", href: "/" },
-  { key: "transactions", label: "Transactions", href: "/transactions" },
-  { key: "subscriptions", label: "Subscriptions", href: "/subscriptions" },
-  { key: "accounts", label: "Accounts", href: "/accounts" },
-  { key: "budgets", label: "Budgets", href: "/budgets" },
-  { key: "activity", label: "Activity", href: "/activity" },
+  { key: "", label: "Dashboard", icon: "⌂", href: "/" },
+  { key: "transactions", label: "Transactions", icon: "↕", href: "/transactions" },
+  { key: "subscriptions", label: "Subscriptions", icon: "↻", href: "/subscriptions" },
+  { key: "accounts", label: "Accounts", icon: "▣", href: "/accounts" },
+  { key: "budgets", label: "Budgets", icon: "◎", href: "/budgets" },
+  { key: "activity", label: "Activity", icon: "◷", href: "/activity" },
 ];
 
 function Chrome({ children }: { children: ReactNode }) {
@@ -97,6 +98,7 @@ function Chrome({ children }: { children: ReactNode }) {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [betaDesign, setBetaDesign] = useState(false);
 
   // Confirmation dialog state (rendered as a native <dialog>)
   const [confirmState, setConfirmState] = useState<ConfirmState>({ open: false, title: "", message: "" });
@@ -179,6 +181,15 @@ function Chrome({ children }: { children: ReactNode }) {
   // categories + settings (once)
   useEffect(() => { reloadCategories(); }, [reloadCategories]);
   useEffect(() => { setSelectedMonth(urlMonth); }, [urlMonth]);
+  useEffect(() => { setBetaDesign(readBetaDesign(window.localStorage)); }, []);
+
+  const toggleBetaDesign = () => {
+    setBetaDesign((enabled) => {
+      writeBetaDesign(window.localStorage, !enabled);
+
+      return !enabled;
+    });
+  };
 
   const loadMonth = useCallback(async () => {
     try {
@@ -232,9 +243,15 @@ function Chrome({ children }: { children: ReactNode }) {
 
   return (
     <Ctx.Provider value={ctx}>
-      <div className="app">
+      <div className="app" data-design={betaDesign ? "v2" : "current"}>
         <div className="topbar">
-          <h1>💰 Finance</h1>
+          <div className="brand">
+            <span className="brand-mark" aria-hidden="true">F</span>
+            <div>
+              <h1><span className="legacy-logo" aria-hidden="true">💰 </span>Finance</h1>
+              <span className="beta-kicker">Personal finance, clearly</span>
+            </div>
+          </div>
           <div className="month-picker">
             <label className="muted" htmlFor="pick-currency">Currency</label>
             <select id="pick-currency" value={settings.currency} onChange={(e) => setCurrency(e.target.value)}>
@@ -248,6 +265,20 @@ function Chrome({ children }: { children: ReactNode }) {
                 <option key={m} value={m}>{monthLabel(m)}</option>
               ))}
             </select>
+            <button
+              type="button"
+              className="design-toggle"
+              role="switch"
+              aria-checked={betaDesign}
+              aria-label={`Design Language v2 beta is ${betaDesign ? "on" : "off"}. Switch to ${betaDesign ? "current design" : "beta design"}`}
+              onClick={toggleBetaDesign}
+            >
+              <span className="design-toggle-copy">
+                <strong>Design v2</strong>
+                <small>{betaDesign ? "Beta on" : "Try beta"}</small>
+              </span>
+              <span className="switch-track" aria-hidden="true"><span /></span>
+            </button>
           </div>
         </div>
 
@@ -259,13 +290,14 @@ function Chrome({ children }: { children: ReactNode }) {
             return (
               <Link key={t.key} href={`${t.href}?month=${month}`} className={active ? "active" : ""}
                 aria-current={active ? "page" : undefined}>
+                <span className="nav-icon" aria-hidden="true">{t.icon}</span>
                 {t.label}
               </Link>
             );
           })}
         </nav>
 
-        {children}
+        <main className="finance-content">{children}</main>
       </div>
 
       {toast && <div className="toast" role="status">{toast}</div>}
