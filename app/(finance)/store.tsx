@@ -105,6 +105,12 @@ function Chrome({ children }: { children: ReactNode }) {
   // Undo snackbar state
   const [undoState, setUndoState] = useState<UndoState | null>(null);
   const [undoTimer, setUndoTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  // On mobile the sidebar nav becomes a horizontally scrollable row — keep
+  // the active tab scrolled into view instead of leaving it hidden off-screen.
+  const navRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    navRef.current?.querySelector<HTMLElement>("a.active")?.scrollIntoView({ inline: "center", block: "nearest" });
+  }, [pathname]);
 
   const sym = settings.currency_symbol || "₪";
 
@@ -262,12 +268,12 @@ function Chrome({ children }: { children: ReactNode }) {
       {betaDesign ? (
         <div className="app" data-design="v2">
           <aside className="sidebar">
-            <div>
+            <div className="sidebar-head">
               <div className="brand">
                 <span className="brand-mark" aria-hidden="true">F</span>
                 <span className="brand-name">Finance</span>
               </div>
-              <nav className="nav" aria-label="Primary">
+              <nav className="nav" aria-label="Primary" ref={navRef}>
                 {TABS.map((t) => {
                   const active = t.key === "" ? pathname === "/" : pathname === t.href;
 
