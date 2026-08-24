@@ -17,6 +17,7 @@ test("v2 mobile sidebar-head and nav can shrink instead of overflowing the page"
   assert.match(mobileRules, /\.sidebar \.nav a\s*\{[^}]*min-height:\s*44px/);
   assert.match(mobileRules, /\.selector\s*\{[^}]*min-height:\s*44px/);
   assert.match(mobileRules, /\.month-picker\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 1fr\) 44px/);
+  assert.match(mobileRules, /\.design-toggle\s*\{[^}]*position:\s*static[^}]*width:\s*44px/);
 });
 
 test("legacy mobile header keeps the beta switch inside its control grid", () => {

@@ -304,8 +304,8 @@ dialog.modal::backdrop { background: rgba(0,0,0,.55); }
 .app[data-design="v2"] .selector label::after { content: ":"; }
 .app[data-design="v2"] .selector select { min-height: 0; height: auto; border: none; background: transparent;
   padding: 0 16px 0 0; font-size: 13px; font-weight: 600; }
-.app[data-design="v2"] .design-toggle { min-height: 0; height: 32px; padding: 0 10px; border-radius: 8px;
-  background: var(--v2-surface); }
+.app[data-design="v2"] .design-toggle { position: fixed; top: 32px; right: 32px; z-index: 10;
+  min-height: 0; height: 32px; padding: 0 10px; border-radius: 8px; background: var(--v2-surface); }
 .app[data-design="v2"] .switch-track { background: var(--v2-neutral-soft); }
 .app[data-design="v2"] .switch-track span { background: var(--v2-muted); }
 .app[data-design="v2"] .design-toggle[aria-checked="true"] .switch-track { background: var(--v2-accent-soft); }
@@ -407,7 +407,7 @@ dialog.modal::backdrop { background: rgba(0,0,0,.55); }
   .app[data-design="v2"] .selector { min-width: 0; height: auto; min-height: 44px; padding-inline: 8px; gap: 4px; }
   .app[data-design="v2"] .selector label { white-space: nowrap; }
   .app[data-design="v2"] .selector select { min-width: 0; width: 100%; padding-right: 12px; }
-  .app[data-design="v2"] .design-toggle { width: 44px; height: auto; min-height: 44px; padding: 0; justify-content: center; }
+  .app[data-design="v2"] .design-toggle { position: static; width: 44px; height: auto; min-height: 44px; padding: 0; justify-content: center; }
   .app[data-design="v2"] .design-toggle-copy { display: none; }
   .app[data-design="v2"] .dash-right { flex: 0 1 auto; max-width: 100%; }
   .app[data-design="v2"] .finance-content, .app[data-design="v2"] .dash-split,
