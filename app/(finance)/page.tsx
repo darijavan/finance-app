@@ -98,12 +98,12 @@ function HeroSparkline({ points }: { points: TrendPoint[] }) {
   if (recent.length < 2)
 
     return null;
-  const w = 540, h = 100;
+  const w = 540, h = 100, pad = 6;
   const vals = recent.map((p) => p.net_worth);
   const min = Math.min(...vals);
   const max = Math.max(...vals);
   const xOf = (i: number) => (i / (recent.length - 1)) * w;
-  const yOf = (v: number) => h - ((v - min) / (max - min || 1)) * h;
+  const yOf = (v: number) => pad + (1 - (v - min) / (max - min || 1)) * (h - pad * 2);
   const path = recent.map((p, i) => `${i === 0 ? "M" : "L"}${xOf(i)},${yOf(p.net_worth)}`).join(" ");
 
   return (
