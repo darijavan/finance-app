@@ -16,15 +16,15 @@ test("v2 mobile sidebar-head and nav can shrink instead of overflowing the page"
   // Nav links and the currency/month/beta controls must meet the 44px touch target.
   assert.match(mobileRules, /\.sidebar \.nav a\s*\{[^}]*min-height:\s*44px/);
   assert.match(mobileRules, /\.selector\s*\{[^}]*min-height:\s*44px/);
-  assert.match(mobileRules, /\.month-picker\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 1fr\) 44px/);
-  assert.match(mobileRules, /\.design-toggle\s*\{[^}]*position:\s*static[^}]*width:\s*44px/);
+  assert.match(mobileRules, /\.topbar\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 1fr\) 44px/);
+  assert.match(mobileRules, /\.month-picker\s*\{[^}]*display:\s*contents/);
 });
 
 test("legacy mobile header keeps the beta switch inside its control grid", () => {
   const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
   const mobileRules = css.slice(css.indexOf('@media (max-width: 640px)'));
 
-  assert.match(mobileRules, /\[data-design="current"\] \.month-picker\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 1fr\) 44px/);
-  assert.match(mobileRules, /\[data-design="current"\] \.month-picker > select\s*\{[^}]*min-width:\s*0[^}]*width:\s*100%/);
+  assert.match(mobileRules, /\[data-design="current"\] \.topbar\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 1fr\) 44px/);
+  assert.match(mobileRules, /\[data-design="current"\] \.month-picker\s*\{[^}]*display:\s*contents/);
   assert.match(mobileRules, /\[data-design="current"\] \.design-toggle\s*\{[^}]*width:\s*44px/);
 });
