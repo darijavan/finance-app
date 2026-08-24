@@ -316,8 +316,8 @@ function Chrome({ children }: { children: ReactNode }) {
                     ))}
                   </select>
                 </span>
-                {designToggleBtn}
               </div>
+              {designToggleBtn}
             </div>
 
             <main className="finance-content">{children}</main>
@@ -340,8 +340,8 @@ function Chrome({ children }: { children: ReactNode }) {
                   <option key={m} value={m}>{monthLabel(m)}</option>
                 ))}
               </select>
-              {designToggleBtn}
             </div>
+            {designToggleBtn}
           </div>
 
           <nav className="nav" aria-label="Primary">

@@ -164,8 +164,10 @@ dialog.modal::backdrop { background: rgba(0,0,0,.55); }
   /* Keep the opt-in control from widening the legacy header. The current
      design's select values state the currency/month; their labels remain
      available to assistive technology, while the switch is named by aria. */
-  .app[data-design="current"] .month-picker { display: grid;
+  .app[data-design="current"] .topbar { display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px; width: 100%; gap: 6px; }
+  .app[data-design="current"] .topbar h1 { grid-column: 1 / -1; }
+  .app[data-design="current"] .month-picker { display: contents; }
   .app[data-design="current"] .month-picker > label { position: absolute; width: 1px; height: 1px;
     margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
   .app[data-design="current"] .month-picker > select { min-width: 0; width: 100%; }
@@ -304,8 +306,8 @@ dialog.modal::backdrop { background: rgba(0,0,0,.55); }
 .app[data-design="v2"] .selector label::after { content: ":"; }
 .app[data-design="v2"] .selector select { min-height: 0; height: auto; border: none; background: transparent;
   padding: 0 16px 0 0; font-size: 13px; font-weight: 600; }
-.app[data-design="v2"] .design-toggle { position: fixed; top: 32px; right: 32px; z-index: 10;
-  min-height: 0; height: 32px; padding: 0 10px; border-radius: 8px; background: var(--v2-surface); }
+.app[data-design="v2"] .design-toggle { min-height: 0; height: 32px; padding: 0 10px; border-radius: 8px;
+  background: var(--v2-surface); }
 .app[data-design="v2"] .switch-track { background: var(--v2-neutral-soft); }
 .app[data-design="v2"] .switch-track span { background: var(--v2-muted); }
 .app[data-design="v2"] .design-toggle[aria-checked="true"] .switch-track { background: var(--v2-accent-soft); }
@@ -400,10 +402,10 @@ dialog.modal::backdrop { background: rgba(0,0,0,.55); }
   .app[data-design="v2"] .user-info { display: none; }
   .app[data-design="v2"] .content-area { min-width: 0; max-width: 100%; padding: 16px max(14px, env(safe-area-inset-right))
     calc(24px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
-  .app[data-design="v2"] .topbar { flex-wrap: wrap; row-gap: 12px; margin-bottom: 16px; padding-bottom: 16px; }
-  .app[data-design="v2"] .topbar h1 { font-size: 18px; }
-  .app[data-design="v2"] .month-picker { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
-    width: 100%; gap: 8px; }
+  .app[data-design="v2"] .topbar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
+    row-gap: 12px; margin-bottom: 16px; padding-bottom: 16px; }
+  .app[data-design="v2"] .topbar h1 { grid-column: 1 / -1; font-size: 18px; }
+  .app[data-design="v2"] .month-picker { display: contents; }
   .app[data-design="v2"] .selector { min-width: 0; height: auto; min-height: 44px; padding-inline: 8px; gap: 4px; }
   .app[data-design="v2"] .selector label { white-space: nowrap; }
   .app[data-design="v2"] .selector select { min-width: 0; width: 100%; padding-right: 12px; }
