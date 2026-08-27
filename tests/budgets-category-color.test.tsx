@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   context: {
     month: "2026-08", sym: "₪",
     categories: [{ id: 1, name: "Food", direction: "expense", color: "#ff7c7c" }],
-    budgets: [], expenseCats: [], reload: vi.fn(), notify: vi.fn(), confirm: vi.fn(), undo: vi.fn(),
+    budgets: [], expenseCats: [], reload: vi.fn(), reloadCategories: vi.fn(), notify: vi.fn(), confirm: vi.fn(), undo: vi.fn(),
   },
 }));
 
@@ -19,7 +19,18 @@ vi.mock("@/lib/sort", () => ({
 
 const { default: BudgetsPage } = await import("../app/(finance)/budgets/page");
 
-afterEach(() => vi.clearAllMocks());
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
+
+it("refreshes categories immediately after updating a category", async () => {
+  render(<BudgetsPage />);
+  fireEvent.click(screen.getByLabelText("Edit category Food"));
+  fireEvent.click(screen.getByRole("button", { name: "Update" }));
+
+  await vi.waitFor(() => expect(mocks.context.reloadCategories).toHaveBeenCalledOnce());
+});
 
 it("saves the selected native color for an edited category", async () => {
   render(<BudgetsPage />);
@@ -32,7 +43,7 @@ it("saves the selected native color for an edited category", async () => {
   fireEvent.change(color, { target: { value: "#123456" } });
   fireEvent.click(screen.getByRole("button", { name: "Update" }));
 
-  expect(mocks.sendJSON).toHaveBeenCalledWith("/api/categories/1", "PUT", {
+  await vi.waitFor(() => expect(mocks.sendJSON).toHaveBeenCalledWith("/api/categories/1", "PUT", {
     name: "Food", direction: "expense", color: "#123456",
-  });
+  }));
 });

@@ -10,6 +10,7 @@ import type { Transaction, Transfer } from "@/lib/types";
 import { useSort, useSorted, SortHeader } from "@/lib/sort";
 import { withQueryParam } from "@/lib/query";
 import { withReceiptName } from "@/lib/receipt-state";
+import { tagTextColor } from "@/lib/tag-color";
 
 const FILTER_KEYS = ["q", "account_id", "category_id", "from", "to", "min", "max", "reimbursable"];
 
@@ -444,7 +445,7 @@ export default function TransactionsPage() {
               <tr key={t.id}>
                 <td className="date-cell">{t.date}</td>
                 <td>
-                  <span className="tag" style={{ background: catColor(categories, t.category_id) }}>
+                  <span className="tag" style={{ background: catColor(categories, t.category_id), color: tagTextColor(catColor(categories, t.category_id)) }}>
                     {catName(categories, t.category_id, t.direction)}
                   </span>
                 </td>

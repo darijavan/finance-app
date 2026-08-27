@@ -5,10 +5,11 @@ import { useFinance } from "../store";
 import { API, sendJSON, fmt } from "@/lib/client";
 import type { Category, Budget } from "@/lib/types";
 import { useSort, useSorted, SortHeader } from "@/lib/sort";
+import { tagTextColor } from "@/lib/tag-color";
 
 export default function BudgetsPage() {
   const {
-    month, sym, categories, budgets, expenseCats, reload, notify, confirm, undo,
+    month, sym, categories, budgets, expenseCats, reload, reloadCategories, notify, confirm, undo,
   } = useFinance();
 
   const [bCat, setBCat] = useState<string>(""); // "" = overall
@@ -93,7 +94,7 @@ export default function BudgetsPage() {
       notify("Category added");
     }
     cancelEditCat();
-    reload();
+    reloadCategories();
   };
 
   const visibleBudgets = budgets.filter((b) => b.amount > 0);
@@ -185,7 +186,7 @@ export default function BudgetsPage() {
       </div>
       <div className="row" style={{ marginTop: 10, flexWrap: "wrap" }}>
         {categories.map((c) => (
-          <span key={c.id} className="tag" style={{ background: c.color }}>
+          <span key={c.id} className="tag" style={{ background: c.color, color: tagTextColor(c.color) }}>
             {c.name} <span className="muted">({c.direction})</span>{" "}
             <button className="linkbtn" title="Edit" aria-label={`Edit category ${c.name}`}
               onClick={() => startEditCat(c)}>✎</button>
