@@ -16,6 +16,7 @@ export default function BudgetsPage() {
   const [bRollover, setBRollover] = useState(false);
   const [cName, setCName] = useState("");
   const [cDir, setCDir] = useState<"expense" | "income">("expense");
+  const [cColor, setCColor] = useState("#7c9cff");
   const [bEditing, setBEditing] = useState(false);
   const [cEditId, setCEditId] = useState<number | null>(null);
 
@@ -68,12 +69,14 @@ export default function BudgetsPage() {
     setCEditId(c.id);
     setCName(c.name);
     setCDir(c.direction);
+    setCColor(c.color);
   };
 
   const cancelEditCat = () => {
     setCEditId(null);
     setCName("");
     setCDir("expense");
+    setCColor("#7c9cff");
   };
 
   const saveCategory = async () => {
@@ -81,13 +84,12 @@ export default function BudgetsPage() {
 
     return notify("Enter category name");
     if (cEditId != null) {
-      const c = categories.find((x) => x.id === cEditId);
       await sendJSON(`${API}/categories/${cEditId}`, "PUT", {
-        name: cName.trim(), direction: cDir, color: c?.color || "#7c9cff",
+        name: cName.trim(), direction: cDir, color: cColor,
       });
       notify("Category updated");
     } else {
-      await sendJSON(`${API}/categories`, "POST", { name: cName.trim(), direction: cDir });
+      await sendJSON(`${API}/categories`, "POST", { name: cName.trim(), direction: cDir, color: cColor });
       notify("Category added");
     }
     cancelEditCat();
@@ -173,6 +175,10 @@ export default function BudgetsPage() {
             <option value="expense">Expense</option>
             <option value="income">Income</option>
           </select>
+        </div>
+        <div className="field">
+          <label htmlFor="cat-color">Tag color</label>
+          <input id="cat-color" type="color" value={cColor} onChange={(e) => setCColor(e.target.value)} />
         </div>
         {cEditId != null && <button className="btn secondary" onClick={cancelEditCat}>Cancel</button>}
         <button className="btn secondary" onClick={saveCategory}>{cEditId != null ? "Update" : "Add category"}</button>
