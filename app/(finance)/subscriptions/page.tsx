@@ -5,6 +5,7 @@ import { useFinance } from "../store";
 import { API, sendJSON, fmt, fmtCur, CURRENCIES } from "@/lib/client";
 import type { Subscription } from "@/lib/types";
 import { useSort, useSorted, SortHeader } from "@/lib/sort";
+import { tagTextColor } from "@/lib/tag-color";
 
 export default function SubscriptionsPage() {
   const {
@@ -208,7 +209,7 @@ export default function SubscriptionsPage() {
                 <td className="muted">{s.frequency === "yearly" ? `${s.month_of_year}/${s.day_of_month}` : s.day_of_month}</td>
                 <td className="muted">{s.frequency}{s.frequency === "yearly" ? ` (m${s.month_of_year})` : ""}</td>
                 <td className="muted">{s.monthly_equivalent == null ? "—" : fmtCur(s.monthly_equivalent, s.currency || settings.currency)}</td>
-                <td><span className="tag" style={{ background: s.category_color || "#888" }}>{s.category_name || "—"}</span></td>
+                <td><span className="tag" style={{ background: s.category_color || "#888", color: tagTextColor(s.category_color || "#888") }}>{s.category_name || "—"}</span></td>
                 <td className="muted">{s.account_name || "—"}</td>
                 <td className="muted">{s.start_date || "—"}</td>
                 <td className="right actions">
