@@ -6,7 +6,8 @@ describe("tagTextColor", () => {
     expect(tagTextColor("#123456")).toBe("#fff");
   });
 
-  it("uses black text on a light background", () => {
+  it("uses black text when it produces the stronger WCAG contrast", () => {
     expect(tagTextColor("#ffcc00")).toBe("#000");
+    expect(tagTextColor("#aba3dc")).toBe("#000");
   });
 });
