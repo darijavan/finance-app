@@ -50,7 +50,7 @@ describe("POST /api/subscriptions/charge", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ created: 1 });
     expect(insert).toHaveBeenCalledWith(20, "ILS", "expense", 2, "2026-08-10", "[auto] Music (monthly)", null, 3, null, null, null, null, null, expect.any(String));
-    expect(mocks.db.exec).toHaveBeenNthCalledWith(1, "BEGIN");
+    expect(mocks.db.exec).toHaveBeenNthCalledWith(1, "BEGIN IMMEDIATE");
     expect(mocks.db.exec).toHaveBeenNthCalledWith(2, "COMMIT");
     expect(mocks.logActivity).toHaveBeenCalledWith(mocks.db, "transaction", "create", null, "Charged Music for 2026-08");
   });

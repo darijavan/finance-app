@@ -28,4 +28,18 @@ describe("snapshotConversion", () => {
       .resolves.toEqual({ amount: 36.53, rate: 3.0464, rate_date: "2026-07-20", source: "frankfurter" });
     expect(run).toHaveBeenCalledWith("2026-07-21", "USD", "ILS", 3.0464, "2026-07-20", "frankfurter", expect.any(String));
   });
+
+  it("falls back to Currency API for dated MGA quotes", async () => {
+    const run = vi.fn();
+    mocks.db.prepare.mockImplementation((sql: string) => (
+      sql.startsWith("SELECT") ? { get: () => undefined } : { run }
+    ));
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ message: "not found" }), { status: 404 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ date: "2026-08-28", usd: { mga: 4332.83634349 } }), { status: 200 })));
+
+    await expect(snapshotConversion(11.99, "USD", "MGA", "2026-08-28"))
+      .resolves.toEqual({ amount: 51950.71, rate: 4332.83634349, rate_date: "2026-08-28", source: "currency-api" });
+    expect(run).toHaveBeenCalledWith("2026-08-28", "USD", "MGA", 4332.83634349, "2026-08-28", "currency-api", expect.any(String));
+  });
 });
