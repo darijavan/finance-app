@@ -412,6 +412,7 @@ dialog.modal::backdrop { background: rgba(0,0,0,.55); }
   .app[data-design="v2"] .design-toggle { position: static; width: 44px; height: auto; min-height: 44px; padding: 0; justify-content: center; }
   .app[data-design="v2"] .design-toggle-copy { display: none; }
   .app[data-design="v2"] .dash-right { flex: 0 1 auto; max-width: 100%; }
+  .app[data-design="v2"] .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .app[data-design="v2"] .finance-content, .app[data-design="v2"] .dash-split,
   .app[data-design="v2"] .dash-left, .app[data-design="v2"] .panel,
   .app[data-design="v2"] .net-worth-hero { min-width: 0; max-width: 100%; }
@@ -423,4 +424,8 @@ dialog.modal::backdrop { background: rgba(0,0,0,.55); }
   .app[data-design="v2"] *, .app[data-design="v2"] *::before, .app[data-design="v2"] *::after {
     scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important;
   }
+}
+
+@media (max-width: 380px) {
+  .app[data-design="v2"] .cards { grid-template-columns: 1fr; }
 }

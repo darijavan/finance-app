@@ -28,3 +28,22 @@ test("legacy mobile header keeps the beta switch inside its control grid", () =>
   assert.match(mobileRules, /\[data-design="current"\] \.month-picker\s*\{[^}]*display:\s*contents/);
   assert.match(mobileRules, /\[data-design="current"\] \.design-toggle\s*\{[^}]*width:\s*44px/);
 });
+
+test("v2 stat cards can fit two columns at 390px", () => {
+  const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
+  const start = css.indexOf('@media (max-width: 860px)');
+  const end = css.indexOf('@media (prefers-reduced-motion: reduce)', start);
+  const mobileRules = css.slice(start, end);
+
+  assert.match(mobileRules, /\.app\[data-design="v2"\] \.cards\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
+});
+
+test("v2 stat cards stack at 380px", () => {
+  const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
+  const twoColumn = css.indexOf('.app[data-design="v2"] .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }');
+  const start = css.lastIndexOf('@media (max-width: 380px)');
+  const narrowRules = css.slice(start);
+
+  assert.isAbove(start, twoColumn);
+  assert.match(narrowRules, /\.app\[data-design="v2"\] \.cards\s*\{[^}]*grid-template-columns:\s*1fr/);
+});
