@@ -5,7 +5,7 @@ import { afterEach, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   getJSON: vi.fn().mockResolvedValue({ months: [] }),
   context: {
-    month: "2026-08", sym: "₪", accounts: [], betaDesign: false, notify: vi.fn(),
+    month: "2026-08", sym: "₪", accounts: [], notify: vi.fn(),
     goals: [{ id: 1, name: "Emergency fund", target_amount: 1000, current: 250, account_id: 1, account_name: "Savings", currency: "ILS", target_date: "2026-12-31", note: "" }],
     summary: {
       spent: 0, earned: 0, net: 0, recurring_monthly: 0, remaining_subscriptions: 0,
