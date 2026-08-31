@@ -27,4 +27,5 @@ test("legacy mobile header keeps the beta switch inside its control grid", () =>
   assert.match(mobileRules, /\[data-design="current"\] \.topbar\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 1fr\) 44px/);
   assert.match(mobileRules, /\[data-design="current"\] \.month-picker\s*\{[^}]*display:\s*contents/);
   assert.match(mobileRules, /\[data-design="current"\] \.design-toggle\s*\{[^}]*width:\s*44px/);
+  assert.match(mobileRules, /\.nav\s*\{[^}]*width:\s*calc\(100% \+ 20px\)/);
 });

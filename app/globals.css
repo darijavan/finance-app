@@ -174,7 +174,7 @@ dialog.modal::backdrop { background: rgba(0,0,0,.55); }
   .app[data-design="current"] .design-toggle { width: 44px; min-height: 44px; padding: 0; justify-content: center; }
   .app[data-design="current"] .design-toggle-copy { display: none; }
   /* Single-row tab nav: scrolls horizontally, bleeds to the screen edges. */
-  .nav { min-width: 0; max-width: 100%; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  .nav { min-width: 0; width: calc(100% + 20px); max-width: none; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
     margin: 0 -10px 16px; padding: 0 10px 4px; scrollbar-width: none; }
   .nav::-webkit-scrollbar { display: none; }
   .nav a { flex: 0 0 auto; white-space: nowrap; font-size: 13px; padding: 10px 12px; min-height: 40px;
