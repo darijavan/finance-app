@@ -12,7 +12,7 @@ import {
 import { withQueryParam } from "@/lib/query";
 import { readBetaDesign, writeBetaDesign } from "@/lib/design-preference";
 import type {
-  Category, Transaction, Subscription, Budget, Summary, Settings, Account, Transfer,
+  Category, Transaction, Subscription, Budget, Summary, Settings, Account, Transfer, Goal,
 } from "@/lib/types";
 
 interface ConfirmOpts {
@@ -45,6 +45,7 @@ interface FinanceCtx {
   incomeCats: Category[];
   accounts: Account[];
   transfers: Transfer[];
+  goals: Goal[];
   reloadKey: number;
   reload: () => void;
   reloadCategories: () => void;
@@ -94,6 +95,7 @@ function Chrome({ children }: { children: ReactNode }) {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -198,13 +200,14 @@ function Chrome({ children }: { children: ReactNode }) {
 
   const loadMonth = useCallback(async () => {
     try {
-      const [tx, subs, b, sum, accs, xf] = await Promise.all([
+      const [tx, subs, b, sum, accs, xf, gs] = await Promise.all([
         getJSON<Transaction[]>(`${API}/transactions?month=${month}`),
         getJSON<Subscription[]>(`${API}/subscriptions`),
         getJSON<Budget[]>(`${API}/budgets?month=${month}`),
         getJSON<Summary>(`${API}/summary?month=${month}`),
         getJSON<Account[]>(`${API}/accounts?month=${month}`),
         getJSON<Transfer[]>(`${API}/transfers?month=${month}&limit=50`),
+        getJSON<Goal[]>(`${API}/goals`),
       ]);
       setTransactions(tx);
       setSubscriptions(subs);
@@ -212,6 +215,7 @@ function Chrome({ children }: { children: ReactNode }) {
       setSummary(sum);
       setAccounts(accs);
       setTransfers(xf);
+      setGoals(gs);
     } catch (e) { notify("Load failed: " + String(e)); }
   }, [month, notify]);
 
@@ -242,7 +246,7 @@ function Chrome({ children }: { children: ReactNode }) {
 
   const ctx: FinanceCtx = {
     month, setMonth, categories, settings, transactions, subscriptions,
-    budgets, summary, sym, expenseCats, incomeCats, accounts, transfers, reloadKey, reload, reloadCategories,
+    budgets, summary, sym, expenseCats, incomeCats, accounts, transfers, goals, reloadKey, reload, reloadCategories,
     notify, toast, confirm, undo, betaDesign,
   };
 

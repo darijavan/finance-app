@@ -162,7 +162,7 @@ function CashFlowChart({ points, sym }: { points: TrendPoint[]; sym: string }) {
 }
 
 export default function DashboardPage() {
-  const { summary, sym, month, accounts, notify, betaDesign } = useFinance();
+  const { summary, sym, month, accounts, goals, notify, betaDesign } = useFinance();
   const [trends, setTrends] = useState<TrendPoint[] | null>(null);
 
   useEffect(() => {
@@ -321,6 +321,34 @@ export default function DashboardPage() {
     </div>
   );
 
+  const goalsPanel = (
+    <div className="panel">
+      <h2>Savings goals</h2>
+      {goals.length === 0 && (
+        <div className="empty">
+          No savings goals yet — <Link href={`/accounts?month=${month}`}>create one</Link>.
+        </div>
+      )}
+      {goals.map((goal) => {
+        const current = Math.max(0, goal.current || 0);
+        const percent = goal.target_amount > 0 ? Math.min(100, (current / goal.target_amount) * 100) : 0;
+        const complete = current >= goal.target_amount;
+
+        return (
+          <div key={goal.id} className="budget-row">
+            <div className="top">
+              <span>{complete ? "🎉 " : ""}{goal.name}<span className="muted"> — {goal.account_name}{goal.target_date ? ` · by ${goal.target_date}` : ""}</span></span>
+              <span className={complete ? "amount-income" : "muted"}>{fmtCur(current, goal.currency || "ILS")} / {fmtCur(goal.target_amount, goal.currency || "ILS")} ({Math.round(percent)}%)</span>
+            </div>
+            <div className="bar">
+              <span style={{ width: `${percent}%`, background: complete ? "var(--green)" : "var(--accent)" }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   const reimbursePanel = (
     <div className="panel">
       <h2>Reimburse next time</h2>
@@ -390,6 +418,7 @@ export default function DashboardPage() {
         {observationsPanel}
         <div className="grid2">{netWorthChartPanel}{cashFlowChartPanel}</div>
         <div className="grid2">{spendingByCategoryPanel}{budgetsPanel}</div>
+        {goalsPanel}
         {reimbursePanel}
         {dueSubsPanel}
       </>
@@ -423,6 +452,7 @@ export default function DashboardPage() {
           {observationsPanel}
           {reimbursePanel}
           {dueSubsPanel}
+          {goalsPanel}
         </div>
         <div className="dash-right">
           {spendingByCategoryPanel}
