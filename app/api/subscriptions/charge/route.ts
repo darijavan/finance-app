@@ -15,7 +15,6 @@ export async function POST(req: NextRequest) {
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const month = searchParams.get("month") || today.slice(0, 7);
   if (!/^\d{4}-\d{2}$/.test(month)) {
-    
 
     return NextResponse.json({ error: "month must be YYYY-MM" }, { status: 400 });
   }
@@ -23,51 +22,59 @@ export async function POST(req: NextRequest) {
   const insert = db.prepare(
     `INSERT OR IGNORE INTO transactions(amount,currency,direction,category_id,date,note,account_id,subscription_id,
       account_amount,account_currency,account_fx_rate,account_fx_date,account_fx_source,created_at)
-     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
   );
-  db.exec("BEGIN");
-  let created = 0;
-  const chargedNames: string[] = [];
+  const pending: { sub: any; date: string; snap: any }[] = [];
   try {
-    for (const s of subs as any[]) {
-      // The button may backfill a past month, but must never book charges dated
-      // in the future, ahead of the due day, or before the subscription began.
-      const date = chargeDate(s, month, today);
-      if (date != null) {
-        const alreadyCharged = db.prepare(
-          "SELECT 1 FROM transactions WHERE subscription_id=? AND substr(date, 1, 7)=?",
-        ).get(s.id, month);
-        if (alreadyCharged) continue;
-        let snap: any = { account_amount: null, account_currency: null, account_fx_rate: null, account_fx_date: null, account_fx_source: null };
-        if (s.account_id != null) {
-          const account = db.prepare("SELECT currency FROM accounts WHERE id=?").get(s.account_id) as any;
-          if (!account) throw new Error(`subscription account ${s.account_id} not found`);
-          const fx = await snapshotConversion(s.amount, s.currency || "ILS", account.currency, date);
-          snap = { account_amount: fx.amount, account_currency: account.currency, account_fx_rate: fx.rate, account_fx_date: fx.rate_date, account_fx_source: fx.source };
-        }
-        const result = insert.run(
-          s.amount, s.currency || "ILS", s.direction, s.category_id, date,
-          `[auto] ${s.name} (${s.frequency})`, s.account_id ?? null, s.id,
-          snap.account_amount, snap.account_currency, snap.account_fx_rate, snap.account_fx_date, snap.account_fx_source, now.toISOString(),
-        );
-        if (result.changes > 0) {
-          created++;
-          chargedNames.push(s.name);
-        }
+    // Fetch and cache dated quotes before the ledger write transaction.
+    for (const sub of subs) {
+      const date = chargeDate(sub, month, today);
+      if (date == null) continue;
+      const alreadyCharged = db.prepare(
+        "SELECT 1 FROM transactions WHERE subscription_id=? AND substr(date, 1, 7)=?",
+      ).get(sub.id, month);
+      if (alreadyCharged) continue;
+      let snap: any = { account_amount: null, account_currency: null, account_fx_rate: null, account_fx_date: null, account_fx_source: null };
+      if (sub.account_id != null) {
+        const account = db.prepare("SELECT currency FROM accounts WHERE id=?").get(sub.account_id) as any;
+        if (!account) throw new Error(`subscription account ${sub.account_id} not found`);
+        const fx = await snapshotConversion(sub.amount, sub.currency || "ILS", account.currency, date);
+        snap = { account_amount: fx.amount, account_currency: account.currency, account_fx_rate: fx.rate, account_fx_date: fx.rate_date, account_fx_source: fx.source };
+      }
+      pending.push({ sub, date, snap });
+    }
+
+    db.exec("BEGIN IMMEDIATE");
+    let created = 0;
+    const chargedNames: string[] = [];
+    for (const { sub, date, snap } of pending) {
+      // Recheck once the transaction holds the writer lock, keeping the endpoint idempotent.
+      const alreadyCharged = db.prepare(
+        "SELECT 1 FROM transactions WHERE subscription_id=? AND substr(date, 1, 7)=?",
+      ).get(sub.id, month);
+      if (alreadyCharged) continue;
+      const result = insert.run(
+        sub.amount, sub.currency || "ILS", sub.direction, sub.category_id, date,
+        `[auto] ${sub.name} (${sub.frequency})`, sub.account_id ?? null, sub.id,
+        snap.account_amount, snap.account_currency, snap.account_fx_rate, snap.account_fx_date, snap.account_fx_source, now.toISOString(),
+      );
+      if (result.changes > 0) {
+        created++;
+        chargedNames.push(sub.name);
       }
     }
     db.exec("COMMIT");
+    if (created > 0) {
+      logActivity(db, "transaction", "create", null,
+        `Charged ${chargedNames.join(", ")} for ${month}`);
+    }
+
+    return NextResponse.json({ created });
   } catch (e) {
-    db.exec("ROLLBACK");
-    
+    try {
+      db.exec("ROLLBACK");
+    } catch {}
 
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
-  if (created > 0) {
-    logActivity(db, "transaction", "create", null,
-      `Charged ${chargedNames.join(", ")} for ${month}`);
-  }
-  
-
-  return NextResponse.json({ created });
 }

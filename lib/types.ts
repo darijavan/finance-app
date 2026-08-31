@@ -83,6 +83,10 @@ export interface Subscription {
   monthly_equivalent?: number | null;
   last_charge_amount?: number | null; // amount of the most recent automatic charge
   last_charge_currency?: Currency | null; // native currency of the most recent automatic charge
+  last_charge_id?: number | null;
+  last_charge_account_amount?: number | null;
+  last_charge_account_currency?: Currency | null;
+  last_charge_date?: string | null;
 }
 
 export interface Budget {

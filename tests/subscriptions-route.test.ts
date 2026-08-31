@@ -32,15 +32,15 @@ describe("subscriptions routes", () => {
         return { all: () => [{ id: 1, name: "Music", amount: 12, frequency: "monthly" }, { id: 2, name: "Yearly", amount: 120, frequency: "yearly" }] };
       }
 
-      return { all: () => [{ subscription_id: 1, amount: 10, currency: "USD" }] };
+      return { all: () => [{ id: 91, subscription_id: 1, amount: 10, currency: "USD", account_amount: 43328.36, account_currency: "MGA", date: "2026-08-28" }] };
     });
 
     const response = await collection.GET();
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual([
-      { id: 1, name: "Music", amount: 12, frequency: "monthly", monthly_equivalent: 12, last_charge_amount: 10, last_charge_currency: "USD" },
-      { id: 2, name: "Yearly", amount: 120, frequency: "yearly", monthly_equivalent: null, last_charge_amount: null, last_charge_currency: null },
+      { id: 1, name: "Music", amount: 12, frequency: "monthly", monthly_equivalent: 12, last_charge_amount: 10, last_charge_currency: "USD", last_charge_id: 91, last_charge_account_amount: 43328.36, last_charge_account_currency: "MGA", last_charge_date: "2026-08-28" },
+      { id: 2, name: "Yearly", amount: 120, frequency: "yearly", monthly_equivalent: null, last_charge_amount: null, last_charge_currency: null, last_charge_id: null, last_charge_account_amount: null, last_charge_account_currency: null, last_charge_date: null },
     ]);
   });
 
