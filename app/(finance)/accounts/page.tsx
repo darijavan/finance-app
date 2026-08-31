@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState, type DragEvent } from "react";
+import { useEffect, useState, type DragEvent } from "react";
 import { useFinance } from "../store";
-import { API, getJSON, sendJSON, fmt, fmtCur, CURRENCIES } from "@/lib/client";
-import type { Transfer, AccountType, Goal } from "@/lib/types";
+import { API, sendJSON, fmt, fmtCur, CURRENCIES } from "@/lib/client";
+import type { Transfer, AccountType } from "@/lib/types";
 
 const TYPES: { v: AccountType; label: string }[] = [
   { v: "bank", label: "Bank" },
@@ -14,7 +14,7 @@ const TYPES: { v: AccountType; label: string }[] = [
 
 export default function AccountsPage() {
   const {
-    settings, accounts, transfers, reload, notify, confirm, undo,
+    settings, accounts, transfers, goals, reload, notify, confirm, undo,
   } = useFinance();
 
   const [aName, setAName] = useState("");
@@ -145,17 +145,10 @@ export default function AccountsPage() {
 
   // Savings goals — target is in the linked account's currency; progress is
   // that account's balance.
-  const [goals, setGoals] = useState<Goal[]>([]);
   const [gName, setGName] = useState("");
   const [gTarget, setGTarget] = useState("");
   const [gAccount, setGAccount] = useState("");
   const [gDate, setGDate] = useState("");
-
-  const loadGoals = useCallback(async () => {
-    try { setGoals(await getJSON<Goal[]>(`${API}/goals`)); }
-    catch { /* non-fatal; section just stays empty */ }
-  }, []);
-  useEffect(() => { loadGoals(); }, [loadGoals, accounts]);
 
   const saveGoal = async () => {
     const target = parseFloat(gTarget);
@@ -171,7 +164,7 @@ export default function AccountsPage() {
     });
     notify("Goal added");
     setGName(""); setGTarget(""); setGAccount(""); setGDate("");
-    loadGoals();
+    reload();
   };
 
   const deleteGoal = async (id: number) => {
@@ -185,7 +178,7 @@ export default function AccountsPage() {
     return;
     const r = await sendJSON<{ ok: boolean; log_id: number | null }>(`${API}/goals/${id}`, "DELETE");
     notify("Goal deleted");
-    loadGoals();
+    reload();
     if (r.log_id != null) undo({ message: "Goal deleted.", logId: r.log_id });
   };
 
