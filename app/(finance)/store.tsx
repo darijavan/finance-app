@@ -11,6 +11,7 @@ import {
 } from "@/lib/client";
 import { withQueryParam } from "@/lib/query";
 import { readBetaDesign, writeBetaDesign } from "@/lib/design-preference";
+import { readV2Theme, writeV2Theme, type V2Theme } from "@/lib/theme-preference";
 import type {
   Category, Transaction, Subscription, Budget, Summary, Settings, Account, Transfer, Goal,
 } from "@/lib/types";
@@ -100,6 +101,7 @@ function Chrome({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [betaDesign, setBetaDesign] = useState(false);
+  const [v2Theme, setV2Theme] = useState<V2Theme>("light");
 
   // Confirmation dialog state (rendered as a native <dialog>)
   const [confirmState, setConfirmState] = useState<ConfirmState>({ open: false, title: "", message: "" });
@@ -189,6 +191,11 @@ function Chrome({ children }: { children: ReactNode }) {
   useEffect(() => { reloadCategories(); }, [reloadCategories]);
   useEffect(() => { setSelectedMonth(urlMonth); }, [urlMonth]);
   useEffect(() => { setBetaDesign(readBetaDesign(window.localStorage)); }, []);
+  useEffect(() => {
+    const stored = readV2Theme(window.localStorage);
+    const system = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    setV2Theme(stored ?? system);
+  }, []);
 
   const toggleBetaDesign = () => {
     setBetaDesign((enabled) => {
@@ -196,6 +203,11 @@ function Chrome({ children }: { children: ReactNode }) {
 
       return !enabled;
     });
+  };
+
+  const setTheme = (theme: V2Theme) => {
+    setV2Theme(theme);
+    writeV2Theme(window.localStorage, theme);
   };
 
   const loadMonth = useCallback(async () => {
@@ -267,10 +279,17 @@ function Chrome({ children }: { children: ReactNode }) {
     </button>
   );
 
+  const modeToggle = (
+    <div className="mode-toggle" role="group" aria-label="Color theme">
+      <button type="button" aria-pressed={v2Theme === "light"} aria-label="Light theme" onClick={() => setTheme("light")}>☀</button>
+      <button type="button" aria-pressed={v2Theme === "dark"} aria-label="Dark theme" onClick={() => setTheme("dark")}>☾</button>
+    </div>
+  );
+
   return (
     <Ctx.Provider value={ctx}>
       {betaDesign ? (
-        <div className="app" data-design="v2">
+        <div className="app" data-design="v2" data-theme={v2Theme}>
           <aside className="sidebar">
             <div className="sidebar-head">
               <div className="brand">
@@ -304,6 +323,7 @@ function Chrome({ children }: { children: ReactNode }) {
             <div className="topbar">
               <h1>{activeTab.v2Title}</h1>
               <div className="month-picker">
+                {modeToggle}
                 <span className="selector">
                   <label htmlFor="pick-currency">Currency</label>
                   <select id="pick-currency" value={settings.currency} onChange={(e) => setCurrency(e.target.value)}>

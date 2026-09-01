@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useFinance } from "./store";
 import { API, getJSON, fmt, fmtCur } from "@/lib/client";
+import { sparklinePoints } from "@/lib/sparkline";
 import type { TrendPoint } from "@/lib/types";
 
 const CHART_W = 560;
@@ -99,18 +100,14 @@ function HeroSparkline({ points }: { points: TrendPoint[] }) {
 
     return null;
   const w = 540, h = 100, pad = 6;
-  const vals = recent.map((p) => p.net_worth);
-  const min = Math.min(...vals);
-  const max = Math.max(...vals);
-  const xOf = (i: number) => (i / (recent.length - 1)) * w;
-  const yOf = (v: number) => pad + (1 - (v - min) / (max - min || 1)) * (h - pad * 2);
-  const path = recent.map((p, i) => `${i === 0 ? "M" : "L"}${xOf(i)},${yOf(p.net_worth)}`).join(" ");
+  const coords = sparklinePoints(recent.map((p) => p.net_worth), w, h, pad);
+  const path = coords.map((c, i) => `${i === 0 ? "M" : "L"}${c.x},${c.y}`).join(" ");
 
   return (
     <div className="hero-sparkline">
       <svg viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Net worth trend, last 6 months">
         <path d={path} fill="none" stroke="var(--accent)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-        {recent.map((p, i) => <circle key={p.month} cx={xOf(i)} cy={yOf(p.net_worth)} r={3} fill="var(--accent)" />)}
+        {coords.map((c, i) => <circle key={recent[i].month} cx={c.x} cy={c.y} r={3} fill="var(--accent)" />)}
       </svg>
       <div className="row" style={{ justifyContent: "space-between" }}>
         {recent.map((p) => <span key={p.month} className="muted" style={{ fontSize: 11 }}>{monthLabel(p.month)}</span>)}

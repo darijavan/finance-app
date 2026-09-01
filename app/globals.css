@@ -245,26 +245,27 @@ dialog.modal::backdrop { background: rgba(0,0,0,.55); }
   display: flex; align-items: stretch; max-width: none; min-height: 100vh;
   margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: var(--v2-font);
 }
-@media (prefers-color-scheme: dark) {
-  .app[data-design="v2"] {
-    --v2-bg: #16191c;
-    --v2-surface: #212429;
-    --v2-surface-recessed: #16191c;
-    --v2-border: #2e3238;
-    --v2-text: #faf9f6;
-    --v2-muted: #989da3;
-    --v2-muted-2: #989da3;
-    --v2-accent: #4ed4e4;
-    --v2-accent-fill: #39a0b5;
-    --v2-accent-soft: #1e2d33;
-    --v2-green: #54a076;
-    --v2-green-soft: #16211e;
-    --v2-red: #c76e67;
-    --v2-red-soft: #2e1d1b;
-    --v2-amber: #d8a75a;
-    --v2-amber-soft: #2b2418;
-    --v2-neutral-soft: #2e3238;
-  }
+/* Manual override via the header's sun/moon toggle (JS sets data-theme after
+   reading localStorage, falling back to prefers-color-scheme on first mount —
+   same flash-then-settle tradeoff the beta opt-in itself already accepts). */
+.app[data-design="v2"][data-theme="dark"] {
+  --v2-bg: #16191c;
+  --v2-surface: #212429;
+  --v2-surface-recessed: #16191c;
+  --v2-border: #2e3238;
+  --v2-text: #faf9f6;
+  --v2-muted: #989da3;
+  --v2-muted-2: #989da3;
+  --v2-accent: #4ed4e4;
+  --v2-accent-fill: #39a0b5;
+  --v2-accent-soft: #1e2d33;
+  --v2-green: #54a076;
+  --v2-green-soft: #16211e;
+  --v2-red: #c76e67;
+  --v2-red-soft: #2e1d1b;
+  --v2-amber: #d8a75a;
+  --v2-amber-soft: #2b2418;
+  --v2-neutral-soft: #2e3238;
 }
 .app[data-design="v2"] * { font-family: var(--v2-font); }
 .app[data-design="v2"] input, .app[data-design="v2"] select, .app[data-design="v2"] textarea {
@@ -306,6 +307,11 @@ dialog.modal::backdrop { background: rgba(0,0,0,.55); }
 .app[data-design="v2"] .selector label::after { content: ":"; }
 .app[data-design="v2"] .selector select { min-height: 0; height: auto; border: none; background: transparent;
   padding: 0 16px 0 0; font-size: 13px; font-weight: 600; }
+.app[data-design="v2"] .mode-toggle { display: inline-flex; gap: 2px; height: 32px; padding: 2px;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--v2-neutral-soft); }
+.app[data-design="v2"] .mode-toggle button { display: grid; place-items: center; width: 30px; height: 100%;
+  border: none; border-radius: 6px; background: transparent; color: var(--v2-muted-2); font-size: 14px; line-height: 1; }
+.app[data-design="v2"] .mode-toggle button[aria-pressed="true"] { background: var(--v2-surface); color: var(--v2-accent); }
 .app[data-design="v2"] .design-toggle { min-height: 0; height: 32px; padding: 0 10px; border-radius: 8px;
   background: var(--v2-surface); }
 .app[data-design="v2"] .switch-track { background: var(--v2-neutral-soft); }
@@ -416,10 +422,14 @@ dialog.modal::backdrop { background: rgba(0,0,0,.55); }
   .app[data-design="v2"] .user-info { display: none; }
   .app[data-design="v2"] .content-area { min-width: 0; max-width: 100%; padding: 16px max(14px, env(safe-area-inset-right))
     calc(24px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
-  .app[data-design="v2"] .topbar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
-    row-gap: 12px; margin-bottom: 16px; padding-bottom: 16px; }
-  .app[data-design="v2"] .topbar h1 { grid-column: 1 / -1; font-size: 18px; }
+  .app[data-design="v2"] .topbar { position: relative; display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px; row-gap: 12px; margin-bottom: 16px; padding-bottom: 16px; }
+  .app[data-design="v2"] .topbar h1 { grid-column: 1 / -1; padding-right: 88px; font-size: 18px; }
   .app[data-design="v2"] .month-picker { display: contents; }
+  /* Kept out of the topbar's 3-column grid (like .user-profile in the
+     sidebar-head) so it doesn't consume a currency/month/beta-toggle slot. */
+  .app[data-design="v2"] .mode-toggle { position: absolute; top: 0; right: 0; height: 44px; padding: 2px; }
+  .app[data-design="v2"] .mode-toggle button { width: 38px; }
   .app[data-design="v2"] .selector { min-width: 0; height: auto; min-height: 44px; padding-inline: 8px; gap: 4px; }
   .app[data-design="v2"] .selector label { white-space: nowrap; }
   .app[data-design="v2"] .selector select { min-width: 0; width: 100%; padding-right: 12px; }
