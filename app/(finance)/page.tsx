@@ -219,12 +219,12 @@ export default function DashboardPage() {
         <div className="value green">{fmt(summary.earned, sym)}</div>
       </div>
       <div className="card">
-        <div className="label">Net</div>
-        <div className={`value ${summary.net >= 0 ? "green" : "red"}`}>{fmt(summary.net, sym)}</div>
-      </div>
-      <div className="card">
         <div className="label">Recurring / mo</div>
         <div className="value yellow">{fmt(summary.recurring_monthly, sym)}</div>
+      </div>
+      <div className="card">
+        <div className="label">Remaining subscriptions</div>
+        <div className="value yellow">{fmt(summary.remaining_subscriptions, sym)}</div>
       </div>
     </div>
   );
@@ -410,6 +410,78 @@ export default function DashboardPage() {
     </div>
   );
 
+  const v2SpendingBudgetPanel = (
+    <section className="panel spending-budget-panel" aria-labelledby="spending-budgets">
+      <h2 id="spending-budgets">Spending &amp; budgets</h2>
+      <div className="spending-section">
+        <span className="spending-section-label">Spending by category</span>
+        {summary.by_category.length === 0 && (
+          <div className="empty">
+            No expenses this month — <Link href={`/transactions?month=${month}`}>log one</Link>.
+          </div>
+        )}
+        {summary.by_category.map((c) => (
+          <div key={c.name} className="spending-row">
+            <div className="top">
+              <span><span className="category-dot" style={{ background: c.color }} />{c.name}</span>
+              <span>{fmt(c.total, sym)}</span>
+            </div>
+            <div className="spending-progress"><span style={{ width: `${(c.total / maxCat) * 100}%`, background: c.color }} /></div>
+          </div>
+        ))}
+      </div>
+      <div className="spending-section">
+        <span className="spending-section-label">Budgets</span>
+        {summary.budgets.length === 0 && (
+          <div className="empty">
+            No budgets set — <Link href={`/budgets?month=${month}`}>create one</Link>.
+          </div>
+        )}
+        {summary.budgets.map((b, i) => {
+          const pct = b.budget > 0 ? (b.actual / b.budget) * 100 : 0;
+          const over = b.actual > b.budget;
+
+          return (
+            <div key={i} className="spending-row">
+              <div className="top">
+                <span><span className="category-dot" style={{ background: over ? "var(--red)" : b.color }} />{b.category_name}{b.rollover ? <span className="muted" style={{ fontSize: 11 }}> ↻</span> : null}</span>
+                <span className={over ? "amount-expense" : "muted"}>{fmt(b.actual, sym)} / {fmt(b.budget, sym)} ({Math.round(pct)}%)</span>
+              </div>
+              <div className="spending-progress"><span style={{ width: `${Math.min(100, pct)}%`, background: over ? "var(--red)" : b.color }} /></div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+
+  const v2OutstandingPanel = (
+    <section className="panel outstanding-panel" aria-labelledby="outstanding-items">
+      <h2 id="outstanding-items">Outstanding items</h2>
+      {summary.reimbursable_expenses.length === 0 && summary.due_subscriptions.length === 0 && (
+        <div className="empty">No reimbursements or subscriptions waiting.</div>
+      )}
+      <ul className="outstanding-list">
+        {summary.reimbursable_expenses.map((expense) => (
+          <li key={`expense-${expense.id}`} className="outstanding-item">
+            <div><strong>{expense.note || "Untitled expense"}</strong><span className="muted">{expense.category_name} · {expense.date}</span></div>
+            <span className="tag reimbursement-tag status-pill">Reimbursement pending</span>
+            <span className="amount-expense">-{fmtCur(expense.amount, expense.currency)}</span>
+          </li>
+        ))}
+        {summary.due_subscriptions.map((sub) => (
+          <li key={`subscription-${sub.id}`} className="outstanding-item">
+            <div><strong>{sub.name}</strong><span className="muted">{sub.date}</span></div>
+            <span className={`tag subscription-tag status-pill${sub.overdue ? " overdue" : ""}`}>{sub.overdue ? "Overdue" : "Due"}</span>
+            <span className="amount-expense">-{fmtCur(sub.amount, sub.currency)}</span>
+          </li>
+        ))}
+      </ul>
+      {summary.reimbursable_expenses.length > 0 && <div className="outstanding-total"><span>Reimbursements</span><span className="amount-expense">-{fmt(summary.remaining_reimbursements, sym)}</span></div>}
+      {summary.due_subscriptions.length > 0 && <div className="outstanding-total"><span>Subscriptions</span><span className="amount-expense">-{fmt(summary.remaining_subscriptions, sym)}</span></div>}
+    </section>
+  );
+
   if (!betaDesign) {
 
     return (
@@ -450,13 +522,11 @@ export default function DashboardPage() {
       <div className="dash-split">
         <div className="dash-left">
           {observationsPanel}
-          {reimbursePanel}
-          {dueSubsPanel}
+          {v2OutstandingPanel}
           {goalsPanel}
         </div>
         <div className="dash-right">
-          {spendingByCategoryPanel}
-          {budgetsPanel}
+          {v2SpendingBudgetPanel}
         </div>
       </div>
 
