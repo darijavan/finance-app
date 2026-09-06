@@ -128,14 +128,14 @@ it("describes the selected date range in filtered result headings", async () => 
 it("marks transfers into the filtered account as positive", async () => {
   vi.useFakeTimers();
   mocks.getJSON.mockImplementation((url: string) => Promise.resolve(url.includes("/transfers")
-    ? [{ id: 10, date: "2026-07-17", from_account: 2, to_account: 7, from_name: "Cash", to_name: "Checking", amount: 120, currency: "ILS", to_amount: 95, to_currency: "USD", note: "Deposit" }]
+    ? [{ id: 10, date: "2026-07-17", from_account: 2, to_account: 7, from_name: "Cash", to_name: "Checking", amount: 120, currency: "ILS", from_amount: 137, from_currency: "EUR", to_amount: 95, to_currency: "USD", note: "Deposit" }]
     : []));
 
   render(<TransactionsPage />);
   await act(async () => { await vi.advanceTimersByTimeAsync(250); });
 
   expect(screen.getByText("+120").className).toContain("amount-income");
-  expect(screen.getByText("+95").className).toContain("amount-income");
+  expect(screen.getByText("+137").className).toContain("amount-income");
 });
 
 it("ignores an older account transfer response after the filter changes", async () => {

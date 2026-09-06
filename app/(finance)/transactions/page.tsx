@@ -504,12 +504,12 @@ export default function TransactionsPage() {
         <p className="muted">Transfers are account movements, not transactions.</p>
         {filteredTransfers.length === 0 ? <div className="empty">No transfers involving this account.</div> : (
           <table>
-            <thead><tr><th className="date-cell">Date</th><th>Route</th><th>Note</th><th className="right">Amount</th><th className="right" title="Immutable amount in the selected account's currency">Account amount</th></tr></thead>
+            <thead><tr><th className="date-cell">Date</th><th>Route</th><th>Note</th><th className="right">Amount</th><th className="right" title="Immutable amount in the origin account's currency">Account amount</th></tr></thead>
             <tbody>
               {filteredTransfers.map((transfer) => {
                 const incoming = transfer.to_account === Number(fAccount);
-                const accountAmount = incoming ? transfer.to_amount : transfer.from_amount;
-                const accountCurrency = incoming ? transfer.to_currency : transfer.from_currency;
+                const accountAmount = transfer.from_amount;
+                const accountCurrency = transfer.from_currency;
 
                 return (
                   <tr key={transfer.id}>
