@@ -159,8 +159,10 @@ dialog.modal::backdrop { background: rgba(0,0,0,.55); }
     display: inline-flex; align-items: center; }
   .icon-btn { width: 36px; height: 36px; }
   .toast, .undo-snackbar { bottom: calc(18px + env(safe-area-inset-bottom)); }
-  /* Keep dense tables readable on phones; this covers note/description cells on every screen. */
-  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; font-size: 13px; }
+  /* Shared mobile table behavior: descriptions wrap instead of widening every screen's table. */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: normal; font-size: 13px; }
+  td:not(.actions) { overflow-wrap: anywhere; }
+  .date-cell, td.right, .amount-expense, .amount-income { white-space: nowrap; }
   /* iOS date controls have a wide intrinsic size; allow the field and control to
      shrink so both columns remain aligned instead of overflowing the row. */
   .row .field { flex: 1 1 calc(50% - 4px); min-width: 0; }
