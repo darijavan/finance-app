@@ -24,6 +24,7 @@ export interface Transaction {
   reimbursable: boolean;
   reimbursed_at: string | null;
   receipt_name: string | null;
+  receipt_mime: string | null;
   created_at: string;
   category_name?: string;
   category_color?: string;

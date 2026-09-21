@@ -11,6 +11,7 @@ import { useSort, useSorted, SortHeader } from "@/lib/sort";
 import { withQueryParam } from "@/lib/query";
 import { withReceiptName } from "@/lib/receipt-state";
 import { tagTextColor } from "@/lib/tag-color";
+import ReceiptViewer from "./receipt-viewer";
 
 const FILTER_KEYS = ["q", "account_id", "category_id", "from", "to", "min", "max", "reimbursable"];
 
@@ -66,6 +67,7 @@ export default function TransactionsPage() {
   const [tReceipt, setTReceipt] = useState<File | null>(null);
   const [editId, setEditId] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
+  const [viewingReceipt, setViewingReceipt] = useState<Transaction | null>(null);
   const [monthFrom, monthTo] = monthDateRange(month);
   const followsMonthFrom = useRef(!searchParams.get("from"));
   const followsMonthTo = useRef(!searchParams.get("to"));
@@ -452,7 +454,8 @@ export default function TransactionsPage() {
                 <td className="muted">
                   {t.is_subscription_charge && <span className="tag subscription-tag">↻ Subscription · read-only</span>}{" "}
                   {t.reimbursable && <span className="tag reimbursement-tag">{t.reimbursed_at ? "✓ Reimbursed" : "↻ Reimbursable"}</span>}{" "}
-                  {t.receipt_name && <a className="linkbtn" href={`${API}/transactions/${t.id}/receipt`}>📎 Receipt</a>}{" "}
+                  {t.receipt_name && <button className="linkbtn" type="button"
+                    aria-label={`View receipt ${t.receipt_name}`} onClick={() => setViewingReceipt(t)}>📎 Receipt</button>}{" "}
                   {t.note}
                 </td>
                 <td className="muted">{t.account_name || "—"}</td>
@@ -526,6 +529,7 @@ export default function TransactionsPage() {
         )}
       </div>
     )}
+    {viewingReceipt && <ReceiptViewer transaction={viewingReceipt} onClose={() => setViewingReceipt(null)} />}
     </>
   );
 }

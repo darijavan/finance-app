@@ -138,6 +138,19 @@ dialog.modal::backdrop { background: rgba(0,0,0,.55); }
 .modal p { margin: 0 0 10px; color: var(--text); font-size: 14px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 
+dialog.receipt-viewer { width: min(1000px, calc(100% - 32px)); max-width: none; height: min(800px, calc(100% - 32px));
+  padding: 14px; overflow: hidden; }
+.receipt-viewer-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.receipt-viewer-header h3 { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.receipt-viewer-header a { text-decoration: none; }
+.receipt-pdf { width: 100%; height: calc(100% - 52px); border: 0; background: white; }
+.receipt-image-controls { display: flex; justify-content: center; gap: 8px; margin-bottom: 8px; }
+.receipt-image-stage { height: calc(100% - 98px); display: flex; align-items: center; justify-content: center;
+  overflow: hidden; background: var(--bg); border-radius: 8px; }
+.receipt-image-stage img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; transform-origin: center; user-select: none; }
+.receipt-image-stage.zoomed { cursor: grab; touch-action: none; }
+.receipt-image-stage.zoomed:active { cursor: grabbing; }
+
 /* Undo snackbar (bottom) */
 .undo-snackbar { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
   background: var(--panel-2); border: 1px solid var(--border); padding: 10px 12px 10px 16px;
@@ -179,6 +192,11 @@ dialog.modal::backdrop { background: rgba(0,0,0,.55); }
   .cards { grid-template-columns: repeat(2, 1fr); }
   .card .value { font-size: 18px; }
   .topbar { gap: 8px; }
+  dialog.receipt-viewer { width: calc(100% - 16px); height: calc(100% - 16px); padding: 10px; }
+  .receipt-viewer-header { align-items: flex-start; flex-direction: column; }
+  .receipt-viewer-header .modal-actions { width: 100%; margin: 0; justify-content: flex-start; }
+  .receipt-pdf { height: calc(100% - 94px); }
+  .receipt-image-stage { height: calc(100% - 140px); }
 }
 @media (max-width: 380px) {
   .cards { grid-template-columns: 1fr; }
