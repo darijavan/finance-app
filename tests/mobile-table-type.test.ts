@@ -10,10 +10,10 @@ test("mobile tables wrap long descriptions at the compact text size", () => {
   assert.match(mobileRules, /td:not\(\.actions\)\s*\{[^}]*overflow-wrap:\s*anywhere/);
 });
 
-test("all mobile tables retain readable columns inside their panels", () => {
+test("all mobile tables scroll while retaining readable data columns", () => {
   const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
   const mobileRules = css.slice(css.indexOf("@media (max-width: 640px)"));
 
-  assert.match(mobileRules, /\.panel\s*\{[^}]*overflow-x:\s*auto/);
-  assert.match(mobileRules, /table\s*\{[^}]*min-width:\s*760px/);
+  assert.match(mobileRules, /table\s*\{[^}]*display:\s*block[^}]*overflow-x:\s*auto/);
+  assert.match(mobileRules, /th:not\(:last-child\),\s*td:not\(\.actions\)\s*\{[^}]*min-width:\s*112px/);
 });
