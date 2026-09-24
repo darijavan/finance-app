@@ -95,6 +95,8 @@ input[type="checkbox"] { min-height: 0; width: 16px; height: 16px; padding: 0; a
 .icon-btn.danger:hover, .icon-btn.danger:focus-visible { color: var(--red); border-color: var(--red); }
 
 table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.transfer-table { min-width: 760px; }
 th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); }
 th { color: var(--muted); font-weight: 600; font-size: 12px; }
 .table-total th, .table-total td { border-top: 2px solid var(--border); border-bottom: 0; font-variant-numeric: tabular-nums; }
