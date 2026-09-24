@@ -295,9 +295,8 @@ export default function AccountsPage() {
       <h2 style={{ marginTop: 22 }}>Recent transfers</h2>
       {transfers.length === 0 && <div className="empty">No transfers yet.</div>}
       {transfers.length > 0 && (
-        <div className="table-scroll">
-          <table className="transfer-table">
-            <thead><tr>
+        <table>
+          <thead><tr>
             <th className="date-cell">Date</th><th>From</th><th>To</th><th className="right">Amount</th><th className="right" title="Immutable debit in the origin account's currency">From amount</th><th>Note</th><th></th>
           </tr></thead>
           <tbody>
@@ -319,7 +318,6 @@ export default function AccountsPage() {
             ))}
           </tbody>
         </table>
-        </div>
       )}
     </div>
 

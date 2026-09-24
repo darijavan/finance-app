@@ -10,9 +10,10 @@ test("mobile tables wrap long descriptions at the compact text size", () => {
   assert.match(mobileRules, /td:not\(\.actions\)\s*\{[^}]*overflow-wrap:\s*anywhere/);
 });
 
-test("transfer history keeps its columns readable inside a scroll container", () => {
+test("all mobile tables retain readable columns inside their panels", () => {
   const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
+  const mobileRules = css.slice(css.indexOf("@media (max-width: 640px)"));
 
-  assert.match(css, /\.table-scroll\s*\{[^}]*overflow-x:\s*auto/);
-  assert.match(css, /\.transfer-table\s*\{[^}]*min-width:\s*760px/);
+  assert.match(mobileRules, /\.panel\s*\{[^}]*overflow-x:\s*auto/);
+  assert.match(mobileRules, /table\s*\{[^}]*min-width:\s*760px/);
 });
