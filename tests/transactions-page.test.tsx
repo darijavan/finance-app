@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, render } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -40,4 +40,11 @@ it("re-fetches active all-month filters after the provider reloads", async () =>
   view.rerender(<TransactionsPage />);
   await act(async () => { await vi.advanceTimersByTimeAsync(250); });
   expect(mocks.getJSON).toHaveBeenCalledTimes(2);
+});
+
+it("offers PDF files by extension when creating a transaction", () => {
+  render(<TransactionsPage />);
+
+  const receipt = screen.getByLabelText("Receipt (PDF or image)") as HTMLInputElement;
+  expect(receipt.accept).toContain(".pdf");
 });

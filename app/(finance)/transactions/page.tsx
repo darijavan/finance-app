@@ -345,8 +345,8 @@ export default function TransactionsPage() {
           Reimbursable
         </label>
         <div className="field">
-          <label>Receipt (PDF or image)</label>
-          <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp"
+          <label htmlFor="transaction-receipt">Receipt (PDF or image)</label>
+          <input id="transaction-receipt" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
             onChange={(e) => setTReceipt(e.target.files?.[0] ?? null)} />
         </div>
         {editId != null && <button className="btn secondary" onClick={cancelEdit}>Cancel</button>}
@@ -470,7 +470,7 @@ export default function TransactionsPage() {
                     {t.reimbursable && !t.reimbursed_at && <button className="btn secondary small" title="Mark reimbursed"
                       aria-label={`Mark transaction of ${t.date} reimbursed`} onClick={() => markReimbursed(t.id)}>Reimburse</button>}{" "}
                     <label className="btn secondary small" title="Attach receipt" aria-label={`Attach receipt to transaction of ${t.date}`}>
-                      <input hidden type="file" accept="application/pdf,image/jpeg,image/png,image/webp"
+                      <input hidden type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
                         onChange={(e) => { const receipt = e.target.files?.[0]; if (receipt) void uploadReceipt(t.id, receipt).catch((error) => notify(`Receipt upload failed: ${String(error)}`)); e.currentTarget.value = ""; }} />
                       📎
                     </label>{" "}
