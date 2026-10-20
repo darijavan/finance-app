@@ -70,38 +70,41 @@ export default function TransactionsPage() {
   const [showImport, setShowImport] = useState(false);
   const [viewingReceipt, setViewingReceipt] = useState<Transaction | null>(null);
   const [monthFrom, monthTo] = monthDateRange(month);
-  const followsMonthFrom = useRef(!searchParams.get("from"));
-  const followsMonthTo = useRef(!searchParams.get("to"));
 
   // Search / filters. When any filter is set, results come from the API across
   // all months instead of the month view.
   const [fQ, setFQ] = useState(() => searchParams.get("q") || "");
   const [fAccount, setFAccount] = useState(() => searchParams.get("account_id") || "");
   const [fCat, setFCat] = useState(() => searchParams.get("category_id") || "");
-  const [fFrom, setFFrom] = useState(() => searchParams.get("from") || monthFrom);
-  const [fTo, setFTo] = useState(() => searchParams.get("to") || monthTo);
+  const [fromFilter, setFromFilter] = useState(() => ({
+    customized: searchParams.has("from"), value: searchParams.get("from") ?? monthFrom,
+  }));
+  const [toFilter, setToFilter] = useState(() => ({
+    customized: searchParams.has("to"), value: searchParams.get("to") ?? monthTo,
+  }));
   const [fMin, setFMin] = useState(() => searchParams.get("min") || "");
   const [fMax, setFMax] = useState(() => searchParams.get("max") || "");
   const [fReimbursable, setFReimbursable] = useState(() => searchParams.get("reimbursable") || "");
   const [filtered, setFiltered] = useState<Transaction[] | null>(null);
-  const [filteredTransfers, setFilteredTransfers] = useState<Transfer[] | null>(null);
+  const [filteredTransfers, setFilteredTransfers] = useState<{ key: string; rows: Transfer[] } | null>(null);
   const transferRequest = useRef(0);
-  const previousMonth = useRef(month);
-  const dateSearchActive = !followsMonthFrom.current || !followsMonthTo.current;
-  const filterActive = !!(dateSearchActive || fQ || fAccount || fCat || fFrom || fTo || fMin || fMax || fReimbursable);
+  const [previousMonth, setPreviousMonth] = useState(month);
+
+  if (previousMonth !== month) {
+    setPreviousMonth(month);
+    setFromFilter({ customized: false, value: monthFrom });
+    setToFilter({ customized: false, value: monthTo });
+  }
+
+  const fFrom = fromFilter.value;
+  const fTo = toFilter.value;
+  const filterActive = !!(fromFilter.customized || toFilter.customized || fQ || fAccount || fCat || fFrom || fTo || fMin || fMax || fReimbursable);
   const dateContext = dateFilterContext(fFrom, fTo);
-
-  useEffect(() => {
-    if (previousMonth.current === month) {
-
-      return;
-    }
-    previousMonth.current = month;
-    followsMonthFrom.current = true;
-    followsMonthTo.current = true;
-    setFFrom(monthFrom);
-    setFTo(monthTo);
-  }, [month, monthFrom, monthTo]);
+  const transferFilterKey = new URLSearchParams({
+    account_id: fAccount,
+    ...(fFrom ? { from: fFrom } : {}),
+    ...(fTo ? { to: fTo } : {}),
+  }).toString();
 
   useEffect(() => {
     let query = window.location.search;
@@ -112,9 +115,9 @@ export default function TransactionsPage() {
   }, [fQ, fAccount, fCat, fFrom, fTo, fMin, fMax, fReimbursable, month]);
 
   useEffect(() => {
-    if (!filterActive) { setFiltered(null); 
+    if (!filterActive)
 
-    return; }
+    return;
     const params = new URLSearchParams();
     if (fQ) params.set("q", fQ);
     if (fAccount) params.set("account_id", fAccount);
@@ -136,23 +139,20 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     const request = ++transferRequest.current;
-    if (!fAccount) {
-      setFilteredTransfers(null);
+    if (!fAccount)
 
-      return;
-    }
+    return;
     const params = new URLSearchParams({ account_id: fAccount });
     if (fFrom) params.set("from", fFrom);
     if (fTo) params.set("to", fTo);
+    const key = params.toString();
     getJSON<Transfer[]>(`${API}/transfers?${params}`)
-      .then((transfers) => { if (transferRequest.current === request) setFilteredTransfers(transfers); })
+      .then((rows) => { if (transferRequest.current === request) setFilteredTransfers({ key, rows }); })
       .catch((e) => { if (transferRequest.current === request) notify("Transfer search failed: " + String(e)); });
   }, [fAccount, fFrom, fTo, reloadKey, notify]);
 
   const clearFilters = () => {
-    followsMonthFrom.current = true;
-    followsMonthTo.current = true;
-    setFQ(""); setFAccount(""); setFCat(""); setFFrom(monthFrom); setFTo(monthTo); setFMin(""); setFMax(""); setFReimbursable("");
+    setFQ(""); setFAccount(""); setFCat(""); setFromFilter({ customized: false, value: monthFrom }); setToFilter({ customized: false, value: monthTo }); setFMin(""); setFMax(""); setFReimbursable("");
   };
 
   const rows = filterActive ? (filtered ?? []) : transactions;
@@ -381,11 +381,11 @@ export default function TransactionsPage() {
         </div>
         <div className="field">
           <label>From</label>
-          <input type="date" value={fFrom} onChange={(e) => { followsMonthFrom.current = false; setFFrom(e.target.value); }} />
+          <input type="date" value={fFrom} onChange={(e) => setFromFilter({ customized: true, value: e.target.value })} />
         </div>
         <div className="field">
           <label>To</label>
-          <input type="date" value={fTo} onChange={(e) => { followsMonthTo.current = false; setFTo(e.target.value); }} />
+          <input type="date" value={fTo} onChange={(e) => setToFilter({ customized: true, value: e.target.value })} />
         </div>
         <div className="field">
           <label>Min</label>
@@ -503,15 +503,15 @@ export default function TransactionsPage() {
       )}
     </div>
 
-    {fAccount && filteredTransfers && (
+    {fAccount && filteredTransfers?.key === transferFilterKey && (
       <div className="panel">
         <h2>Transfers involving {filteredAccountName}</h2>
         <p className="muted">Transfers are account movements, not transactions.</p>
-        {filteredTransfers.length === 0 ? <div className="empty">No transfers involving this account.</div> : (
+        {filteredTransfers.rows.length === 0 ? <div className="empty">No transfers involving this account.</div> : (
           <table>
             <thead><tr><th className="date-cell">Date</th><th>Route</th><th>Note</th><th className="right">Amount</th><th className="right" title="Immutable amount in the origin account's currency">Account amount</th></tr></thead>
             <tbody>
-              {filteredTransfers.map((transfer) => {
+              {filteredTransfers.rows.map((transfer) => {
                 const incoming = transfer.to_account === Number(fAccount);
                 const accountAmount = transfer.from_amount;
                 const accountCurrency = transfer.from_currency;

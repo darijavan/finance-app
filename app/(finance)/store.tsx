@@ -70,6 +70,28 @@ function monthLabel(m: string): string {
   return new Date(`${m}-01T00:00:00`).toLocaleDateString(undefined, { month: "short", year: "numeric" });
 }
 
+function fetchCategories() {
+
+  return Promise.all([
+    getJSON<Category[]>(`${API}/categories`),
+    getJSON<Settings>(`${API}/settings`),
+  ]);
+}
+
+async function fetchMonth(month: string) {
+  const [transactions, subscriptions, budgets, summary, accounts, transfers, goals] = await Promise.all([
+    getJSON<Transaction[]>(`${API}/transactions?month=${month}`),
+    getJSON<Subscription[]>(`${API}/subscriptions`),
+    getJSON<Budget[]>(`${API}/budgets?month=${month}`),
+    getJSON<Summary>(`${API}/summary?month=${month}`),
+    getJSON<Account[]>(`${API}/accounts?month=${month}`),
+    getJSON<Transfer[]>(`${API}/transfers?month=${month}&limit=50`),
+    getJSON<Goal[]>(`${API}/goals`),
+  ]);
+
+  return { transactions, subscriptions, budgets, summary, accounts, transfers, goals };
+}
+
 const TABS = [
   { key: "", label: "Dashboard", href: "/" },
   { key: "transactions", label: "Transactions", href: "/transactions" },
@@ -85,6 +107,12 @@ function Chrome({ children }: { children: ReactNode }) {
   const searchParams = useSearchParams();
   const urlMonth = searchParams.get("month") || currentMonth();
   const [month, setSelectedMonth] = useState(urlMonth);
+  const [previousUrlMonth, setPreviousUrlMonth] = useState(urlMonth);
+
+  if (previousUrlMonth !== urlMonth) {
+    setPreviousUrlMonth(urlMonth);
+    setSelectedMonth(urlMonth);
+  }
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [settings, setSettings] = useState<Settings>({ currency: "ILS", currency_symbol: "₪" });
@@ -97,6 +125,7 @@ function Chrome({ children }: { children: ReactNode }) {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const monthRequest = useRef(0);
 
   // Confirmation dialog state (rendered as a native <dialog>)
   const [confirmState, setConfirmState] = useState<ConfirmState>({ open: false, title: "", message: "" });
@@ -167,41 +196,43 @@ function Chrome({ children }: { children: ReactNode }) {
 
   const reloadCategories = useCallback(async () => {
     try {
-      const [cats, s] = await Promise.all([
-        getJSON<Category[]>(`${API}/categories`),
-        getJSON<Settings>(`${API}/settings`),
-      ]);
+      const [cats, s] = await fetchCategories();
       setCategories(cats);
       setSettings(s);
     } catch (e) { notify("Load failed: " + String(e)); }
   }, [notify]);
 
   // categories + settings (once)
-  useEffect(() => { reloadCategories(); }, [reloadCategories]);
-  useEffect(() => { setSelectedMonth(urlMonth); }, [urlMonth]);
+  useEffect(() => {
+    fetchCategories()
+      .then(([cats, s]) => { setCategories(cats); setSettings(s); })
+      .catch((e) => notify("Load failed: " + String(e)));
+  }, [notify]);
+
+  const applyMonth = useCallback((data: Awaited<ReturnType<typeof fetchMonth>>) => {
+    setTransactions(data.transactions);
+    setSubscriptions(data.subscriptions);
+    setBudgets(data.budgets);
+    setSummary(data.summary);
+    setAccounts(data.accounts);
+    setTransfers(data.transfers);
+    setGoals(data.goals);
+  }, []);
 
   const loadMonth = useCallback(async () => {
+    const request = ++monthRequest.current;
     try {
-      const [tx, subs, b, sum, accs, xf, gs] = await Promise.all([
-        getJSON<Transaction[]>(`${API}/transactions?month=${month}`),
-        getJSON<Subscription[]>(`${API}/subscriptions`),
-        getJSON<Budget[]>(`${API}/budgets?month=${month}`),
-        getJSON<Summary>(`${API}/summary?month=${month}`),
-        getJSON<Account[]>(`${API}/accounts?month=${month}`),
-        getJSON<Transfer[]>(`${API}/transfers?month=${month}&limit=50`),
-        getJSON<Goal[]>(`${API}/goals`),
-      ]);
-      setTransactions(tx);
-      setSubscriptions(subs);
-      setBudgets(b);
-      setSummary(sum);
-      setAccounts(accs);
-      setTransfers(xf);
-      setGoals(gs);
+      const data = await fetchMonth(month);
+      if (monthRequest.current === request) applyMonth(data);
     } catch (e) { notify("Load failed: " + String(e)); }
-  }, [month, notify]);
+  }, [month, notify, applyMonth]);
 
-  useEffect(() => { loadMonth(); }, [loadMonth, reloadKey]);
+  useEffect(() => {
+    const request = ++monthRequest.current;
+    fetchMonth(month)
+      .then((data) => { if (monthRequest.current === request) applyMonth(data); })
+      .catch((e) => { if (monthRequest.current === request) notify("Load failed: " + String(e)); });
+  }, [month, reloadKey, notify, applyMonth]);
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 

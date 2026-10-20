@@ -95,6 +95,26 @@ it("resets explicit date bounds when the month changes", async () => {
   expect((toInput as HTMLInputElement).value).toBe("2026-08-31");
 });
 
+it("does not restore custom date bounds when returning to an earlier month", () => {
+  mocks.search = "";
+  mocks.context.month = "2026-07";
+  mocks.getJSON.mockResolvedValue([]);
+
+  const view = render(<TransactionsPage />);
+  const fromInput = screen.getByText("From", { selector: "label" }).parentElement?.querySelector("input") as HTMLInputElement;
+  const toInput = screen.getByText("To", { selector: "label" }).parentElement?.querySelector("input") as HTMLInputElement;
+  fireEvent.change(fromInput, { target: { value: "2026-06-15" } });
+  fireEvent.change(toInput, { target: { value: "" } });
+
+  mocks.context.month = "2026-08";
+  view.rerender(<TransactionsPage />);
+  mocks.context.month = "2026-07";
+  view.rerender(<TransactionsPage />);
+
+  expect(fromInput.value).toBe("2026-07-01");
+  expect(toInput.value).toBe("2026-07-31");
+});
+
 it("searches all months when both date bounds are cleared", async () => {
   vi.useFakeTimers();
   mocks.search = "";

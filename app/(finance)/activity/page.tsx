@@ -12,17 +12,23 @@ const ACTION_LABEL: Record<string, string> = {
   "delete-undone": "deleted (undone)",
 };
 
+const fetchEntries = () => getJSON<ActivityEntry[]>(`${API}/activity?limit=200`);
+
 export default function ActivityPage() {
   const { reload, notify } = useFinance();
   const [entries, setEntries] = useState<ActivityEntry[] | null>(null);
 
   const load = useCallback(async () => {
     try {
-      setEntries(await getJSON<ActivityEntry[]>(`${API}/activity?limit=200`));
+      setEntries(await fetchEntries());
     } catch (e) { notify("Load failed: " + String(e)); }
   }, [notify]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    fetchEntries()
+      .then(setEntries)
+      .catch((e) => notify("Load failed: " + String(e)));
+  }, [notify]);
 
   const undoEntry = async (id: number) => {
     try {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type DragEvent } from "react";
+import { useState, type DragEvent } from "react";
 import { useFinance } from "../store";
 import { API, sendJSON, fmt, fmtCur, CURRENCIES } from "@/lib/client";
 import type { Transfer, AccountType } from "@/lib/types";
@@ -20,7 +20,7 @@ export default function AccountsPage() {
   const [aName, setAName] = useState("");
   const [aType, setAType] = useState<AccountType>("bank");
   const [aCur, setACur] = useState<string>(settings.currency || "ILS");
-  const [accountOrder, setAccountOrder] = useState<number[]>([]);
+  const [accountOrder, setAccountOrder] = useState(() => ({ accounts, ids: accounts.map((account) => account.id) }));
   const [draggedAccountId, setDraggedAccountId] = useState<number | null>(null);
   const [dragOverAccountId, setDragOverAccountId] = useState<number | null>(null);
 
@@ -35,11 +35,12 @@ export default function AccountsPage() {
 
   const total = accounts.reduce((acc, a) => acc + (a.base_balance || 0), 0);
   const accountsById = new Map(accounts.map((account) => [account.id, account]));
-  const orderedAccounts = accountOrder.length === accounts.length
-    ? accountOrder.flatMap((id) => accountsById.get(id) ?? [])
+  if (accountOrder.accounts !== accounts) {
+    setAccountOrder({ accounts, ids: accounts.map((account) => account.id) });
+  }
+  const orderedAccounts = accountOrder.accounts === accounts
+    ? accountOrder.ids.flatMap((id) => accountsById.get(id) ?? [])
     : accounts;
-
-  useEffect(() => { setAccountOrder(accounts.map((account) => account.id)); }, [accounts]);
 
   const dropAccount = async (event: DragEvent<HTMLDivElement>, targetId: number) => {
     event.preventDefault();
@@ -47,7 +48,7 @@ export default function AccountsPage() {
     if (draggedAccountId == null || draggedAccountId === targetId)
 
     return;
-    const next = [...accountOrder];
+    const next = orderedAccounts.map((account) => account.id);
     const from = next.indexOf(draggedAccountId);
     const to = next.indexOf(targetId);
     if (from < 0 || to < 0)
@@ -55,7 +56,7 @@ export default function AccountsPage() {
     return;
     next.splice(from, 1);
     next.splice(to, 0, draggedAccountId);
-    setAccountOrder(next);
+    setAccountOrder({ accounts, ids: next });
     try {
       await sendJSON(`${API}/accounts/reorder`, "POST", { ids: next });
       reload();
