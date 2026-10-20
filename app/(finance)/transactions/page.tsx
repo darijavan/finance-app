@@ -10,8 +10,44 @@ import type { Transaction, Transfer } from "@/lib/types";
 import { useSort, useSorted, SortHeader } from "@/lib/sort";
 import { withQueryParam } from "@/lib/query";
 import { withReceiptName } from "@/lib/receipt-state";
+import { tagTextColor } from "@/lib/tag-color";
+import ReceiptViewer from "./receipt-viewer";
 
 const FILTER_KEYS = ["q", "account_id", "category_id", "from", "to", "min", "max", "reimbursable"];
+
+function formatFilterDate(date: string) {
+
+  return new Intl.DateTimeFormat("en", {
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+    year: "numeric",
+  }).format(new Date(`${date}T00:00:00Z`));
+}
+
+function dateFilterContext(from: string, to: string) {
+  if (from && to) {
+
+    return `${formatFilterDate(from)} to ${formatFilterDate(to)}`;
+  }
+  if (from) {
+
+    return `from ${formatFilterDate(from)}`;
+  }
+  if (to) {
+
+    return `through ${formatFilterDate(to)}`;
+  }
+
+  return "all months";
+}
+
+function monthDateRange(month: string) {
+  const [, monthNumber] = month.split("-").map(Number);
+  const lastDay = new Date(Date.UTC(Number(month.slice(0, 4)), monthNumber, 0)).getUTCDate();
+
+  return [`${month}-01`, `${month}-${String(lastDay).padStart(2, "0")}`] as const;
+}
 
 export default function TransactionsPage() {
   const searchParams = useSearchParams();
@@ -28,24 +64,44 @@ export default function TransactionsPage() {
   const [tAccount, setTAccount] = useState<string>("");
   const [tReimbursable, setTReimbursable] = useState(false);
   const [tPostedAccountAmount, setTPostedAccountAmount] = useState("");
+  const [tRecordedAccountAmount, setTRecordedAccountAmount] = useState("");
   const [tReceipt, setTReceipt] = useState<File | null>(null);
   const [editId, setEditId] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
+  const [viewingReceipt, setViewingReceipt] = useState<Transaction | null>(null);
+  const [monthFrom, monthTo] = monthDateRange(month);
+  const followsMonthFrom = useRef(!searchParams.get("from"));
+  const followsMonthTo = useRef(!searchParams.get("to"));
 
   // Search / filters. When any filter is set, results come from the API across
   // all months instead of the month view.
   const [fQ, setFQ] = useState(() => searchParams.get("q") || "");
   const [fAccount, setFAccount] = useState(() => searchParams.get("account_id") || "");
   const [fCat, setFCat] = useState(() => searchParams.get("category_id") || "");
-  const [fFrom, setFFrom] = useState(() => searchParams.get("from") || "");
-  const [fTo, setFTo] = useState(() => searchParams.get("to") || "");
+  const [fFrom, setFFrom] = useState(() => searchParams.get("from") || monthFrom);
+  const [fTo, setFTo] = useState(() => searchParams.get("to") || monthTo);
   const [fMin, setFMin] = useState(() => searchParams.get("min") || "");
   const [fMax, setFMax] = useState(() => searchParams.get("max") || "");
   const [fReimbursable, setFReimbursable] = useState(() => searchParams.get("reimbursable") || "");
   const [filtered, setFiltered] = useState<Transaction[] | null>(null);
   const [filteredTransfers, setFilteredTransfers] = useState<Transfer[] | null>(null);
   const transferRequest = useRef(0);
-  const filterActive = !!(fQ || fAccount || fCat || fFrom || fTo || fMin || fMax || fReimbursable);
+  const previousMonth = useRef(month);
+  const dateSearchActive = !followsMonthFrom.current || !followsMonthTo.current;
+  const filterActive = !!(dateSearchActive || fQ || fAccount || fCat || fFrom || fTo || fMin || fMax || fReimbursable);
+  const dateContext = dateFilterContext(fFrom, fTo);
+
+  useEffect(() => {
+    if (previousMonth.current === month) {
+
+      return;
+    }
+    previousMonth.current = month;
+    followsMonthFrom.current = true;
+    followsMonthTo.current = true;
+    setFFrom(monthFrom);
+    setFTo(monthTo);
+  }, [month, monthFrom, monthTo]);
 
   useEffect(() => {
     let query = window.location.search;
@@ -94,7 +150,9 @@ export default function TransactionsPage() {
   }, [fAccount, fFrom, fTo, reloadKey, notify]);
 
   const clearFilters = () => {
-    setFQ(""); setFAccount(""); setFCat(""); setFFrom(""); setFTo(""); setFMin(""); setFMax(""); setFReimbursable("");
+    followsMonthFrom.current = true;
+    followsMonthTo.current = true;
+    setFQ(""); setFAccount(""); setFCat(""); setFFrom(monthFrom); setFTo(monthTo); setFMin(""); setFMax(""); setFReimbursable("");
   };
 
   const rows = filterActive ? (filtered ?? []) : transactions;
@@ -152,6 +210,7 @@ export default function TransactionsPage() {
     setTAccount(t.account_id != null ? String(t.account_id) : "");
     setTReimbursable(t.reimbursable);
     setTPostedAccountAmount("");
+    setTRecordedAccountAmount(t.account_amount == null ? "" : String(t.account_amount));
     setTReceipt(null);
   };
 
@@ -271,8 +330,8 @@ export default function TransactionsPage() {
         </div>
         {editId != null && tAccount && (
           <div className="field">
-            <label>Corrected posted debit (account currency)</label>
-            <input type="number" step="0.01" placeholder="Leave blank to keep current snapshot" value={tPostedAccountAmount} onChange={(e) => setTPostedAccountAmount(e.target.value)} />
+            <label htmlFor="posted-transaction-debit">Corrected posted debit (account currency)</label>
+            <input id="posted-transaction-debit" type="number" step="0.01" placeholder={tRecordedAccountAmount || "Leave blank to keep current snapshot"} value={tPostedAccountAmount} onChange={(e) => setTPostedAccountAmount(e.target.value)} />
           </div>
         )}
         <div className="field">
@@ -288,8 +347,8 @@ export default function TransactionsPage() {
           Reimbursable
         </label>
         <div className="field">
-          <label>Receipt (PDF or image)</label>
-          <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp"
+          <label htmlFor="transaction-receipt">Receipt (PDF or image)</label>
+          <input id="transaction-receipt" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
             onChange={(e) => setTReceipt(e.target.files?.[0] ?? null)} />
         </div>
         {editId != null && <button className="btn secondary" onClick={cancelEdit}>Cancel</button>}
@@ -300,7 +359,7 @@ export default function TransactionsPage() {
     <div className="panel">
       {/* Collapsed by default so the list stays close to the top of the page. */}
       <details className="filters" open={filterActive || undefined}>
-        <summary>Search &amp; filter{filterActive ? ` — ${rows.length} match(es), all months` : ""}</summary>
+        <summary>Search &amp; filter{filterActive ? ` — ${rows.length} match(es), ${dateContext}` : ""}</summary>
         <div className="row">
         <div className="field">
           <label>Text</label>
@@ -322,11 +381,11 @@ export default function TransactionsPage() {
         </div>
         <div className="field">
           <label>From</label>
-          <input type="date" value={fFrom} onChange={(e) => setFFrom(e.target.value)} />
+          <input type="date" value={fFrom} onChange={(e) => { followsMonthFrom.current = false; setFFrom(e.target.value); }} />
         </div>
         <div className="field">
           <label>To</label>
-          <input type="date" value={fTo} onChange={(e) => setFTo(e.target.value)} />
+          <input type="date" value={fTo} onChange={(e) => { followsMonthTo.current = false; setFTo(e.target.value); }} />
         </div>
         <div className="field">
           <label>Min</label>
@@ -350,7 +409,7 @@ export default function TransactionsPage() {
 
       <div className="row" style={{ marginTop: 16, justifyContent: "space-between" }}>
         <h2 style={{ margin: 0 }}>
-          {filterActive ? `Search results (${rows.length}, all months)` : "This month"}
+          {filterActive ? `Search results (${rows.length}, ${dateContext})` : "This month"}
         </h2>
         <div>
           <button className="btn secondary small" onClick={exportCSV} disabled={sortedTx.length === 0}>⬇ Export CSV</button>{" "}
@@ -390,14 +449,15 @@ export default function TransactionsPage() {
               <tr key={t.id}>
                 <td className="date-cell">{t.date}</td>
                 <td>
-                  <span className="tag" style={{ background: catColor(categories, t.category_id) }}>
+                  <span className="tag" style={{ background: catColor(categories, t.category_id), color: tagTextColor(catColor(categories, t.category_id)) }}>
                     {catName(categories, t.category_id, t.direction)}
                   </span>
                 </td>
                 <td className="muted">
                   {t.is_subscription_charge && <span className="tag subscription-tag">↻ Subscription · read-only</span>}{" "}
                   {t.reimbursable && <span className="tag reimbursement-tag">{t.reimbursed_at ? "✓ Reimbursed" : "↻ Reimbursable"}</span>}{" "}
-                  {t.receipt_name && <a className="linkbtn" href={`${API}/transactions/${t.id}/receipt`}>📎 Receipt</a>}{" "}
+                  {t.receipt_name && <button className="linkbtn" type="button"
+                    aria-label={`View receipt ${t.receipt_name}`} onClick={() => setViewingReceipt(t)}>📎 Receipt</button>}{" "}
                   {t.note}
                 </td>
                 <td className="muted">{t.account_name || "—"}</td>
@@ -412,7 +472,7 @@ export default function TransactionsPage() {
                     {t.reimbursable && !t.reimbursed_at && <button className="btn secondary small" title="Mark reimbursed"
                       aria-label={`Mark transaction of ${t.date} reimbursed`} onClick={() => markReimbursed(t.id)}>Reimburse</button>}{" "}
                     <label className="btn secondary small" title="Attach receipt" aria-label={`Attach receipt to transaction of ${t.date}`}>
-                      <input hidden type="file" accept="application/pdf,image/jpeg,image/png,image/webp"
+                      <input hidden type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
                         onChange={(e) => { const receipt = e.target.files?.[0]; if (receipt) void uploadReceipt(t.id, receipt).catch((error) => notify(`Receipt upload failed: ${String(error)}`)); e.currentTarget.value = ""; }} />
                       📎
                     </label>{" "}
@@ -449,10 +509,12 @@ export default function TransactionsPage() {
         <p className="muted">Transfers are account movements, not transactions.</p>
         {filteredTransfers.length === 0 ? <div className="empty">No transfers involving this account.</div> : (
           <table>
-            <thead><tr><th className="date-cell">Date</th><th>Route</th><th>Note</th><th className="right">Amount</th></tr></thead>
+            <thead><tr><th className="date-cell">Date</th><th>Route</th><th>Note</th><th className="right">Amount</th><th className="right" title="Immutable amount in the origin account's currency">Account amount</th></tr></thead>
             <tbody>
               {filteredTransfers.map((transfer) => {
                 const incoming = transfer.to_account === Number(fAccount);
+                const accountAmount = transfer.from_amount;
+                const accountCurrency = transfer.from_currency;
 
                 return (
                   <tr key={transfer.id}>
@@ -460,6 +522,7 @@ export default function TransactionsPage() {
                     <td>{transfer.from_name || transfer.from_account} → {transfer.to_name || transfer.to_account}</td>
                     <td className="muted">{transfer.note || "—"}</td>
                     <td className={`right ${incoming ? "amount-income" : "amount-expense"}`}>{incoming ? "+" : "-"}{fmtCur(transfer.amount, transfer.currency)}</td>
+                    <td className={`right ${incoming ? "amount-income" : "amount-expense"}`}>{accountAmount == null || accountCurrency == null ? "—" : `${incoming ? "+" : "-"}${fmtCur(accountAmount, accountCurrency)}`}</td>
                   </tr>
                 );
               })}
@@ -468,6 +531,7 @@ export default function TransactionsPage() {
         )}
       </div>
     )}
+    {viewingReceipt && <ReceiptViewer transaction={viewingReceipt} onClose={() => setViewingReceipt(null)} />}
     </>
   );
 }

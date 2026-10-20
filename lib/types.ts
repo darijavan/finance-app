@@ -24,6 +24,7 @@ export interface Transaction {
   reimbursable: boolean;
   reimbursed_at: string | null;
   receipt_name: string | null;
+  receipt_mime: string | null;
   created_at: string;
   category_name?: string;
   category_color?: string;
@@ -55,6 +56,8 @@ export interface Transfer {
   created_at: string;
   from_amount: number | null; // immutable debit in the origin account's currency
   from_currency: Currency | null;
+  to_amount: number | null; // immutable credit in the destination account's currency
+  to_currency: Currency | null;
   from_name?: string;
   to_name?: string;
 }
@@ -81,6 +84,10 @@ export interface Subscription {
   monthly_equivalent?: number | null;
   last_charge_amount?: number | null; // amount of the most recent automatic charge
   last_charge_currency?: Currency | null; // native currency of the most recent automatic charge
+  last_charge_id?: number | null;
+  last_charge_account_amount?: number | null;
+  last_charge_account_currency?: Currency | null;
+  last_charge_date?: string | null;
 }
 
 export interface Budget {

@@ -5,6 +5,7 @@ import { useFinance } from "../store";
 import { API, sendJSON, fmt, fmtCur, CURRENCIES } from "@/lib/client";
 import type { Subscription } from "@/lib/types";
 import { useSort, useSorted, SortHeader } from "@/lib/sort";
+import { tagTextColor } from "@/lib/tag-color";
 
 export default function SubscriptionsPage() {
   const {
@@ -22,6 +23,8 @@ export default function SubscriptionsPage() {
   const [sDate, setSDate] = useState<string>(""); // start date YYYY-MM-DD
   const [sAccount, setSAccount] = useState<string>("");
   const [sEditId, setSEditId] = useState<number | null>(null);
+  const [chargeCorrection, setChargeCorrection] = useState<Subscription | null>(null);
+  const [postedChargeAmount, setPostedChargeAmount] = useState("");
 
   const sort = useSort<"name" | "amount" | "paymentDay" | "freq" | "monthly" | "cat">("paymentDay");
   const sortedSubs = useSorted(subscriptions, sort, {
@@ -91,6 +94,24 @@ export default function SubscriptionsPage() {
   const chargeSubscriptions = async () => {
     const r = await sendJSON<{ created: number }>(`${API}/subscriptions/charge?month=${month}`, "POST");
     notify(`Charged ${r.created} subscription(s)`);
+    reload();
+  };
+
+  const startChargeCorrection = (subscription: Subscription) => {
+    setChargeCorrection(subscription);
+    setPostedChargeAmount("");
+  };
+
+  const saveChargeCorrection = async () => {
+    const amount = Number(postedChargeAmount);
+    if (chargeCorrection?.last_charge_id == null || !Number.isFinite(amount) || amount <= 0) {
+
+      return notify("Enter the actual deducted amount");
+    }
+    await sendJSON(`${API}/subscriptions/charge/${chargeCorrection.last_charge_id}`, "PUT", { posted_account_amount: amount });
+    notify("Posted debit corrected");
+    setChargeCorrection(null);
+    setPostedChargeAmount("");
     reload();
   };
 
@@ -208,7 +229,7 @@ export default function SubscriptionsPage() {
                 <td className="muted">{s.frequency === "yearly" ? `${s.month_of_year}/${s.day_of_month}` : s.day_of_month}</td>
                 <td className="muted">{s.frequency}{s.frequency === "yearly" ? ` (m${s.month_of_year})` : ""}</td>
                 <td className="muted">{s.monthly_equivalent == null ? "—" : fmtCur(s.monthly_equivalent, s.currency || settings.currency)}</td>
-                <td><span className="tag" style={{ background: s.category_color || "#888" }}>{s.category_name || "—"}</span></td>
+                <td><span className="tag" style={{ background: s.category_color || "#888", color: tagTextColor(s.category_color || "#888") }}>{s.category_name || "—"}</span></td>
                 <td className="muted">{s.account_name || "—"}</td>
                 <td className="muted">{s.start_date || "—"}</td>
                 <td className="right actions">
@@ -216,7 +237,11 @@ export default function SubscriptionsPage() {
                     onClick={() => startEditSub(s)}>✎</button>{" "}
                   <button className="btn secondary small" title={s.active ? "Pause future charges" : "Resume future charges"}
                     aria-label={`${s.active ? "Pause" : "Resume"} subscription ${s.name}`}
-                    onClick={() => setSubscriptionActive(s)}>{s.active ? "Pause" : "Resume"}</button>
+                    onClick={() => setSubscriptionActive(s)}>{s.active ? "Pause" : "Resume"}</button>{" "}
+                  {s.last_charge_id != null && s.last_charge_account_currency != null && (
+                    <button className="btn secondary small" title="Correct the actual bank debit" aria-label={`Correct posted debit for ${s.name}`}
+                      onClick={() => startChargeCorrection(s)}>Adjust debit</button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -229,6 +254,21 @@ export default function SubscriptionsPage() {
         <span style={{ marginLeft: 16 }}>Remaining to pay: {fmt(summary?.remaining_subscriptions ?? 0, sym)}</span>
       </p>
     </div>
+    {chargeCorrection && (
+      <div className="panel editing">
+        <h2>Correct posted debit — {chargeCorrection.name}</h2>
+        <p className="muted">Charge dated {chargeCorrection.last_charge_date}. Leave the subscription price unchanged; enter only the amount actually deducted by the bank.</p>
+        <div className="row">
+          <div className="field">
+            <label htmlFor="posted-subscription-debit">Actual deducted amount ({chargeCorrection.last_charge_account_currency})</label>
+            <input id="posted-subscription-debit" type="number" min="0.01" step="0.01" value={postedChargeAmount}
+              onChange={(e) => setPostedChargeAmount(e.target.value)} placeholder={chargeCorrection.last_charge_account_amount == null ? "" : String(chargeCorrection.last_charge_account_amount)} />
+          </div>
+          <button className="btn secondary" onClick={() => setChargeCorrection(null)}>Cancel</button>
+          <button className="btn" onClick={saveChargeCorrection}>Save posted debit</button>
+        </div>
+      </div>
+    )}
     </>
   );
 }

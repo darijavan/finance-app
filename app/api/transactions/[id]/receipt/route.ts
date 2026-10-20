@@ -7,20 +7,24 @@ import { isSubscriptionCharge } from "@/lib/subscription-charge";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const db = getDb();
   const id = Number((await params).id);
   const receipt = db.prepare("SELECT receipt_key, receipt_name, receipt_mime FROM transactions WHERE id=?").get(id) as any;
   if (!receipt?.receipt_key)
 
   return NextResponse.json({ error: "receipt not found" }, { status: 404 });
+  // The in-app viewer asks for an inline render; every other caller (download link,
+  // direct navigation) keeps forcing a download so a receipt is never rendered by
+  // surprise outside the modal.
+  const inline = req.nextUrl.searchParams.get("view") === "1";
   try {
     const body = await fs.readFile(receiptPath(receipt.receipt_key));
 
     return new NextResponse(body, {
       headers: {
         "Content-Type": receipt.receipt_mime,
-        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(receiptName(receipt.receipt_name || "receipt"))}`,
+        "Content-Disposition": `${inline ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(receiptName(receipt.receipt_name || "receipt"))}`,
         "X-Content-Type-Options": "nosniff",
       },
     });

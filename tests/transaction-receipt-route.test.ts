@@ -31,6 +31,17 @@ describe("transaction receipt route", () => {
     expect(await response.text()).toBe("%PDF-safe");
   });
 
+  it("serves receipts inline for the in-app viewer without weakening the download default", async () => {
+    mocks.db.prepare.mockReturnValue({ get: () => ({ receipt_key: "123e4567-e89b-12d3-a456-426614174000", receipt_name: "invoice 1.pdf", receipt_mime: "application/pdf" }) });
+    mocks.readFile.mockResolvedValue(Buffer.from("%PDF-safe"));
+
+    const response = await route.GET(new NextRequest("http://localhost/api/transactions/9/receipt?view=1"), params);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Disposition")).toBe("inline; filename*=UTF-8''invoice_1.pdf");
+    expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+  });
+
   it("does not expose missing receipt files", async () => {
     mocks.db.prepare.mockReturnValue({ get: () => ({ receipt_key: "123e4567-e89b-12d3-a456-426614174000", receipt_name: "invoice.pdf", receipt_mime: "application/pdf" }) });
     mocks.readFile.mockRejectedValue(new Error("ENOENT"));

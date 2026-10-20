@@ -5,10 +5,11 @@ import { useFinance } from "../store";
 import { API, sendJSON, fmt } from "@/lib/client";
 import type { Category, Budget } from "@/lib/types";
 import { useSort, useSorted, SortHeader } from "@/lib/sort";
+import { tagTextColor } from "@/lib/tag-color";
 
 export default function BudgetsPage() {
   const {
-    month, sym, categories, budgets, expenseCats, reload, notify, confirm, undo,
+    month, sym, categories, budgets, expenseCats, reload, reloadCategories, notify, confirm, undo,
   } = useFinance();
 
   const [bCat, setBCat] = useState<string>(""); // "" = overall
@@ -16,6 +17,7 @@ export default function BudgetsPage() {
   const [bRollover, setBRollover] = useState(false);
   const [cName, setCName] = useState("");
   const [cDir, setCDir] = useState<"expense" | "income">("expense");
+  const [cColor, setCColor] = useState("#7c9cff");
   const [bEditing, setBEditing] = useState(false);
   const [cEditId, setCEditId] = useState<number | null>(null);
 
@@ -68,12 +70,14 @@ export default function BudgetsPage() {
     setCEditId(c.id);
     setCName(c.name);
     setCDir(c.direction);
+    setCColor(c.color);
   };
 
   const cancelEditCat = () => {
     setCEditId(null);
     setCName("");
     setCDir("expense");
+    setCColor("#7c9cff");
   };
 
   const saveCategory = async () => {
@@ -81,17 +85,16 @@ export default function BudgetsPage() {
 
     return notify("Enter category name");
     if (cEditId != null) {
-      const c = categories.find((x) => x.id === cEditId);
       await sendJSON(`${API}/categories/${cEditId}`, "PUT", {
-        name: cName.trim(), direction: cDir, color: c?.color || "#7c9cff",
+        name: cName.trim(), direction: cDir, color: cColor,
       });
       notify("Category updated");
     } else {
-      await sendJSON(`${API}/categories`, "POST", { name: cName.trim(), direction: cDir });
+      await sendJSON(`${API}/categories`, "POST", { name: cName.trim(), direction: cDir, color: cColor });
       notify("Category added");
     }
     cancelEditCat();
-    reload();
+    reloadCategories();
   };
 
   const visibleBudgets = budgets.filter((b) => b.amount > 0);
@@ -174,12 +177,16 @@ export default function BudgetsPage() {
             <option value="income">Income</option>
           </select>
         </div>
+        <div className="field">
+          <label htmlFor="cat-color">Tag color</label>
+          <input id="cat-color" type="color" value={cColor} onChange={(e) => setCColor(e.target.value)} />
+        </div>
         {cEditId != null && <button className="btn secondary" onClick={cancelEditCat}>Cancel</button>}
         <button className="btn secondary" onClick={saveCategory}>{cEditId != null ? "Update" : "Add category"}</button>
       </div>
       <div className="row" style={{ marginTop: 10, flexWrap: "wrap" }}>
         {categories.map((c) => (
-          <span key={c.id} className="tag" style={{ background: c.color }}>
+          <span key={c.id} className="tag" style={{ background: c.color, color: tagTextColor(c.color) }}>
             {c.name} <span className="muted">({c.direction})</span>{" "}
             <button className="linkbtn" title="Edit" aria-label={`Edit category ${c.name}`}
               onClick={() => startEditCat(c)}>✎</button>

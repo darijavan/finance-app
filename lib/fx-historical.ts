@@ -2,6 +2,7 @@ import type { Currency } from "./currency.ts";
 import { getDb } from "./db.ts";
 
 const DAILY_FX_ENDPOINT = "https://api.frankfurter.dev/v1";
+const FALLBACK_DAILY_FX_ENDPOINT = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api";
 
 export type FxSnapshot = {
   amount: number;
@@ -50,18 +51,32 @@ export async function snapshotConversion(
     `${DAILY_FX_ENDPOINT}/${encodeURIComponent(date)}?base=${encodeURIComponent(from)}&symbols=${encodeURIComponent(to)}`,
     { cache: "no-store" },
   );
-  if (!response.ok) throw new Error(`Historical FX lookup failed (${response.status}) for ${from}/${to} on ${date}`);
-  const data = await response.json() as { date?: string; rates?: Record<string, number> };
-  const rate = data.rates?.[to];
-  if (!Number.isFinite(rate) || !rate || rate <= 0 || !data.date) {
-    throw new Error(`Historical FX quote unavailable for ${from}/${to} on ${date}`);
-  }
-  const source = "frankfurter";
+  const data = response.ok
+    ? await response.json() as { date?: string; rates?: Record<string, number> }
+    : null;
+  const rate = data?.rates?.[to];
+  const quote = Number.isFinite(rate) && rate && rate > 0 && data?.date
+    ? { rate, rate_date: data.date, source: "frankfurter" }
+    : await fallbackSnapshot(from, to, date);
   db.prepare(
     `INSERT INTO fx_daily_rates(requested_date,base_currency,quote_currency,rate,rate_date,source,retrieved_at)
      VALUES(?,?,?,?,?,?,?)`,
-  ).run(date, from, to, rate, data.date, source, new Date().toISOString());
-  
+  ).run(date, from, to, quote.rate, quote.rate_date, quote.source, new Date().toISOString());
 
-  return { amount: convertAmount(amount, rate), rate, rate_date: data.date, source };
+  return { amount: convertAmount(amount, quote.rate), ...quote };
+}
+
+async function fallbackSnapshot(from: string, to: string, date: string): Promise<Omit<FxSnapshot, "amount">> {
+  const response = await fetch(
+    `${FALLBACK_DAILY_FX_ENDPOINT}@${encodeURIComponent(date)}/v1/currencies/${encodeURIComponent(from.toLowerCase())}.json`,
+    { cache: "no-store" },
+  );
+  if (!response.ok) throw new Error(`Historical FX lookup failed (${response.status}) for ${from}/${to} on ${date}`);
+  const data = await response.json() as { date?: string; [base: string]: unknown };
+  const rate = (data[from.toLowerCase()] as Record<string, unknown> | undefined)?.[to.toLowerCase()];
+  if (typeof rate !== "number" || !Number.isFinite(rate) || rate <= 0 || !data.date) {
+    throw new Error(`Historical FX quote unavailable for ${from}/${to} on ${date}`);
+  }
+
+  return { rate, rate_date: data.date, source: "currency-api" };
 }
