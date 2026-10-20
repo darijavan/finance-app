@@ -64,6 +64,7 @@ export default function TransactionsPage() {
   const [tAccount, setTAccount] = useState<string>("");
   const [tReimbursable, setTReimbursable] = useState(false);
   const [tPostedAccountAmount, setTPostedAccountAmount] = useState("");
+  const [tRecordedAccountAmount, setTRecordedAccountAmount] = useState("");
   const [tReceipt, setTReceipt] = useState<File | null>(null);
   const [editId, setEditId] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
@@ -209,6 +210,7 @@ export default function TransactionsPage() {
     setTAccount(t.account_id != null ? String(t.account_id) : "");
     setTReimbursable(t.reimbursable);
     setTPostedAccountAmount("");
+    setTRecordedAccountAmount(t.account_amount == null ? "" : String(t.account_amount));
     setTReceipt(null);
   };
 
@@ -328,8 +330,8 @@ export default function TransactionsPage() {
         </div>
         {editId != null && tAccount && (
           <div className="field">
-            <label>Corrected posted debit (account currency)</label>
-            <input type="number" step="0.01" placeholder="Leave blank to keep current snapshot" value={tPostedAccountAmount} onChange={(e) => setTPostedAccountAmount(e.target.value)} />
+            <label htmlFor="posted-transaction-debit">Corrected posted debit (account currency)</label>
+            <input id="posted-transaction-debit" type="number" step="0.01" placeholder={tRecordedAccountAmount || "Leave blank to keep current snapshot"} value={tPostedAccountAmount} onChange={(e) => setTPostedAccountAmount(e.target.value)} />
           </div>
         )}
         <div className="field">
