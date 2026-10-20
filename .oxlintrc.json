@@ -4,7 +4,10 @@
   "categories": {
     "correctness": "error"
   },
-  "rules": {},
+  "jsPlugins": ["@stylistic/eslint-plugin"],
+  "rules": {
+    "@stylistic/no-multiple-empty-lines": ["warn", { "max": 1 }]
+  },
   "env": {
     "builtin": true
   }
