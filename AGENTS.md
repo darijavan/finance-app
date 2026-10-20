@@ -28,4 +28,4 @@ A repository commit-msg hook enforces the title format. If it rejects a message,
 
 ## Spacing
 
-Keep at most one successive empty line in TypeScript and JavaScript source. Run `pnpm lint:fix` to fix spacing automatically.
+Keep at most one successive empty line in TypeScript and JavaScript source. Leave a blank line before `return` when it follows another statement in the same block; no padding is required when `return` is the first statement. Both rules use `@stylistic/eslint-plugin` through Oxlint. Run `pnpm lint:fix` to fix spacing automatically.

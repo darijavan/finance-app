@@ -6,7 +6,11 @@
   },
   "jsPlugins": ["@stylistic/eslint-plugin"],
   "rules": {
-    "@stylistic/no-multiple-empty-lines": ["warn", { "max": 1 }]
+    "@stylistic/no-multiple-empty-lines": ["warn", { "max": 1 }],
+    "@stylistic/padding-line-between-statements": [
+      "error",
+      { "blankLine": "always", "prev": "*", "next": "return" }
+    ]
   },
   "env": {
     "builtin": true
