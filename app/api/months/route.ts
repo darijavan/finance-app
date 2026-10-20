@@ -10,6 +10,5 @@ export async function GET() {
   const months = rows.map(r => r.m);
   if (months.length === 0) months.push(new Date().toISOString().slice(0, 7));
   
-
   return NextResponse.json(months);
 }

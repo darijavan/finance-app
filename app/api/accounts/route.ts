@@ -16,11 +16,9 @@ async function balancesByAccount(db: any, accounts: { id: number; currency: Curr
     through,
   );
   
-
   return accounts.map((a: any) => {
     const balance = Math.round((native.get(a.id) || 0) * 100) / 100;
     
-
     return { ...a, balance, base_balance: Math.round(toBase(balance, a.currency) * 100) / 100 };
   });
 }
@@ -36,7 +34,6 @@ export async function GET(req: NextRequest) {
   const { toBase } = await getConverter();
   const accounts = db.prepare("SELECT * FROM accounts ORDER BY active DESC, sort_order, id").all() as any[];
   
-
   return NextResponse.json(await balancesByAccount(db, accounts, toBase, month ? `${month}-31` : undefined));
 }
 
@@ -55,6 +52,5 @@ export async function POST(req: NextRequest) {
   const info = db.prepare("INSERT INTO accounts(name,type,currency,active,note,sort_order) VALUES(?,?,?,1,?,COALESCE((SELECT MAX(sort_order) + 1 FROM accounts), 1))").run(name, type, cur, String(b.note ?? ""));
   logActivity(db, "account", "create", Number(info.lastInsertRowid), `Added account "${name}" (${type})`);
   
-
   return NextResponse.json({ ok: true, id: info.lastInsertRowid }, { status: 201 });
 }

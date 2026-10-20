@@ -133,7 +133,6 @@ export default function TransactionsPage() {
         .catch((e) => notify("Search failed: " + String(e)));
     }, 250); // debounce typing
     
-
     return () => clearTimeout(t);
   }, [filterActive, fQ, fAccount, fCat, fFrom, fTo, fMin, fMax, fReimbursable, reloadKey, notify]);
 
@@ -173,7 +172,6 @@ export default function TransactionsPage() {
       totals.set(currency, (totals.get(currency) || 0) + (t.direction === "expense" ? -t.amount : t.amount));
     }
     
-
     return [...totals.entries()].sort(([a], [b]) => a.localeCompare(b));
   }, [sortedTx, settings.currency]);
 
@@ -592,7 +590,6 @@ function ImportCSV({ onDone, notify }: { onDone: () => void; notify: (m: string)
       direction = (raw < 0) === negIsExpense ? "expense" : "income";
     }
     
-
     return { date, amount: Math.abs(raw), direction, note: noteCol >= 0 ? (r[noteCol] ?? "").trim() : "" };
   }), [dataRows, dateCol, amountCol, noteCol, dateFormat, signRule]);
 

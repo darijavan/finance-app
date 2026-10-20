@@ -24,7 +24,6 @@ function validRows(value: unknown): StatementRow[] | null {
     rows.push({ date, amount, direction: oneOf(row.direction, ["expense", "income"] as const, "expense"), note });
   }
   
-
   return rows;
 }
 
@@ -40,7 +39,6 @@ export async function GET() {
     LEFT JOIN statement_import_rows r ON r.import_id=i.id
     GROUP BY i.id ORDER BY i.id DESC`).all();
   
-
   return NextResponse.json(imports);
 }
 
@@ -53,14 +51,12 @@ export async function POST(req: NextRequest) {
   const rows = validRows(body.rows);
   if (!Number.isInteger(accountId) || accountId <= 0 || !cur || !source || !/^[a-f0-9]{64}$/i.test(fingerprint) || !rows) {
     
-
     return NextResponse.json({ error: "invalid statement import" }, { status: 400 });
   }
 
   const db = getDb();
   if (!db.prepare("SELECT 1 FROM accounts WHERE id=?").get(accountId)) {
     
-
     return NextResponse.json({ error: "account not found" }, { status: 404 });
   }
   const existingImport = db.prepare("SELECT id FROM statement_imports WHERE source_fingerprint=?").get(fingerprint) as { id: number } | undefined;
@@ -82,12 +78,10 @@ export async function POST(req: NextRequest) {
     logActivity(db, "statement_import", "create", importId, `Created statement import draft from ${source} (${rows.length} rows)`);
     db.exec("COMMIT");
     
-
     return NextResponse.json({ id: importId, rows: preview }, { status: 201 });
   } catch (error) {
     try { db.exec("ROLLBACK"); } catch { /* no transaction to roll back */ }
     
-
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }

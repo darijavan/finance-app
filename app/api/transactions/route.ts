@@ -14,7 +14,6 @@ async function accountSnapshot(db: any, amount: number, currency: Currency, date
   if (!account) throw new Error("account not found");
   const fx = await snapshotConversion(amount, currency, account.currency, date);
   
-
   return { account_amount: fx.amount, account_currency: account.currency, account_fx_rate: fx.rate, account_fx_date: fx.rate_date, account_fx_source: fx.source };
 }
 
@@ -49,7 +48,6 @@ export async function GET(req: NextRequest) {
     reimbursable: Boolean(row.reimbursable),
   }));
   
-
   return NextResponse.json(rows);
 }
 
@@ -72,7 +70,6 @@ export async function POST(req: NextRequest) {
   const reimbursable = body.reimbursable ? 1 : 0;
   if (category_id === undefined || account_id === undefined) {
     
-
     return NextResponse.json({ error: "invalid category or account id" }, { status: 400 });
   }
   const cur = currency(body.currency);
@@ -91,11 +88,9 @@ export async function POST(req: NextRequest) {
     logActivity(db, "transaction", "create", Number(info.lastInsertRowid),
       `Added ${direction} ${amount} ${cur}${note ? ` (${note})` : ""} for ${date}`);
     
-
     return NextResponse.json(row, { status: 201 });
   } catch (e) {
     
-
     return NextResponse.json({ error: String(e) }, { status: 422 });
   }
 }

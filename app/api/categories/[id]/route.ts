@@ -23,7 +23,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   logActivity(db, "category", "update", id,
     `Updated category #${id} to "${body.name}" (${body.direction})${before ? ` — was "${before.name}"` : ""}`);
   
-
   return NextResponse.json(row);
 }
 
@@ -39,6 +38,5 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     `Deleted category #${id} ("${row.name}", ${row.direction})`,
     { table: "categories", ...row });
   
-
   return NextResponse.json({ ok: true, log_id: logId });
 }

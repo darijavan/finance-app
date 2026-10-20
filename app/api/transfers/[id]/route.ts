@@ -28,7 +28,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const cur = currency(body.currency);
   if (!Number.isFinite(amount) || amount <= 0 || !from_account || !to_account || from_account === to_account || date == null || cur == null) {
     
-
     return NextResponse.json({ error: "valid amount, currency, date, and two different accounts required" }, { status: 400 });
   }
   const from = db.prepare("SELECT currency FROM accounts WHERE id=?").get(from_account) as { currency: Currency } | undefined;
@@ -67,11 +66,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       : `Corrected transfer #${id} origin debit from ${before.from_amount ?? "—"} ${before.from_currency ?? ""} to ${postedFromAmount} ${from.currency}`,
       postedFromAmount === undefined ? undefined : { before_from_amount: before.from_amount, posted_from_amount: postedFromAmount, from_currency: from.currency, from_fx_source: fromSource });
     
-
     return NextResponse.json(row);
   } catch (e) {
     
-
     return NextResponse.json({ error: String(e) }, { status: 422 });
   }
 }
@@ -89,6 +86,5 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     `Deleted transfer #${id} (${row.amount} ${row.currency || ""})`,
     { table: "transfers", ...row });
   
-
   return NextResponse.json({ ok: true, log_id: logId });
 }

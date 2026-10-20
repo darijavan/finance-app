@@ -32,7 +32,6 @@ export async function GET() {
     s.last_charge_date = lastCharge?.date ?? null;
   }
   
-
   return NextResponse.json(rows);
 }
 
@@ -56,7 +55,6 @@ export async function POST(req: NextRequest) {
   const categoryId = optionalId(b.category_id);
   if (cur == null || (b.start_date && startDate == null) || accountId === undefined || categoryId === undefined) {
     
-
     return NextResponse.json({ error: "invalid currency, start date, category, or account" }, { status: 400 });
   }
   const info = db.prepare(
@@ -71,6 +69,5 @@ export async function POST(req: NextRequest) {
   logActivity(db, "subscription", "create", Number(info.lastInsertRowid),
     `Added subscription "${name}" (${amount} ${cur}, ${frequency})`);
   
-
   return NextResponse.json({ ok: true, id: info.lastInsertRowid }, { status: 201 });
 }

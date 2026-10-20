@@ -20,7 +20,6 @@ export function getDb(): DatabaseSync {
   seedDefaults(db);
   _db = db;
   
-
   return db;
 }
 
@@ -205,7 +204,6 @@ export function logActivity(
     new Date().toISOString(),
   );
   
-
   return Number(info.lastInsertRowid);
 }
 
@@ -234,7 +232,6 @@ export function undoActivity(
   // Mark the log entry as undone so it can't be re-applied.
   db.prepare("UPDATE activity_log SET action='delete-undone' WHERE id=?").run(logId);
   
-
   return Number((db.prepare("SELECT last_insert_rowid() AS id").get() as any).id);
 }
 

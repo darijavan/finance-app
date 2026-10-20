@@ -79,14 +79,12 @@ export async function GET(req: NextRequest) {
       ? db.prepare("SELECT amount, currency FROM transactions WHERE substr(date,1,7)=? AND direction='expense'").all(m)
       : db.prepare("SELECT amount, currency FROM transactions WHERE substr(date,1,7)=? AND direction='expense' AND category_id=?").all(m, catId)) as any[];
     
-
     return rows.reduce((acc, r) => acc + toBase(r.amount, r.currency || base), 0);
   };
   const prevMonth = (m: string) => {
     const [y, mm] = m.split("-").map(Number);
     const d = new Date(y, mm - 2, 1);
     
-
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   };
   // ponytail: positive carryover only, chain capped at 12 months back.
@@ -101,7 +99,6 @@ export async function GET(req: NextRequest) {
     return b.amount;
     const leftover = effectiveBudget(prev, depth + 1) - spentInMonth(b.category_id, pm);
     
-
     return b.amount + Math.max(0, leftover);
   };
 
@@ -109,12 +106,10 @@ export async function GET(req: NextRequest) {
   const budgetRows = budgets.map((b: any) => {
     if (b.category_id == null) {
       
-
       return { category_id: null, category_name: "Overall", color: "#7c9cff", budget: r2(effectiveBudget(b)), actual: spent, rollover: !!b.rollover };
     }
     const cat = db.prepare("SELECT name,color FROM categories WHERE id=?").get(b.category_id) as any;
     
-
     return {
       category_id: b.category_id,
       category_name: cat?.name ?? "Unknown",
@@ -131,7 +126,6 @@ export async function GET(req: NextRequest) {
   const recurring_monthly = r2(
     subs.reduce((acc: number, s: any) => {
       
-
       return s.frequency === "monthly" ? acc + toBase(s.amount, s.currency || base) : acc;
     }, 0)
   );

@@ -12,7 +12,6 @@ export async function GET() {
   const obj: Record<string, string> = {};
   for (const r of rows) obj[r.key] = r.value;
   
-
   return NextResponse.json(obj);
 }
 
@@ -26,7 +25,6 @@ export async function PUT(req: NextRequest) {
   return NextResponse.json({ error: "no valid settings keys" }, { status: 400 });
   if ("currency" in body && currency(body.currency) == null) {
     
-
     return NextResponse.json({ error: "invalid currency code" }, { status: 400 });
   }
   const upsert = db.prepare("INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value");
@@ -37,10 +35,8 @@ export async function PUT(req: NextRequest) {
   } catch (e) {
     db.exec("ROLLBACK");
     
-
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
   
-
   return NextResponse.json({ ok: true });
 }

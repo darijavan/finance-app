@@ -33,6 +33,5 @@ export function nativeBalances(txs: TxRow[], transfers: TransferRow[], through?:
     bump(x.to_account, x.to_amount ?? x.amount);
   }
   
-
   return native;
 }

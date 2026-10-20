@@ -20,14 +20,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!name || target == null || account_id == null || account_id === undefined ||
       ("target_date" in b && b.target_date && target_date == null)) {
     
-
     return NextResponse.json({ error: "invalid field value" }, { status: 400 });
   }
   db.prepare("UPDATE goals SET name=?, target_amount=?, account_id=?, target_date=?, note=? WHERE id=?")
     .run(name, target, account_id, target_date, "note" in b ? String(b.note ?? "") : before.note, id);
   logActivity(db, "goal", "update", id, `Updated savings goal #${id} ("${name}")`);
   
-
   return NextResponse.json({ ok: true });
 }
 
@@ -43,6 +41,5 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     `Deleted savings goal #${id} ("${row.name}", target ${row.target_amount})`,
     { table: "goals", ...row });
   
-
   return NextResponse.json({ ok: true, log_id: logId });
 }

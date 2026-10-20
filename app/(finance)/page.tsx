@@ -13,7 +13,6 @@ const PAD = { top: 26, right: 10, bottom: 22, left: 46 };
 
 function monthLabel(m: string): string {
   
-
   return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][Number(m.slice(5, 7)) - 1];
 }
 
@@ -21,7 +20,6 @@ function monthLabel(m: string): string {
 function Grid({ y0, yMax, yOf, sym }: { y0: number; yMax: number; yOf: (v: number) => number; sym: string }) {
   const ticks = [y0, (y0 + yMax) / 2, yMax];
   
-
   return (
     <g>
       {ticks.map((v, i) => (
@@ -56,7 +54,6 @@ function NetWorthChart({ points, sym }: { points: TrendPoint[]; sym: string }) {
 
   const last = points.length - 1;
   
-
   return (
     <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} style={{ width: "100%", height: "auto" }} role="img"
       aria-label="Net worth by month" onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
@@ -108,7 +105,6 @@ function CashFlowChart({ points, sym }: { points: TrendPoint[]; sym: string }) {
       {points.map((p, i) => {
         const cx = PAD.left + slot * i + slot / 2;
         
-
         return (
           <g key={p.month} onMouseEnter={() => setHover(i)}>
             {/* invisible hover target wider than the thin bars */}
@@ -249,7 +245,6 @@ export default function DashboardPage() {
             const pct = b.budget > 0 ? (b.actual / b.budget) * 100 : 0;
             const over = b.actual > b.budget;
             
-
             return (
               <div key={i} className="budget-row">
                 <div className="top">

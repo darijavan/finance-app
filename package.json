@@ -9,7 +9,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "lint": "oxlint . && node scripts/check-return-spacing.mjs $(git ls-files '*.ts' '*.tsx')"
+    "lint": "oxlint . && node scripts/check-return-spacing.mjs $(git ls-files '*.ts' '*.tsx') && git ls-files --cached --others --exclude-standard -z '*.ts' '*.tsx' '*.js' '*.mjs' '*.cjs' '*.mts' '*.cts' | xargs -0 node scripts/check-empty-lines.mjs",
+    "lint:fix": "oxlint --fix . && node scripts/check-return-spacing.mjs --fix $(git ls-files '*.ts' '*.tsx') && git ls-files --cached --others --exclude-standard -z '*.ts' '*.tsx' '*.js' '*.mjs' '*.cjs' '*.mts' '*.cts' | xargs -0 node scripts/check-empty-lines.mjs --fix"
   },
   "dependencies": {
     "next": "16.3.2",

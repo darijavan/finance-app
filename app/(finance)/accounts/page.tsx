@@ -331,7 +331,6 @@ export default function AccountsPage() {
             const pct = g.target_amount > 0 ? Math.min(100, (cur / g.target_amount) * 100) : 0;
             const done = cur >= g.target_amount;
             
-
             return (
               <div key={g.id} className="budget-row">
                 <div className="top">

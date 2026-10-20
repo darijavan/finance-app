@@ -35,7 +35,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const category_id = "category_id" in body ? optionalId(body.category_id) : before.category_id;
   if (amount == null || cur == null || date == null || account_id === undefined || category_id === undefined) {
     
-
     return NextResponse.json({ error: "invalid amount, currency, date, category, or account" }, { status: 400 });
   }
   const next = { amount, currency: cur, date, account_id };
@@ -92,7 +91,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     : `Corrected transaction #${id} posted debit from ${before.account_amount ?? "—"} ${before.account_currency ?? ""} to ${postedAccountAmount} ${postedAccountCurrency}`,
     postedAccountAmount === undefined ? undefined : { before_account_amount: before.account_amount, posted_account_amount: postedAccountAmount, account_currency: postedAccountCurrency, account_fx_source: "provider_statement" });
   
-
   return NextResponse.json(row);
 }
 
@@ -111,6 +109,5 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const logId = logActivity(db, "transaction", "delete", id,
     `Deleted transaction #${id} (${row.direction} ${row.amount} ${row.currency || ""}, ${row.date})`, { table: "transactions", ...row });
   
-
   return NextResponse.json({ ok: true, log_id: logId });
 }

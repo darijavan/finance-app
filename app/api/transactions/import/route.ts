@@ -15,7 +15,6 @@ export async function POST(req: NextRequest) {
   const b = await req.json();
   if (!Array.isArray(b.rows) || b.rows.length === 0) {
     
-
     return NextResponse.json({ error: "rows required" }, { status: 400 });
   }
   if (b.rows.length > 2000) 
@@ -26,7 +25,6 @@ export async function POST(req: NextRequest) {
   const category_id = optionalId(b.category_id);
   if (cur == null || account_id === undefined || category_id === undefined) {
     
-
     return NextResponse.json({ error: "invalid currency, account, or category" }, { status: 400 });
   }
   let accountCurrency: Currency | null = null;

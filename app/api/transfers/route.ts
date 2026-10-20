@@ -59,7 +59,6 @@ export async function GET(req: NextRequest) {
      ${where} ORDER BY t.date DESC, t.id DESC LIMIT ?`,
   ).all(...args) as any[];
   
-
   return NextResponse.json(rows);
 }
 
@@ -75,7 +74,6 @@ export async function POST(req: NextRequest) {
   const to_account = Number(b.to_account);
   if (!from_account || !to_account || from_account === to_account) {
     
-
     return NextResponse.json({ error: "from/to accounts required and must differ" }, { status: 400 });
   }
   const from = db.prepare("SELECT currency FROM accounts WHERE id=?").get(from_account) as { currency: Currency } | undefined;
@@ -105,11 +103,9 @@ export async function POST(req: NextRequest) {
     logActivity(db, "transfer", "create", Number(info.lastInsertRowid),
       `Transferred ${fromFx.amount} ${from.currency} → ${toFx.amount} ${to.currency} on ${date}`);
     
-
     return NextResponse.json(row, { status: 201 });
   } catch (e) {
     
-
     return NextResponse.json({ error: String(e) }, { status: 422 });
   }
 }

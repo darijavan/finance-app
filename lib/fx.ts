@@ -17,7 +17,6 @@ export function getBaseCurrency(): Currency {
     | { value: Currency }
     | undefined;
   
-
   return row?.value || DEFAULT_CURRENCY;
 }
 
@@ -27,7 +26,6 @@ function readRates(): Record<string, { rate: number; updated_at: string }> {
   const out: Record<string, { rate: number; updated_at: string }> = {};
   for (const r of rows) out[r.code] = { rate: r.rate, updated_at: r.updated_at };
   
-
   return out;
 }
 
@@ -38,7 +36,6 @@ function ratesAreStale(rates: Record<string, { updated_at: string }>): boolean {
   return true;
   const newest = Math.max(...vals.map((v) => Date.parse(v.updated_at) || 0));
   
-
   return Date.now() - newest > REFRESH_MS;
 }
 
@@ -59,7 +56,6 @@ export async function refreshRates(force = false): Promise<Record<string, number
     const out: Record<string, number> = {};
     for (const [c, v] of Object.entries(existing)) out[c] = v.rate;
     
-
     return out;
   }
 
@@ -82,14 +78,12 @@ export async function refreshRates(force = false): Promise<Record<string, number
       throw e;
     }
     
-
     return data.rates;
   } catch {
     // Network/API failure: fall back to whatever we have cached (may be empty).
     const out: Record<string, number> = { [base]: 1 };
     for (const [c, v] of Object.entries(existing)) out[c] = v.rate;
     
-
     return out;
   }
 }
@@ -110,10 +104,8 @@ export async function getConverter(): Promise<{
 
     return amount; // unknown currency -> assume already base
     
-
     return amount / r;
   };
   
-
   return { base, toBase, rates };
 }

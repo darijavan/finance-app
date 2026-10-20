@@ -10,7 +10,6 @@ export async function GET() {
   const db = getDb();
   const rows = db.prepare("SELECT * FROM categories ORDER BY direction, name").all();
   
-
   return NextResponse.json(rows);
 }
 
@@ -27,6 +26,5 @@ export async function POST(req: NextRequest) {
   const row = db.prepare("SELECT * FROM categories WHERE id=?").get(info.lastInsertRowid);
   logActivity(db, "category", "create", Number(info.lastInsertRowid), `Added category "${name}" (${direction})`);
   
-
   return NextResponse.json(row, { status: 201 });
 }

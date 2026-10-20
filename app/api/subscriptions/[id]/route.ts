@@ -38,7 +38,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       validated.category_id === undefined && "category_id" in b ||
       validated.account_id === undefined && "account_id" in b) {
     
-
     return NextResponse.json({ error: "invalid field value" }, { status: 400 });
   }
   const fields: string[] = [];
@@ -55,7 +54,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   logActivity(db, "subscription", "update", id,
     `Updated subscription #${id} (${fields.join(", ") || "no fields"})${before ? ` — was "${before.name}"` : ""}`);
   
-
   return NextResponse.json({ ok: true });
 }
 

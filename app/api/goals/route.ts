@@ -19,7 +19,6 @@ export async function GET() {
   );
   for (const g of rows) g.current = Math.round((native.get(g.account_id) || 0) * 100) / 100;
   
-
   return NextResponse.json(rows);
 }
 
@@ -45,7 +44,6 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ error: "invalid target date" }, { status: 400 });
   if (!db.prepare("SELECT 1 FROM accounts WHERE id=?").get(account_id)) {
     
-
     return NextResponse.json({ error: "account not found" }, { status: 404 });
   }
   const info = db.prepare(
@@ -53,6 +51,5 @@ export async function POST(req: NextRequest) {
   ).run(name, target, account_id, target_date, String(b.note ?? ""), new Date().toISOString());
   logActivity(db, "goal", "create", Number(info.lastInsertRowid), `Added savings goal "${name}" (${target})`);
   
-
   return NextResponse.json({ ok: true, id: info.lastInsertRowid }, { status: 201 });
 }

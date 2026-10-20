@@ -16,6 +16,5 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     `Deleted budget #${id} (${row.amount} for ${row.month}${row.category_id == null ? ", overall" : `, category #${row.category_id}`})`,
     { table: "budgets", ...row });
   
-
   return NextResponse.json({ ok: true, log_id: logId });
 }

@@ -8,7 +8,6 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const { base, rates } = await getConverter();
   
-
   return NextResponse.json({ base, rates });
 }
 
@@ -17,6 +16,5 @@ export async function POST(req: NextRequest) {
   const force = searchParams.get("force") != null;
   const rates = await refreshRates(force);
   
-
   return NextResponse.json({ ok: true, rates });
 }

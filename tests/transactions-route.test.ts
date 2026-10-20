@@ -14,7 +14,6 @@ const { POST } = await import("../app/api/transactions/route");
 
 function request(body: unknown) {
 
-
   return new NextRequest("http://localhost/api/transactions", {
     method: "POST", body: JSON.stringify(body), headers: { "content-type": "application/json" },
   });

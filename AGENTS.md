@@ -25,3 +25,7 @@ chore(deps): update Next.js patch release
 Before committing, inspect the diff and run the relevant checks. Keep commits focused and independently buildable. After a successful commit, push it to `origin main` unless the task explicitly uses a feature branch.
 
 A repository commit-msg hook enforces the title format. If it rejects a message, rewrite the title; do not bypass the hook.
+
+## Spacing
+
+Keep at most one successive empty line in TypeScript and JavaScript source. Run `pnpm lint:fix` to fix spacing automatically.

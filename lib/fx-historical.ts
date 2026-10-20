@@ -15,7 +15,6 @@ export type FxSnapshot = {
 export function convertAmount(amount: number, rate: number): number {
   if (!Number.isFinite(rate) || rate <= 0) throw new Error("FX rate must be positive");
   
-
   return Math.round(amount * rate * 100) / 100;
 }
 
@@ -43,7 +42,6 @@ export async function snapshotConversion(
   ).get(date, from, to) as { rate: number; rate_date: string; source: string } | undefined;
   if (cached) {
     
-
     return { amount: convertAmount(amount, cached.rate), rate: cached.rate, rate_date: cached.rate_date, source: cached.source };
   }
 

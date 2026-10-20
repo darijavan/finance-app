@@ -20,7 +20,6 @@ export function cutoffDay(month: string, today: string): number {
 
   return Number(today.slice(8, 10));
   
-
   return 0;
 }
 
@@ -45,11 +44,9 @@ export function nextChargeDate(sub: DueSub, today: string): string | null {
     if (date < today) continue;
     if (sub.start_date && date < sub.start_date) continue;
     
-
     return date;
   }
   
-
   return null;
 }
 
@@ -64,7 +61,6 @@ export function scheduledDateInMonth(sub: DueSub, month: string): string | null 
   return null;
   const date = `${month}-${String(Math.min(sub.day_of_month || 1, 28)).padStart(2, "0")}`;
   
-
   return sub.start_date && date < sub.start_date ? null : date;
 }
 
@@ -77,6 +73,5 @@ export function chargeDate(sub: DueSub, month: string, today: string): string | 
   return null;
   const date = scheduledDateInMonth(sub, month);
   
-
   return date != null && Number(date.slice(8, 10)) <= cutoffDay(month, today) ? date : null;
 }

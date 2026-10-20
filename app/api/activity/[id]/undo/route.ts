@@ -12,10 +12,8 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   const newId = undoActivity(db, logId);
   if (newId == null) {
     
-
     return NextResponse.json({ error: "This action can't be undone (not a reversible delete or already undone)." }, { status: 409 });
   }
   
-
   return NextResponse.json({ ok: true, restored_id: newId });
 }

@@ -59,14 +59,12 @@ export function useFinance(): FinanceCtx {
   const v = useContext(Ctx);
   if (!v) throw new Error("useFinance must be used within FinanceLayout");
   
-
   return v;
 }
 
 // "2026-07" → "Jul 2026" for the month picker.
 function monthLabel(m: string): string {
   
-
   return new Date(`${m}-01T00:00:00`).toLocaleDateString(undefined, { month: "short", year: "numeric" });
 }
 
@@ -144,7 +142,6 @@ function Chrome({ children }: { children: ReactNode }) {
   // Awaitable confirmation dialog. Resolves true when the user confirms.
   const confirm = useCallback((opts: ConfirmOpts): Promise<boolean> => {
     
-
     return new Promise((resolve) => {
       setConfirmState({ ...opts, open: true, resolve });
     });
@@ -154,7 +151,6 @@ function Chrome({ children }: { children: ReactNode }) {
     setConfirmState((s) => {
       s.resolve?.(ok);
       
-
       return { open: false, title: "", message: "" };
     });
   }, []);
@@ -286,7 +282,6 @@ function Chrome({ children }: { children: ReactNode }) {
           {TABS.map((t) => {
             const active = t.key === "" ? pathname === "/" : pathname === t.href;
             
-
             return (
               <Link key={t.key} href={`${t.href}?month=${month}`} className={active ? "active" : ""}
                 aria-current={active ? "page" : undefined}>
@@ -339,6 +334,5 @@ function Chrome({ children }: { children: ReactNode }) {
 
 export default function FinanceProvider({ children }: { children: ReactNode }) {
   
-
   return <Chrome>{children}</Chrome>;
 }

@@ -28,7 +28,6 @@ export function parseCSV(text: string): string[][] {
   if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
   // Drop fully empty trailing rows.
   
-
   return rows.filter((r) => r.some((c) => c.trim() !== ""));
 }
 
@@ -36,11 +35,9 @@ export function toCSV(rows: (string | number | null | undefined)[][]): string {
   const cell = (v: string | number | null | undefined): string => {
     const s = v == null ? "" : String(v);
     
-
     return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   
-
   return rows.map((r) => r.map(cell).join(",")).join("\n") + "\n";
 }
 
@@ -66,7 +63,6 @@ export function normalizeDate(s: string, format: DateFormat = "auto"): string | 
 
     return null;
     
-
     return `${m[3]}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
   }
   m = t.match(/^(\d{4})[/.](\d{1,2})[/.](\d{1,2})$/);
@@ -74,7 +70,6 @@ export function normalizeDate(s: string, format: DateFormat = "auto"): string | 
 
   return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
   
-
   return null;
 }
 
@@ -101,6 +96,5 @@ export function normalizeAmount(s: string): number | null {
 
   return null;
   
-
   return negative ? -n : n;
 }

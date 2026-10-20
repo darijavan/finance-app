@@ -24,7 +24,6 @@ export function useSort<K extends string>(initialKey: K | null = null, initialDi
     }
   };
   
-
   return { key, dir, toggle };
 }
 
@@ -37,7 +36,6 @@ export function useSorted<T, K extends string>(
   accessors: Record<K, (row: T) => string | number | null | undefined>
 ): T[] {
   
-
   return useMemo(() => {
     if (!sort.key) 
 
@@ -45,7 +43,6 @@ export function useSorted<T, K extends string>(
     const acc = accessors[sort.key];
     const mult = sort.dir === "asc" ? 1 : -1;
     
-
     return [...rows].sort((a, b) => {
       let av = acc(a);
       let bv = acc(b);
@@ -69,7 +66,6 @@ export function useSorted<T, K extends string>(
 
       return 1 * mult;
       
-
       return 0;
     });
   }, [rows, sort.key, sort.dir, accessors]);
@@ -88,7 +84,6 @@ export function SortHeader<K extends string>({
   const active = sort.key === k;
   const arrow = active ? (sort.dir === "asc" ? " ▲" : " ▼") : " ↕";
   
-
   return (
     <th
       className={className}

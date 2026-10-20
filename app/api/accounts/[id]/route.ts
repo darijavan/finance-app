@@ -18,7 +18,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     (db.prepare("SELECT COUNT(*) AS c FROM subscriptions WHERE account_id=?").get(id) as any).c;
   if (linked > 0) {
     
-
     return NextResponse.json(
       { error: "Account is in use by transactions, transfers, or subscriptions. Reassign or delete those first." },
       { status: 409 },
@@ -30,6 +29,5 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     `Deleted account #${id} ("${row.name}")`,
     { table: "accounts", ...row });
   
-
   return NextResponse.json({ ok: true, log_id: logId });
 }

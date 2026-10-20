@@ -13,7 +13,6 @@ export const RECEIPT_TYPES = new Set([
 
 export function validReceipt(file: { type: string; size: number }) {
 
-
   return RECEIPT_TYPES.has(file.type) && file.size > 0 && file.size <= MAX_RECEIPT_BYTES;
 }
 

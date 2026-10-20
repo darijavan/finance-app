@@ -10,7 +10,6 @@ export async function getJSON<T>(url: string): Promise<T> {
   const r = await fetch(url);
   if (!r.ok) throw new Error(await r.text());
   
-
   return r.json();
 }
 export async function sendJSON<T>(url: string, method: string, body?: unknown): Promise<T> {
@@ -21,27 +20,23 @@ export async function sendJSON<T>(url: string, method: string, body?: unknown): 
   });
   if (!r.ok) throw new Error(await r.text());
   
-
   return r.json();
 }
 
 export function fmt(n: number, sym: string) {
   
-
   return `${sym}${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
 
 export function symbolOf(code: Currency): string {
   const c = CURRENCIES.find((x) => x.code === code);
   
-
   return c ? c.symbol : code + " ";
 }
 
 // Format an amount using the symbol for its own currency code.
 export function fmtCur(n: number, code: Currency) {
   
-
   return fmt(n, symbolOf(code));
 }
 
@@ -54,13 +49,11 @@ export function monthList(): string[] {
     out.push(`${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`);
   }
   
-
   return out;
 }
 
 export function currentMonth(): string {
   
-
   return new Date().toISOString().slice(0, 7);
 }
 
@@ -70,13 +63,11 @@ export function catName(categories: Category[], id: number | null, direction: st
   return null;
   const c = categories.find((x) => x.id === id);
   
-
   return c ? c.name : (direction === "income" ? "Income" : "Other");
 }
 export function catColor(categories: Category[], id: number | null) {
   const c = categories.find((x) => x.id === id);
   
-
   return c ? c.color : "#888";
 }
 
