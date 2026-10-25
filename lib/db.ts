@@ -115,6 +115,11 @@ function initSchema(db: DatabaseSync) {
       category_id INTEGER,
       month       TEXT NOT NULL,
       amount      REAL NOT NULL,
+      rollover    INTEGER NOT NULL DEFAULT 0,
+      recurring   INTEGER NOT NULL DEFAULT 0,
+      recurrence_start TEXT DEFAULT NULL,
+      recurrence_generated INTEGER NOT NULL DEFAULT 0,
+      recurrence_deleted INTEGER NOT NULL DEFAULT 0,
       UNIQUE(category_id, month),
       FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
     );
@@ -222,6 +227,18 @@ export function undoActivity(
 
   return null;
 
+  if (data.table === "budgets") {
+    const tombstone = db.prepare("SELECT id FROM budgets WHERE id=? AND recurrence_deleted=1").get(data.id) as { id: number } | undefined;
+    if (tombstone) {
+      const cols = Object.keys(data).filter((k) => k !== "table" && k !== "id");
+      db.prepare(`UPDATE budgets SET ${cols.map((column) => `${column}=?`).join(", ")} WHERE id=?`)
+        .run(...cols.map((column) => data[column]), data.id);
+      db.prepare("UPDATE activity_log SET action='delete-undone' WHERE id=?").run(logId);
+
+      return data.id;
+    }
+  }
+
   const cols = Object.keys(data).filter((k) => k !== "table");
   const placeholders = cols.map(() => "?").join(", ");
   const values = cols.map((k) => data[k]);
@@ -276,6 +293,18 @@ function migrate(db: DatabaseSync) {
   }
   if (!cols("budgets").includes("rollover")) {
     db.exec("ALTER TABLE budgets ADD COLUMN rollover INTEGER NOT NULL DEFAULT 0");
+  }
+  if (!cols("budgets").includes("recurring")) {
+    db.exec("ALTER TABLE budgets ADD COLUMN recurring INTEGER NOT NULL DEFAULT 0");
+  }
+  if (!cols("budgets").includes("recurrence_start")) {
+    db.exec("ALTER TABLE budgets ADD COLUMN recurrence_start TEXT DEFAULT NULL");
+  }
+  if (!cols("budgets").includes("recurrence_generated")) {
+    db.exec("ALTER TABLE budgets ADD COLUMN recurrence_generated INTEGER NOT NULL DEFAULT 0");
+  }
+  if (!cols("budgets").includes("recurrence_deleted")) {
+    db.exec("ALTER TABLE budgets ADD COLUMN recurrence_deleted INTEGER NOT NULL DEFAULT 0");
   }
   if (!cols("accounts").includes("sort_order")) {
     db.exec("ALTER TABLE accounts ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0");

@@ -15,6 +15,7 @@ export default function BudgetsPage() {
   const [bCat, setBCat] = useState<string>(""); // "" = overall
   const [bAmount, setBAmount] = useState("");
   const [bRollover, setBRollover] = useState(false);
+  const [bRecurring, setBRecurring] = useState(false);
   const [cName, setCName] = useState("");
   const [cDir, setCDir] = useState<"expense" | "income">("expense");
   const [cColor, setCColor] = useState("#7c9cff");
@@ -26,12 +27,14 @@ export default function BudgetsPage() {
     setBCat(b.category_id != null ? String(b.category_id) : "");
     setBAmount(String(b.amount));
     setBRollover(!!b.rollover);
+    setBRecurring(!!b.recurring);
   };
 
   const cancelEditBudget = () => {
     setBEditing(false);
     setBAmount("");
     setBRollover(false);
+    setBRecurring(false);
   };
 
   const setBudget = async () => {
@@ -41,19 +44,23 @@ export default function BudgetsPage() {
 
     return notify("Enter a valid budget");
     await sendJSON(`${API}/budgets`, "PUT", {
-      month, category_id: bCat ? Number(bCat) : null, amount, rollover: bRollover,
+      month, category_id: bCat ? Number(bCat) : null, amount, rollover: bRollover, recurring: bRecurring,
     });
     setBAmount("");
     setBEditing(false);
     setBRollover(false);
+    setBRecurring(false);
     notify(wasEditing ? "Budget updated" : "Budget saved");
     reload();
   };
 
   const deleteBudget = async (id: number) => {
+    const recurring = budgets.find((budget) => budget.id === id)?.recurrence_start;
     const ok = await confirm({
       title: "Delete budget?",
-      message: "This permanently removes the budget. You can undo it from the bottom bar right after.",
+      message: recurring
+        ? "Remove this month and stop future repeats? Earlier budgets and manual future overrides stay unchanged. You can undo this from the bottom bar."
+        : "This permanently removes the budget. You can undo it from the bottom bar right after.",
       confirmLabel: "Delete",
       danger: true,
     });
@@ -117,17 +124,25 @@ export default function BudgetsPage() {
           </select>
         </div>
         <div className="field">
-          <label>Budget ({sym})</label>
-          <input type="number" step="0.01" value={bAmount} onChange={(e) => setBAmount(e.target.value)} />
+          <label htmlFor="budget-amount">Budget ({sym})</label>
+          <input id="budget-amount" type="number" step="0.01" value={bAmount} onChange={(e) => setBAmount(e.target.value)} />
         </div>
         <label className="muted" style={{ display: "flex", alignItems: "center", gap: 6, paddingBottom: 10 }}
           title="Unused budget carries over into next month">
           <input type="checkbox" checked={bRollover} onChange={(e) => setBRollover(e.target.checked)} />
           Roll over unused
         </label>
+        <label className="muted" style={{ display: "flex", alignItems: "center", gap: 6, paddingBottom: 10 }}
+          title="Create this budget automatically in future months">
+          <input type="checkbox" checked={bRecurring} onChange={(e) => setBRecurring(e.target.checked)} />
+          Repeat every month
+        </label>
         {bEditing && <button className="btn secondary" onClick={cancelEditBudget}>Cancel</button>}
         <button className="btn" onClick={setBudget}>{bEditing ? "Update" : `Save for ${month}`}</button>
       </div>
+      <p className="muted" style={{ fontSize: 12 }}>
+        Repeats forward every month at this amount until you edit or uncheck it here — past months are never rewritten.
+      </p>
 
       <h2 style={{ marginTop: 22 }}>Current budgets</h2>
       {visibleBudgets.length === 0 && (
@@ -146,6 +161,7 @@ export default function BudgetsPage() {
                 <td>
                   {b.category_id == null ? "Overall" : (b.category_name || "—")}
                   {!!b.rollover && <span className="muted" style={{ fontSize: 12 }}> ↻ rollover</span>}
+                  {!!b.recurring && <span className="muted" style={{ fontSize: 12 }}> ↻ repeats monthly</span>}
                 </td>
                 <td className="right">{fmt(b.amount, sym)}</td>
                 <td className="right actions">

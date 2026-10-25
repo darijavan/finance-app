@@ -4,9 +4,11 @@ import { NextRequest } from "next/server";
 const mocks = vi.hoisted(() => ({
   db: { prepare: vi.fn() },
   logActivity: vi.fn(),
+  materializeRecurringBudgets: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({ getDb: () => mocks.db, logActivity: mocks.logActivity }));
+vi.mock("@/lib/budgets", () => ({ materializeRecurringBudgets: mocks.materializeRecurringBudgets }));
 
 const budgets = await import("../app/api/budgets/route");
 const budget = await import("../app/api/budgets/[id]/route");
@@ -34,7 +36,22 @@ describe("/api/budgets", () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual(rows);
+    expect(mocks.materializeRecurringBudgets).toHaveBeenCalledWith(mocks.db, "2026-05");
     expect(all).toHaveBeenCalledWith("2026-05");
+  });
+
+  it("rejects an invalid recurring value", async () => {
+    const response = await budgets.PUT(request("PUT", { month: "2026-05", amount: 400, recurring: "yes" }));
+
+    expect(response.status).toBe(400);
+    expect(mocks.db.prepare).not.toHaveBeenCalled();
+  });
+
+  it("rejects an invalid supplied month", async () => {
+    const response = await budgets.PUT(request("PUT", { month: "2026-13", amount: 400, recurring: false }));
+
+    expect(response.status).toBe(400);
+    expect(mocks.db.prepare).not.toHaveBeenCalled();
   });
 
   it("rejects a non-numeric budget amount at the request boundary", async () => {
@@ -49,6 +66,10 @@ describe("/api/budgets", () => {
     const remove = vi.fn();
     const insert = vi.fn();
     mocks.db.prepare.mockImplementation((sql: string) => {
+      if (sql.startsWith("SELECT recurring")) {
+
+        return { get: () => undefined };
+      }
       if (sql.startsWith("DELETE FROM budgets WHERE month")) {
 
         return { run: remove };
@@ -61,13 +82,29 @@ describe("/api/budgets", () => {
       return { get: () => ({ id: 21 }) };
     });
 
-    const response = await budgets.PUT(request("PUT", { month: "2026-05", category_id: 2, amount: 400, rollover: true }));
+    const response = await budgets.PUT(request("PUT", { month: "2026-05", category_id: 2, amount: 400, rollover: true, recurring: true }));
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ ok: true });
     expect(remove).toHaveBeenCalledWith("2026-05", 2, 2);
-    expect(insert).toHaveBeenCalledWith(2, "2026-05", 400, 1);
+    expect(insert).toHaveBeenCalledWith(2, "2026-05", 400, 1, 1, "2026-05");
     expect(mocks.logActivity).toHaveBeenCalledWith(mocks.db, "budget", "create", 21, "Set category #2 budget for 2026-05 = 400");
+  });
+
+  it("retains recurrence lineage when editing an instance to stop repeating", async () => {
+    const insert = vi.fn();
+    mocks.db.prepare.mockImplementation((sql: string) => {
+      if (sql.startsWith("SELECT recurring")) return { get: () => ({ recurring: 1, recurrence_start: "2026-05" }) };
+      if (sql.includes("month>?")) return { run: vi.fn() };
+      if (sql.startsWith("DELETE FROM budgets WHERE month")) return { run: vi.fn() };
+      if (sql.startsWith("INSERT INTO budgets")) return { run: insert };
+
+      return { get: () => ({ id: 22 }) };
+    });
+
+    await budgets.PUT(request("PUT", { month: "2026-07", category_id: 2, amount: 500, recurring: false }));
+
+    expect(insert).toHaveBeenCalledWith(2, "2026-07", 500, 0, 0, "2026-05");
   });
 });
 

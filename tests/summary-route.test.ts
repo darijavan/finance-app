@@ -5,11 +5,13 @@ const mocks = vi.hoisted(() => ({
   db: { prepare: vi.fn() },
   getConverter: vi.fn(),
   observations: vi.fn(),
+  materializeRecurringBudgets: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({ getDb: () => mocks.db }));
 vi.mock("@/lib/fx", () => ({ getConverter: mocks.getConverter }));
 vi.mock("@/lib/insights", () => ({ observations: mocks.observations }));
+vi.mock("@/lib/budgets", () => ({ materializeRecurringBudgets: mocks.materializeRecurringBudgets }));
 
 const { GET } = await import("../app/api/summary/route");
 
@@ -19,6 +21,14 @@ afterEach(() => {
 });
 
 describe("GET /api/summary", () => {
+  it("rejects an invalid supplied month before reading financial data", async () => {
+    const response = await GET(new NextRequest("http://localhost/api/summary?month=2026-13"));
+
+    expect(response.status).toBe(400);
+    expect(mocks.db.prepare).not.toHaveBeenCalled();
+    expect(mocks.getConverter).not.toHaveBeenCalled();
+  });
+
   it("aggregates converted ledger totals and reports only unpaid current-month expense subscriptions", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-08-16T12:00:00Z"));
@@ -40,7 +50,7 @@ describe("GET /api/summary", () => {
 
         return { all: () => [] };
       }
-      if (sql === "SELECT * FROM budgets WHERE month=?") {
+      if (sql === "SELECT * FROM budgets WHERE month=? AND recurrence_deleted=0") {
 
         return { all: () => [] };
       }
@@ -68,6 +78,7 @@ describe("GET /api/summary", () => {
     const response = await GET(new NextRequest("http://localhost/api/summary?month=2026-08"));
 
     expect(response.status).toBe(200);
+    expect(mocks.materializeRecurringBudgets).toHaveBeenCalledWith(mocks.db, "2026-08");
     expect(await response.json()).toEqual(expect.objectContaining({
       month: "2026-08",
       base: "ILS",

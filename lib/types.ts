@@ -96,6 +96,10 @@ export interface Budget {
   month: string; // YYYY-MM
   amount: number;
   rollover?: number; // 1 = unused budget carries into the next month
+  recurring?: number; // 1 = repeats into future months
+  recurrence_start?: string | null;
+  recurrence_generated?: number;
+  recurrence_deleted?: number;
   category_name?: string;
   category_color?: string;
 }
@@ -150,6 +154,7 @@ export interface Summary {
     budget: number;
     actual: number;
     rollover?: boolean;
+    recurring?: boolean;
   }[];
 }
 

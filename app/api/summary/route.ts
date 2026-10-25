@@ -3,6 +3,8 @@ import { getDb } from "@/lib/db";
 import { getConverter } from "@/lib/fx";
 import { scheduledDateInMonth } from "@/lib/subscription-due";
 import { observations } from "@/lib/insights";
+import { materializeRecurringBudgets } from "@/lib/budgets";
+import { isoMonth } from "@/lib/validate";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +15,10 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 export async function GET(req: NextRequest) {
   const db = getDb();
   const { searchParams } = new URL(req.url);
-  const month = searchParams.get("month") || new Date().toISOString().slice(0, 7);
+  const requestedMonth = searchParams.get("month");
+  const month = requestedMonth == null ? new Date().toISOString().slice(0, 7) : isoMonth(requestedMonth);
+  if (!month) return NextResponse.json({ error: "valid month required" }, { status: 400 });
+  materializeRecurringBudgets(db, month);
   const { base, toBase } = await getConverter();
 
   // Pull raw rows (with per-entry currency) and aggregate in base currency.
@@ -93,7 +98,7 @@ export async function GET(req: NextRequest) {
 
     return b.amount;
     const pm = prevMonth(b.month);
-    const prev = db.prepare("SELECT * FROM budgets WHERE month=? AND category_id IS ?").get(pm, b.category_id) as any;
+    const prev = db.prepare("SELECT * FROM budgets WHERE month=? AND category_id IS ? AND recurrence_deleted=0").get(pm, b.category_id) as any;
     if (!prev) 
 
     return b.amount;
@@ -102,11 +107,11 @@ export async function GET(req: NextRequest) {
     return b.amount + Math.max(0, leftover);
   };
 
-  const budgets = db.prepare("SELECT * FROM budgets WHERE month=?").all(month) as any[];
+  const budgets = db.prepare("SELECT * FROM budgets WHERE month=? AND recurrence_deleted=0").all(month) as any[];
   const budgetRows = budgets.map((b: any) => {
     if (b.category_id == null) {
       
-      return { category_id: null, category_name: "Overall", color: "#7c9cff", budget: r2(effectiveBudget(b)), actual: spent, rollover: !!b.rollover };
+      return { category_id: null, category_name: "Overall", color: "#7c9cff", budget: r2(effectiveBudget(b)), actual: spent, rollover: !!b.rollover, recurring: !!b.recurring };
     }
     const cat = db.prepare("SELECT name,color FROM categories WHERE id=?").get(b.category_id) as any;
     
@@ -117,6 +122,7 @@ export async function GET(req: NextRequest) {
       budget: r2(effectiveBudget(b)),
       actual: r2(spentByCatId.get(b.category_id) || 0),
       rollover: !!b.rollover,
+      recurring: !!b.recurring,
     };
   });
 
