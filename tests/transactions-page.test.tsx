@@ -4,6 +4,7 @@ import { afterEach, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getJSON: vi.fn(),
+  search: "q=rent",
   context: {
     month: "2026-08",
     settings: { currency: "ILS", currency_symbol: "₪" },
@@ -12,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams("q=rent") }));
+vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(mocks.search) }));
 vi.mock("../app/(finance)/store", () => ({ useFinance: () => mocks.context }));
 vi.mock("@/lib/client", () => ({
   API: "/api", getJSON: mocks.getJSON, sendJSON: vi.fn(), fmtCur: (amount: number) => String(amount),
@@ -27,6 +28,7 @@ afterEach(() => {
   vi.clearAllMocks();
   vi.useRealTimers();
   mocks.context.reloadKey = 0;
+  mocks.search = "q=rent";
 });
 
 it("re-fetches active all-month filters after the provider reloads", async () => {
@@ -73,4 +75,25 @@ it("offers PDF files by extension when creating a transaction", () => {
 
   const receipt = screen.getByLabelText("Receipt (PDF or image)") as HTMLInputElement;
   expect(receipt.accept).toContain(".pdf");
+});
+
+it("hydrates, changes, queries, and clears the reimbursed filter", async () => {
+  vi.useFakeTimers();
+  mocks.search = "reimbursed=1";
+  mocks.getJSON.mockResolvedValue([]);
+  render(<TransactionsPage />);
+
+  const select = screen.getByRole("combobox", { name: "Reimbursed" }) as HTMLSelectElement;
+  expect(select.value).toBe("1");
+  await act(async () => { await vi.advanceTimersByTimeAsync(250); });
+  expect(mocks.getJSON).toHaveBeenLastCalledWith("/api/transactions?from=2026-08-01&to=2026-08-31&reimbursed=1");
+
+  fireEvent.change(select, { target: { value: "0" } });
+  await act(async () => { await vi.advanceTimersByTimeAsync(250); });
+  expect(window.location.search).toContain("reimbursed=0");
+  expect(mocks.getJSON).toHaveBeenLastCalledWith("/api/transactions?from=2026-08-01&to=2026-08-31&reimbursed=0");
+
+  fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+  expect(select.value).toBe("");
+  expect(window.location.search).not.toContain("reimbursed");
 });

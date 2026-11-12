@@ -13,7 +13,7 @@ import { withReceiptName } from "@/lib/receipt-state";
 import { tagTextColor } from "@/lib/tag-color";
 import ReceiptViewer from "./receipt-viewer";
 
-const FILTER_KEYS = ["q", "account_id", "category_id", "from", "to", "min", "max", "reimbursable"];
+const FILTER_KEYS = ["q", "account_id", "category_id", "from", "to", "min", "max", "reimbursable", "reimbursed"];
 
 function formatFilterDate(date: string) {
 
@@ -85,6 +85,7 @@ export default function TransactionsPage() {
   const [fMin, setFMin] = useState(() => searchParams.get("min") || "");
   const [fMax, setFMax] = useState(() => searchParams.get("max") || "");
   const [fReimbursable, setFReimbursable] = useState(() => searchParams.get("reimbursable") || "");
+  const [fReimbursed, setFReimbursed] = useState(() => searchParams.get("reimbursed") || "");
   const [filtered, setFiltered] = useState<Transaction[] | null>(null);
   const [filteredTransfers, setFilteredTransfers] = useState<{ key: string; rows: Transfer[] } | null>(null);
   const transferRequest = useRef(0);
@@ -98,7 +99,7 @@ export default function TransactionsPage() {
 
   const fFrom = fromFilter.value;
   const fTo = toFilter.value;
-  const filterActive = !!(fromFilter.customized || toFilter.customized || fQ || fAccount || fCat || fFrom || fTo || fMin || fMax || fReimbursable);
+  const filterActive = !!(fromFilter.customized || toFilter.customized || fQ || fAccount || fCat || fFrom || fTo || fMin || fMax || fReimbursable || fReimbursed);
   const dateContext = dateFilterContext(fFrom, fTo);
   const transferFilterKey = new URLSearchParams({
     account_id: fAccount,
@@ -108,11 +109,11 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     let query = window.location.search;
-    const values = [fQ, fAccount, fCat, fFrom, fTo, fMin, fMax, fReimbursable];
+    const values = [fQ, fAccount, fCat, fFrom, fTo, fMin, fMax, fReimbursable, fReimbursed];
     for (const [index, key] of FILTER_KEYS.entries()) query = withQueryParam(query, key, values[index]);
 
     window.history.replaceState(null, "", query ? `${window.location.pathname}?${query}` : window.location.pathname);
-  }, [fQ, fAccount, fCat, fFrom, fTo, fMin, fMax, fReimbursable, month]);
+  }, [fQ, fAccount, fCat, fFrom, fTo, fMin, fMax, fReimbursable, fReimbursed, month]);
 
   useEffect(() => {
     if (!filterActive)
@@ -127,6 +128,7 @@ export default function TransactionsPage() {
     if (fMin) params.set("min", fMin);
     if (fMax) params.set("max", fMax);
     if (fReimbursable) params.set("reimbursable", fReimbursable);
+    if (fReimbursed) params.set("reimbursed", fReimbursed);
     const t = setTimeout(() => {
       getJSON<Transaction[]>(`${API}/transactions?${params}`)
         .then(setFiltered)
@@ -134,7 +136,7 @@ export default function TransactionsPage() {
     }, 250); // debounce typing
     
     return () => clearTimeout(t);
-  }, [filterActive, fQ, fAccount, fCat, fFrom, fTo, fMin, fMax, fReimbursable, reloadKey, notify]);
+  }, [filterActive, fQ, fAccount, fCat, fFrom, fTo, fMin, fMax, fReimbursable, fReimbursed, reloadKey, notify]);
 
   useEffect(() => {
     const request = ++transferRequest.current;
@@ -151,7 +153,7 @@ export default function TransactionsPage() {
   }, [fAccount, fFrom, fTo, reloadKey, notify]);
 
   const clearFilters = () => {
-    setFQ(""); setFAccount(""); setFCat(""); setFromFilter({ customized: false, value: monthFrom }); setToFilter({ customized: false, value: monthTo }); setFMin(""); setFMax(""); setFReimbursable("");
+    setFQ(""); setFAccount(""); setFCat(""); setFromFilter({ customized: false, value: monthFrom }); setToFilter({ customized: false, value: monthTo }); setFMin(""); setFMax(""); setFReimbursable(""); setFReimbursed("");
   };
 
   const rows = filterActive ? (filtered ?? []) : transactions;
@@ -399,6 +401,14 @@ export default function TransactionsPage() {
             <option value="">— any —</option>
             <option value="1">Reimbursable</option>
             <option value="0">Not reimbursable</option>
+          </select>
+        </div>
+        <div className="field">
+          <label htmlFor="reimbursed-filter">Reimbursed</label>
+          <select id="reimbursed-filter" value={fReimbursed} onChange={(e) => setFReimbursed(e.target.value)}>
+            <option value="">— any —</option>
+            <option value="1">Reimbursed</option>
+            <option value="0">Not reimbursed</option>
           </select>
         </div>
         {filterActive && <button className="btn secondary" onClick={clearFilters}>Clear filters</button>}

@@ -7,5 +7,5 @@ const transactions = readFileSync(new URL("../app/(finance)/transactions/page.ts
 test("active transaction filters refetch after a shared reload", () => {
   assert.match(store, /transfers, goals, reloadKey, reload, reloadCategories/);
   assert.match(transactions, /incomeCats, reloadKey, reload, notify, confirm, undo/);
-  assert.match(transactions, /fReimbursable, reloadKey, notify\]\);/);
+  assert.match(transactions, /fReimbursable, fReimbursed, reloadKey, notify\]\);/);
 });

@@ -35,6 +35,16 @@ export async function GET(req: NextRequest) {
   if (searchParams.get("max")) { wheres.push("t.amount<=?"); args.push(Number(searchParams.get("max"))); }
   const reimbursable = booleanParam(searchParams.get("reimbursable"));
   if (reimbursable !== undefined) { wheres.push("t.reimbursable=?"); args.push(Number(reimbursable)); }
+  const reimbursedParam = searchParams.get("reimbursed");
+  const reimbursed = booleanParam(reimbursedParam);
+  if (reimbursedParam !== null && reimbursed === undefined) {
+
+    return NextResponse.json({ error: "reimbursed must be 1 or 0" }, { status: 400 });
+  }
+  if (reimbursed !== undefined) {
+    wheres.push("t.reimbursable=1");
+    wheres.push(`t.reimbursed_at IS ${reimbursed ? "NOT " : ""}NULL`);
+  }
   const where = wheres.length ? " WHERE " + wheres.join(" AND ") : "";
   const rows = (db.prepare(
     `SELECT t.*, t.subscription_id IS NOT NULL AS is_subscription_charge,
