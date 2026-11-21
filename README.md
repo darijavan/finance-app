@@ -5,6 +5,11 @@ Personal finance tracker — expenses, monthly allowances, and subscriptions
 (with optional rollover), savings goals, trend charts, CSV import/export,
 and a full activity history with undo.
 
+This is a personal project, built for my own use.
+
+![Dashboard with sample data](docs/dashboard.png)
+![Transactions with sample data](docs/transactions.png)
+
 ## Stack
 - **Next.js 16** (App Router) + **TypeScript**
 - **Node 24** (see `.nvmrc`) via **nvm**
@@ -50,21 +55,10 @@ charge ahead of its due day, in a future month, or before the subscription's
 start date. The "Charge now" button on the Subscriptions tab only backfills
 the selected month.
 
-## Access boundary (read this before exposing the app)
-The app itself has **no authentication or authorization layer** — every API
-route trusts its caller. It is exposed only at `finance.ridjvan.me` through a
-Cloudflare tunnel, and **Cloudflare Access (GitHub OAuth policy) is the sole
-access boundary**; locally it binds to `127.0.0.1:3000`
-(`~/.config/systemd/user/finance.service`). Do not port-forward or re-proxy
-it around Cloudflare, and keep the tunnel's Access policy in place.
-
-Deliberately **no app-level auth is added** so nothing conflicts with the
-Access layer in front. If defense-in-depth is wanted later, the opt-in path
-is to *verify* rather than replace Cloudflare Access: check the
-`Cf-Access-Jwt-Assertion` header against the team's public keys
-(`https://<team>.cloudflareaccess.com/cdn-cgi/access/certs`) in a Next.js
-middleware, denying requests without a valid JWT. That adds no second login
-and fails closed if the tunnel is ever bypassed.
+## Access boundary
+This is a single-user personal app with no built-in authentication yet (see
+[#17](https://github.com/darijavan/finance-app/issues/17)), so run it only
+behind an authenticating reverse proxy.
 
 ## Known dependency advisories
 None: on Next 16 with `postcss` overridden to `>=8.5.10` (see
