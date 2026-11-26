@@ -1,0 +1,3 @@
+# Value past amounts at the transaction-date exchange rate
+
+Every converted amount (an **Account amount** or a **Base value**) uses the exchange rate on the date of the **Transaction** or **Transfer**, never today's rate. Past balances and past months' totals therefore never move when exchange rates change. Valuing at today's rate would show what past spending is worth now, but it would also rewrite history every time the rate moved, so a month's spending would change months after it was closed. A historical quote is recorded for each converted entry (see `lib/fx-historical.ts`), so switching to a different policy later would mean recomputing or re-fetching those snapshots.
