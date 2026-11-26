@@ -22,7 +22,7 @@ test(subscriptions): cover yearly due-date rules
 chore(deps): update Next.js patch release
 ```
 
-Before committing, inspect the diff and run the relevant checks. Keep commits focused and independently buildable. Changes reach `main` only through a pull request; see the workflow below.
+Before committing, inspect the diff and run the relevant checks. Keep commits focused and independently buildable. Changes reach `main` only through a pull request, following the workflow below, unless the user says otherwise for that task.
 
 A repository commit-msg hook enforces the title format. If it rejects a message, rewrite the title; do not bypass the hook.
 
@@ -30,7 +30,7 @@ A repository commit-msg hook enforces the title format. If it rejects a message,
 
 Unless the user says otherwise for that task, every change that touches files follows these steps:
 
-1. **Work in a worktree.** Create one per task, on its own branch named with a Conventional Commit type prefix: `git worktree add ../finance-app-<slug> -b <type>/<slug>`, then `pnpm install --frozen-lockfile --offline` inside it. Never work on the main checkout or on `main`.
+1. **Work in a worktree.** Create one per task, on its own branch named with a Conventional Commit type prefix: `git worktree add ../finance-app-<slug> -b <type>/<slug>`, then `pnpm install --frozen-lockfile --offline` inside it. If the pnpm store is missing packages, use `--prefer-offline` instead. Never work on the main checkout or on `main`.
 2. **Implement and verify.** Commit, then run `pnpm test`, `pnpm lint`, `pnpm exec tsc --noEmit` and `pnpm build`.
 3. **Open a draft pull request.** Push the branch and run `gh pr create --draft`. The description summarises the change. The pull request stays a draft until step 6.
 4. **Get an independent review.** Run `/review-branch <worktree-path> <base> -- <original request>`. It reviews in a fresh subagent that sees only the diff and the request. Quote the request as the user stated it, and never add your own explanations or justifications. The review ends with a verdict: **ready to merge** or **not ready**.

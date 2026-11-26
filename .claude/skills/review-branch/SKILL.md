@@ -1,9 +1,11 @@
 ---
 name: review-branch
-description: Independent review of a feature or fix branch, run in a fresh context that sees only the diff and the original request. Use after implementing and committing in a worktree, before pushing or opening a pull request.
+description: Independent review of a feature or fix branch, run in a fresh context that sees only the diff and the original request. Use after implementing and committing in a worktree, before marking the branch's draft pull request ready for review.
 argument-hint: <worktree-path> <base-branch> -- <original request, quoted as the user stated it>
 context: fork
 agent: general-purpose
+background: false
+disallowed-tools: Edit Write NotebookEdit
 ---
 
 # Review a branch
@@ -20,7 +22,7 @@ In order: the worktree path, the base branch, `--`, then the original request or
 
 ## Steps
 
-1. `cd` into the worktree and read the change: `git log --oneline <base>..HEAD` and `git diff <base>...HEAD`. Read the surrounding code of every touched function, and grep the callers of anything whose behaviour changed.
+1. The shell's working directory does not carry over between commands, so start every command with `cd <worktree> &&` and use absolute paths. Otherwise the checks run against the main checkout. Read the change: `git log --oneline <base>..HEAD` and `git diff <base>...HEAD`. Read the surrounding code of every touched function, and grep the callers of anything whose behaviour changed.
 2. Read `AGENTS.md`, `GLOSSARY.md` and the ADRs in `docs/adr/` that touch the changed area. Skip any that don't exist, without comment.
 3. Run the checks yourself rather than trusting the implementer: `pnpm test`, `pnpm lint`, `pnpm exec tsc --noEmit`. A failing check is a finding.
 4. Look for:
