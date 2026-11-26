@@ -45,4 +45,9 @@ List the findings, most severe first. For each one, give:
 
 Then give one line with the check results.
 
-If nothing is critical, say so plainly. Don't pad: leave out any category with no findings, and don't praise the change.
+End with the verdict, on its own line, for the commit you reviewed (`git rev-parse --short HEAD`):
+
+- `Verdict: ready to merge (<sha>)`: no critical findings and every check passes. Minor findings don't block it.
+- `Verdict: not ready (<sha>)`: anything else.
+
+Don't pad: leave out any category with no findings, and don't praise the change.

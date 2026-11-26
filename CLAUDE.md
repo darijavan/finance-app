@@ -1,6 +1,6 @@
 # Finance App instructions for Claude Code
 
-Read and follow [`AGENTS.md`](AGENTS.md) before making changes. In particular, Conventional Commit titles are mandatory, `--no-verify` is forbidden, commits must be focused, and feature or fix work goes through a worktree, an independent `/review-branch` review and a pull request.
+Read and follow [`AGENTS.md`](AGENTS.md) before making changes. In particular, Conventional Commit titles are mandatory, `--no-verify` is forbidden, commits must be focused, and feature or fix work goes through a worktree, a draft pull request, and an independent `/review-branch` review that must say "ready to merge" before the pull request is marked ready.
 
 For project architecture, schema migration, historical-FX, deployment, and verification conventions, follow the repository documentation and existing patterns.
 

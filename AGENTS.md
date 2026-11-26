@@ -32,13 +32,15 @@ Unless the user says otherwise for that task, every change that touches files fo
 
 1. **Work in a worktree.** Create one per task, on its own branch named with a Conventional Commit type prefix: `git worktree add ../finance-app-<slug> -b <type>/<slug>`, then `pnpm install --frozen-lockfile --offline` inside it. Never work on the main checkout or on `main`.
 2. **Implement and verify.** Commit, then run `pnpm test`, `pnpm lint`, `pnpm exec tsc --noEmit` and `pnpm build`.
-3. **Get an independent review.** Run `/review-branch <worktree-path> <base> -- <original request>`. It reviews in a fresh subagent that sees only the diff and the request. Quote the request as the user stated it, and never add your own explanations or justifications.
-4. **Fix and land.**
-   - Fix every **critical** finding, rerun the checks and commit. If the fixes are substantial, run `/review-branch` again.
-   - Fix the **minor** findings that are cheap and clearly correct.
-   - Push the branch and open a pull request with `gh pr create`. The description summarises the change and lists the minor findings left open.
-   - If a critical finding can't be fixed, or fixing it needs a decision from the user, stop before pushing and ask.
-5. **Remove the worktree.** Once the pull request is open and ready for review, run `git worktree remove ../finance-app-<slug>` from the main checkout. The branch stays on the remote and locally. If the pull request needs more changes later, run `git worktree add ../finance-app-<slug> <type>/<slug>` and start again from step 2.
+3. **Open a draft pull request.** Push the branch and run `gh pr create --draft`. The description summarises the change. The pull request stays a draft until step 6.
+4. **Get an independent review.** Run `/review-branch <worktree-path> <base> -- <original request>`. It reviews in a fresh subagent that sees only the diff and the request. Quote the request as the user stated it, and never add your own explanations or justifications. The review ends with a verdict: **ready to merge** or **not ready**.
+5. **Fix.**
+   - Fix every **critical** finding, rerun the checks, commit and push.
+   - Fix the **minor** findings that are cheap and clearly correct. List the rest in the pull request description (`gh pr edit`).
+   - If a critical finding can't be fixed, or fixing it needs a decision from the user, stop and ask. The pull request stays a draft.
+   - The verdict covers only the commits it reviewed. After any new commit, run `/review-branch` again before step 6.
+6. **Mark it ready for review.** Only when the latest review says **ready to merge** and covers the branch's last commit, run `gh pr ready`.
+7. **Remove the worktree.** Run `git worktree remove ../finance-app-<slug>` from the main checkout. The branch stays on the remote and locally. If the pull request needs more changes later, run `git worktree add ../finance-app-<slug> <type>/<slug>` and start again from step 2. Any new commit means the pull request goes back through steps 4 to 6.
 
 ## Spacing
 
