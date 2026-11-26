@@ -5,7 +5,11 @@ vi.mock("@/lib/db", () => ({ getDb: () => mocks.db }));
 
 const { dailyBaseConverter, snapshotConversion } = await import("../lib/fx-historical.ts");
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
 
 describe("snapshotConversion", () => {
   it("uses a cached dated quote without fetching", async () => {
@@ -67,6 +71,5 @@ describe("dailyBaseConverter", () => {
     expect(toBaseAt(10, "ILS", "2026-07-21")).toBe(10);
     expect(toBaseAt(10, null, "2026-07-21")).toBe(10);
     expect(get).toHaveBeenCalledTimes(2); // duplicate pair and base/future pairs skip the lookup
-    vi.useRealTimers();
   });
 });

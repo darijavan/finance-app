@@ -47,7 +47,7 @@ describe("GET /api/summary", () => {
     mocks.db.prepare.mockImplementation((sql: string) => {
       if (sql.startsWith("SELECT DISTINCT currency, date")) {
 
-        return { all: () => pairs };
+        return { all: (...args: string[]) => (expect(args).toEqual(["2025-08", "2026-08"]), pairs) };
       }
       if (sql.startsWith("SELECT t.amount")) {
 

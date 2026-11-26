@@ -3,6 +3,7 @@ import { getDb } from "./db.ts";
 
 const DAILY_FX_ENDPOINT = "https://api.frankfurter.dev/v1";
 const FALLBACK_DAILY_FX_ENDPOINT = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api";
+const FETCH_TIMEOUT_MS = 10_000;
 
 export type FxSnapshot = {
   amount: number;
@@ -47,7 +48,7 @@ export async function snapshotConversion(
 
   const response = await fetch(
     `${DAILY_FX_ENDPOINT}/${encodeURIComponent(date)}?base=${encodeURIComponent(from)}&symbols=${encodeURIComponent(to)}`,
-    { cache: "no-store" },
+    { cache: "no-store", signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) },
   );
   const data = response.ok
     ? await response.json() as { date?: string; rates?: Record<string, number> }
@@ -58,7 +59,8 @@ export async function snapshotConversion(
     : await fallbackSnapshot(from, to, date);
   db.prepare(
     `INSERT INTO fx_daily_rates(requested_date,base_currency,quote_currency,rate,rate_date,source,retrieved_at)
-     VALUES(?,?,?,?,?,?,?)`,
+     VALUES(?,?,?,?,?,?,?)
+     ON CONFLICT DO NOTHING`,
   ).run(date, from, to, quote.rate, quote.rate_date, quote.source, new Date().toISOString());
 
   return { amount: convertAmount(amount, quote.rate), ...quote };
@@ -101,7 +103,7 @@ export async function dailyBaseConverter(
 async function fallbackSnapshot(from: string, to: string, date: string): Promise<Omit<FxSnapshot, "amount">> {
   const response = await fetch(
     `${FALLBACK_DAILY_FX_ENDPOINT}@${encodeURIComponent(date)}/v1/currencies/${encodeURIComponent(from.toLowerCase())}.json`,
-    { cache: "no-store" },
+    { cache: "no-store", signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) },
   );
   if (!response.ok) throw new Error(`Historical FX lookup failed (${response.status}) for ${from}/${to} on ${date}`);
   const data = await response.json() as { date?: string; [base: string]: unknown };
