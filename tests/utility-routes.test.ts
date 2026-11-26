@@ -4,6 +4,7 @@ import { NextRequest } from "next/server";
 const mocks = vi.hoisted(() => ({
   db: { exec: vi.fn(), prepare: vi.fn() },
   getConverter: vi.fn(),
+  dailyBaseConverter: vi.fn(),
   refreshRates: vi.fn(),
   undoActivity: vi.fn(),
   logActivity: vi.fn(),
@@ -15,6 +16,7 @@ vi.mock("@/lib/db", () => ({
   undoActivity: mocks.undoActivity,
 }));
 vi.mock("@/lib/fx", () => ({ getConverter: mocks.getConverter, refreshRates: mocks.refreshRates }));
+vi.mock("@/lib/fx-historical", () => ({ dailyBaseConverter: mocks.dailyBaseConverter }));
 
 const settings = await import("../app/api/settings/route");
 const fx = await import("../app/api/fx/route");
@@ -83,10 +85,14 @@ describe("months and trends routes", () => {
       base: "ILS",
       toBase: (amount: number, currency: string) => currency === "USD" ? amount * 4 : amount,
     });
+    // Flow uses the transaction-date rate (USD 3); net worth keeps today's rate (USD 4).
+    mocks.dailyBaseConverter.mockResolvedValue(
+      (amount: number, currency: string, date: string) => currency === "USD" && date === "2026-08-03" ? amount * 3 : amount,
+    );
     mocks.db.prepare.mockImplementation((sql: string) => {
       if (sql.includes("amount, currency, direction"))
 
-      return { all: () => [{ m: "2026-08", amount: 10, currency: "USD", direction: "expense" }, { m: "2026-08", amount: 5, currency: "ILS", direction: "income" }] };
+      return { all: () => [{ m: "2026-08", date: "2026-08-03", amount: 10, currency: "USD", direction: "expense" }, { m: "2026-08", date: "2026-08-04", amount: 5, currency: "ILS", direction: "income" }] };
       if (sql === "SELECT id, currency FROM accounts")
 
       return { all: () => [{ id: 1, currency: "USD" }] };
@@ -99,7 +105,7 @@ describe("months and trends routes", () => {
 
     const response = await trends.GET(request("/api/trends?months=1"));
 
-    expect(await response.json()).toEqual({ base: "ILS", months: [{ month: "2026-08", spent: 40, earned: 5, net_worth: 32 }] });
+    expect(await response.json()).toEqual({ base: "ILS", months: [{ month: "2026-08", spent: 30, earned: 5, net_worth: 32 }] });
   });
 });
 

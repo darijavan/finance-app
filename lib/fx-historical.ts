@@ -64,6 +64,40 @@ export async function snapshotConversion(
   return { amount: convertAmount(amount, quote.rate), ...quote };
 }
 
+/**
+ * Converter from an entered amount to the base currency at the rate on its own
+ * date, so past totals never move with FX (ADR-0001). `pairs` must cover every
+ * (currency, date) the converter will see. Future dates and failed lookups use
+ * `fallback` (today's rate); failures are retried on the next call.
+ */
+// ponytail: one dated lookup per missing pair, sequential; move to Frankfurter time-series if first loads get slow.
+export async function dailyBaseConverter(
+  base: Currency,
+  fallback: (amount: number, code: Currency) => number,
+  pairs: { currency: Currency | null; date: string }[],
+): Promise<(amount: number, currency: Currency | null, date: string) => number> {
+  const today = new Date().toISOString().slice(0, 10);
+  const rates = new Map<string, number>(); // 0 = lookup failed
+  for (const { currency, date } of pairs) {
+    const key = `${currency}|${date}`;
+    if (!currency || currency === base || date > today || rates.has(key))
+      continue;
+    try {
+      rates.set(key, (await snapshotConversion(1, currency, base, date)).rate);
+    } catch {
+      rates.set(key, 0);
+    }
+  }
+
+  return (amount, currency, date) => {
+    if (!currency || currency === base)
+      return amount;
+    const rate = rates.get(`${currency}|${date}`);
+
+    return rate ? amount * rate : fallback(amount, currency);
+  };
+}
+
 async function fallbackSnapshot(from: string, to: string, date: string): Promise<Omit<FxSnapshot, "amount">> {
   const response = await fetch(
     `${FALLBACK_DAILY_FX_ENDPOINT}@${encodeURIComponent(date)}/v1/currencies/${encodeURIComponent(from.toLowerCase())}.json`,
