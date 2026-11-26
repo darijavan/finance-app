@@ -28,7 +28,7 @@
     "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^4.1.10",
     "jsdom": "^30.0.1",
-    "oxlint": "1.79.0",
+    "oxlint": "1.95.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"
   },
