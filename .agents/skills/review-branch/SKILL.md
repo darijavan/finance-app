@@ -14,14 +14,21 @@ disallowed-tools: Edit Write NotebookEdit
 
 This review only counts if the reviewer has never seen the implementation. Claude Code runs this skill in a fresh subagent on its own (the `context: fork` setting above). Other agents ignore that setting, so check yourself first.
 
-**If this conversation contains you writing or discussing this change, you are the implementer. Do not review it yourself.** Start a fresh reviewer instead, using the first of these options that your agent has:
+**If this conversation contains you writing or discussing this change, you are the implementer. Do not review it yourself.** Start a fresh reviewer instead. Every option below gives it the same prompt:
 
-1. **A subagent with no conversation history.** Give it only this prompt: "Read `<repo>/.agents/skills/review-branch/SKILL.md` and follow it as the reviewer. Arguments: `<worktree-path> <base-branch> -- <original request>`".
-2. **A separate, non-interactive agent process** started from the main checkout. Pass the same prompt and turn off file edits. Use the CLI named in `$REVIEW_AGENT` if it is set. Otherwise use the first one installed, in this order:
-   - `claude -p "<prompt>" --disallowedTools "Edit Write NotebookEdit"`
-   - `codex exec --sandbox read-only "<prompt>"`
-   - `gemini -p "<prompt>"`, with its edit tools excluded
-3. If neither is possible, stop. Tell the user that no fresh-context reviewer is available, and don't review the change yourself.
+> Read `.agents/skills/review-branch/SKILL.md` and follow it as the reviewer. Arguments: `<worktree-path> <base-branch> -- <original request>`
+
+1. **`$REVIEW_AGENT` is set** (`claude`, `codex` or `gemini`): run that CLI's command from the list below, even if your agent has subagents. This is how you ask a different agent for a second opinion.
+2. **Otherwise, if your agent has subagents with no conversation history:** give the prompt to one of them.
+3. **Otherwise:** run the first of these CLIs that is installed, as a separate process started inside the worktree.
+
+The reviewer has to run the project's checks, and they write gitignored caches such as `tsconfig.tsbuildinfo` and `node_modules/.vite`. So each command lets the reviewer run shell commands and write inside the worktree. What keeps the code untouched is this skill's rule against editing files.
+
+- `cd <worktree> && claude -p "<prompt>" --disallowedTools "Edit Write NotebookEdit" --allowedTools "Bash(pnpm *)" "Bash(git *)"`
+- `codex exec -C <worktree> --sandbox workspace-write "<prompt>"`
+- `cd <worktree> && gemini -p "<prompt>" --approval-mode yolo`
+
+If none of these options is available, stop. Tell the user that no fresh-context reviewer is available, and don't review the change yourself.
 
 Then relay the reviewer's report and verdict word for word.
 
