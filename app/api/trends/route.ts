@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getConverter } from "@/lib/fx";
+import { dailyBaseConverter } from "@/lib/fx-historical";
 
 export const dynamic = "force-dynamic";
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
 // GET /api/trends?months=12
-// Per-month spending/earning in base currency, plus end-of-month net worth.
+// Per-month spending/earning in base currency at each transaction's own-date
+// rate (ADR-0001), plus end-of-month net worth.
 // Net worth values native balances at *current* FX rates (historical snapshots
 // only fix each transaction's own account value, not a full past rate table).
 export async function GET(req: NextRequest) {
@@ -25,11 +27,13 @@ export async function GET(req: NextRequest) {
   const firstMonth = months[0];
 
   const flow = new Map<string, { spent: number; earned: number }>();
-  for (const t of db.prepare(
-    "SELECT substr(date,1,7) AS m, amount, currency, direction FROM transactions WHERE substr(date,1,7)>=?"
-  ).all(firstMonth) as any[]) {
+  const flowRows = db.prepare(
+    "SELECT substr(date,1,7) AS m, date, amount, currency, direction FROM transactions WHERE substr(date,1,7)>=? ORDER BY date DESC"
+  ).all(firstMonth) as any[];
+  const toBaseAt = await dailyBaseConverter(base, toBase, flowRows);
+  for (const t of flowRows) {
     const cur = flow.get(t.m) || { spent: 0, earned: 0 };
-    const val = toBase(t.amount, t.currency || base);
+    const val = toBaseAt(t.amount, t.currency, t.date);
     if (t.direction === "expense") cur.spent += val; else cur.earned += val;
     flow.set(t.m, cur);
   }

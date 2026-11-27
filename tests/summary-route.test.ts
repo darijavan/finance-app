@@ -4,12 +4,14 @@ import { NextRequest } from "next/server";
 const mocks = vi.hoisted(() => ({
   db: { prepare: vi.fn() },
   getConverter: vi.fn(),
+  dailyBaseConverter: vi.fn(),
   observations: vi.fn(),
   materializeRecurringBudgets: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({ getDb: () => mocks.db }));
 vi.mock("@/lib/fx", () => ({ getConverter: mocks.getConverter }));
+vi.mock("@/lib/fx-historical", () => ({ dailyBaseConverter: mocks.dailyBaseConverter }));
 vi.mock("@/lib/insights", () => ({ observations: mocks.observations }));
 vi.mock("@/lib/budgets", () => ({ materializeRecurringBudgets: mocks.materializeRecurringBudgets }));
 
@@ -36,14 +38,23 @@ describe("GET /api/summary", () => {
       base: "ILS",
       toBase: (amount: number, currency: string) => currency === "USD" ? amount * 4 : amount,
     });
+    // Ledger rows convert at their own-date rate (USD 3 on 2026-08-03), not today's 4.
+    mocks.dailyBaseConverter.mockResolvedValue(
+      (amount: number, currency: string, date: string) => currency === "USD" && date === "2026-08-03" ? amount * 3 : amount,
+    );
     mocks.observations.mockReturnValue([]);
+    const pairs = [{ currency: "USD", date: "2026-08-03" }];
     mocks.db.prepare.mockImplementation((sql: string) => {
+      if (sql.startsWith("SELECT DISTINCT currency, date")) {
+
+        return { all: (...args: string[]) => (expect(args).toEqual(["2025-08", "2026-08"]), pairs) };
+      }
       if (sql.startsWith("SELECT t.amount")) {
 
         return { all: () => [
-          { amount: 10, currency: "ILS", direction: "expense", category_id: 1, cat_name: "Food", cat_color: "#f00" },
-          { amount: 5, currency: "USD", direction: "expense", category_id: 1, cat_name: "Food", cat_color: "#f00" },
-          { amount: 100, currency: "ILS", direction: "income", category_id: null, cat_name: "Income", cat_color: "#0f0" },
+          { amount: 10, currency: "ILS", date: "2026-08-01", direction: "expense", category_id: 1, cat_name: "Food", cat_color: "#f00" },
+          { amount: 5, currency: "USD", date: "2026-08-03", direction: "expense", category_id: 1, cat_name: "Food", cat_color: "#f00" },
+          { amount: 100, currency: "ILS", date: "2026-08-05", direction: "income", category_id: null, cat_name: "Income", cat_color: "#0f0" },
         ] };
       }
       if (sql.startsWith("SELECT substr(date,1,7)")) {
@@ -79,16 +90,17 @@ describe("GET /api/summary", () => {
 
     expect(response.status).toBe(200);
     expect(mocks.materializeRecurringBudgets).toHaveBeenCalledWith(mocks.db, "2026-08");
+    expect(mocks.dailyBaseConverter).toHaveBeenCalledWith("ILS", expect.any(Function), pairs);
     expect(await response.json()).toEqual(expect.objectContaining({
       month: "2026-08",
       base: "ILS",
-      spent: 30,
+      spent: 25,
       earned: 100,
-      net: 70,
+      net: 75,
       recurring_monthly: 52,
       remaining_subscriptions: 20,
       due_subscriptions: [{ id: 1, name: "Due", amount: 5, currency: "USD", date: "2026-08-10", overdue: true }],
-      by_category: [{ name: "Food", color: "#f00", total: 30 }],
+      by_category: [{ name: "Food", color: "#f00", total: 25 }],
       insights: [],
     }));
   });

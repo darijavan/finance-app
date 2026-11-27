@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getConverter } from "@/lib/fx";
+import { dailyBaseConverter } from "@/lib/fx-historical";
 import { scheduledDateInMonth } from "@/lib/subscription-due";
 import { observations } from "@/lib/insights";
 import { materializeRecurringBudgets } from "@/lib/budgets";
@@ -20,10 +21,17 @@ export async function GET(req: NextRequest) {
   if (!month) return NextResponse.json({ error: "valid month required" }, { status: 400 });
   materializeRecurringBudgets(db, month);
   const { base, toBase } = await getConverter();
+  // Ledger flows use each transaction's own-date rate (ADR-0001). The window
+  // reaches back 12 months because rollover chains go that far.
+  const [year, monthNumber] = month.split("-").map(Number);
+  const windowStart = new Date(year, monthNumber - 13, 1);
+  const toBaseAt = await dailyBaseConverter(base, toBase, db.prepare(
+    "SELECT DISTINCT currency, date FROM transactions WHERE substr(date,1,7) BETWEEN ? AND ? ORDER BY date DESC",
+  ).all(`${windowStart.getFullYear()}-${String(windowStart.getMonth() + 1).padStart(2, "0")}`, month) as any[]);
 
   // Pull raw rows (with per-entry currency) and aggregate in base currency.
   const txRows = db.prepare(
-    `SELECT t.amount, t.currency, t.direction, t.category_id,
+    `SELECT t.amount, t.currency, t.date, t.direction, t.category_id,
             COALESCE(c.name,'Uncategorized') AS cat_name,
             COALESCE(c.color,'#888') AS cat_color
      FROM transactions t LEFT JOIN categories c ON t.category_id=c.id
@@ -35,7 +43,7 @@ export async function GET(req: NextRequest) {
   const byCatMap = new Map<string, { id: number | null; name: string; color: string; total: number }>();
   const spentByCatId = new Map<number, number>();
   for (const t of txRows) {
-    const val = toBase(t.amount, t.currency || base);
+    const val = toBaseAt(t.amount, t.currency, t.date);
     if (t.direction === "expense") {
       spent += val;
       const key = t.category_id == null ? "null" : String(t.category_id);
@@ -57,20 +65,19 @@ export async function GET(req: NextRequest) {
     .sort((a, b) => b.total - a.total);
 
   const previousMonths = Array.from({ length: 3 }, (_, index) => {
-    const [year, monthNumber] = month.split("-").map(Number);
     const date = new Date(year, monthNumber - 2 - index, 1);
 
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
   });
   const priorRows = db.prepare(
-    `SELECT substr(date,1,7) AS month, category_id, amount, currency
+    `SELECT substr(date,1,7) AS month, date, category_id, amount, currency
      FROM transactions
      WHERE direction='expense' AND substr(date,1,7) IN (${previousMonths.map(() => "?").join(",")})`,
   ).all(...previousMonths) as any[];
   const previousSpent = new Map(previousMonths.map((previousMonth) => [previousMonth, 0]));
   const previousCategories = new Map<string, Map<string, number>>();
   for (const row of priorRows) {
-    const value = toBase(row.amount, row.currency || base);
+    const value = toBaseAt(row.amount, row.currency, row.date);
     const key = row.category_id == null ? "null" : String(row.category_id);
     const totals = previousCategories.get(key) || new Map(previousMonths.map((previousMonth) => [previousMonth, 0]));
     totals.set(row.month, (totals.get(row.month) || 0) + value);
@@ -81,10 +88,10 @@ export async function GET(req: NextRequest) {
   // Rollover budgets: unused amount from the previous month's budget carries forward.
   const spentInMonth = (catId: number | null, m: string): number => {
     const rows = (catId == null
-      ? db.prepare("SELECT amount, currency FROM transactions WHERE substr(date,1,7)=? AND direction='expense'").all(m)
-      : db.prepare("SELECT amount, currency FROM transactions WHERE substr(date,1,7)=? AND direction='expense' AND category_id=?").all(m, catId)) as any[];
+      ? db.prepare("SELECT amount, currency, date FROM transactions WHERE substr(date,1,7)=? AND direction='expense'").all(m)
+      : db.prepare("SELECT amount, currency, date FROM transactions WHERE substr(date,1,7)=? AND direction='expense' AND category_id=?").all(m, catId)) as any[];
     
-    return rows.reduce((acc, r) => acc + toBase(r.amount, r.currency || base), 0);
+    return rows.reduce((acc, r) => acc + toBaseAt(r.amount, r.currency, r.date), 0);
   };
   const prevMonth = (m: string) => {
     const [y, mm] = m.split("-").map(Number);
