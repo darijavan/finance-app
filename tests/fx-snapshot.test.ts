@@ -74,24 +74,30 @@ describe("dailyBaseConverter", () => {
     expect(get).toHaveBeenCalledTimes(2); // duplicate pair and base/future pairs skip the lookup
   });
 
-  it("stops looking up new pairs once the per-call time budget is spent", async () => {
+  it("uses only cached rates once the per-call time budget is spent", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-08-16T12:00:00Z"));
-    const get = vi.fn(() => {
-      vi.setSystemTime(Date.now() + 6_000); // this lookup alone exceeds the budget
+    const quote = { rate: 3, rate_date: "2026-07-21", source: "frankfurter" };
+    const get = vi.fn((date: string) => {
+      if (date === "2026-07-21")
+        vi.setSystemTime(Date.now() + 6_000); // this lookup alone exceeds the budget
 
-      return { rate: 3, rate_date: "2026-07-21", source: "frankfurter" };
+      return date === "2026-07-23" ? undefined : quote;
     });
     mocks.db.prepare.mockReturnValue({ get });
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
 
     const toBaseAt = await dailyBaseConverter("ILS", (amount) => amount * 4, [
       { currency: "USD", date: "2026-07-21" },
       { currency: "USD", date: "2026-07-22" },
+      { currency: "USD", date: "2026-07-23" },
     ]);
 
     expect(toBaseAt(10, "USD", "2026-07-21")).toBe(30);
-    expect(toBaseAt(10, "USD", "2026-07-22")).toBe(40); // skipped: today's rate
-    expect(get).toHaveBeenCalledTimes(1);
+    expect(toBaseAt(10, "USD", "2026-07-22")).toBe(30); // cached: still its own-date rate
+    expect(toBaseAt(10, "USD", "2026-07-23")).toBe(40); // uncached: today's rate for now
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
 

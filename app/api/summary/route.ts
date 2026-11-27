@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
   const [year, monthNumber] = month.split("-").map(Number);
   const windowStart = new Date(year, monthNumber - 13, 1);
   const toBaseAt = await dailyBaseConverter(base, toBase, db.prepare(
-    "SELECT DISTINCT currency, date FROM transactions WHERE substr(date,1,7) BETWEEN ? AND ?",
+    "SELECT DISTINCT currency, date FROM transactions WHERE substr(date,1,7) BETWEEN ? AND ? ORDER BY date DESC",
   ).all(`${windowStart.getFullYear()}-${String(windowStart.getMonth() + 1).padStart(2, "0")}`, month) as any[]);
 
   // Pull raw rows (with per-entry currency) and aggregate in base currency.

@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 
   const flow = new Map<string, { spent: number; earned: number }>();
   const flowRows = db.prepare(
-    "SELECT substr(date,1,7) AS m, date, amount, currency, direction FROM transactions WHERE substr(date,1,7)>=?"
+    "SELECT substr(date,1,7) AS m, date, amount, currency, direction FROM transactions WHERE substr(date,1,7)>=? ORDER BY date DESC"
   ).all(firstMonth) as any[];
   const toBaseAt = await dailyBaseConverter(base, toBase, flowRows);
   for (const t of flowRows) {

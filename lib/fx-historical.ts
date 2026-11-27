@@ -38,10 +38,7 @@ export async function snapshotConversion(
   return { amount: convertAmount(amount, 1), rate: 1, rate_date: date, source: "identity" };
 
   const db = getDb();
-  const cached = db.prepare(
-    `SELECT rate, rate_date, source FROM fx_daily_rates
-     WHERE requested_date=? AND base_currency=? AND quote_currency=?`,
-  ).get(date, from, to) as { rate: number; rate_date: string; source: string } | undefined;
+  const cached = cachedQuote(date, from, to);
   if (cached) {
     
     return { amount: convertAmount(amount, cached.rate), rate: cached.rate, rate_date: cached.rate_date, source: cached.source };
@@ -66,13 +63,23 @@ export async function snapshotConversion(
   return { amount: convertAmount(amount, quote.rate), ...quote };
 }
 
+function cachedQuote(date: string, from: string, to: string) {
+
+  return getDb().prepare(
+    `SELECT rate, rate_date, source FROM fx_daily_rates
+     WHERE requested_date=? AND base_currency=? AND quote_currency=?`,
+  ).get(date, from, to) as { rate: number; rate_date: string; source: string } | undefined;
+}
+
 /**
  * Converter from an entered amount to the base currency at the rate on its own
  * date, so past totals never move with FX (ADR-0001). `pairs` must cover every
  * (currency, date) the converter will see. Future dates and failed lookups use
- * `fallback` (today's rate); failures are retried on the next call. Lookups
- * stop after LOOKUP_BUDGET_MS so a slow or failing provider can't stall a page;
- * the remaining pairs use `fallback` and are looked up on later calls.
+ * `fallback` (today's rate); failures are retried on the next call. New
+ * network lookups stop once LOOKUP_BUDGET_MS has passed (checked between
+ * lookups, so one lookup can still overrun it); after that only cached rates are
+ * used and the rest fall back until a later call fetches them. Pass the most
+ * important pairs first.
  */
 // ponytail: one dated lookup per missing pair, sequential; move to Frankfurter time-series if first loads get slow.
 export async function dailyBaseConverter(
@@ -88,7 +95,7 @@ export async function dailyBaseConverter(
     if (!currency || currency === base || date > today || rates.has(key))
       continue;
     if (Date.now() > deadline) {
-      rates.set(key, 0);
+      rates.set(key, cachedQuote(date, currency, base)?.rate ?? 0);
       continue;
     }
     try {
