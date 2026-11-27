@@ -4,6 +4,7 @@ import { getDb } from "./db.ts";
 const DAILY_FX_ENDPOINT = "https://api.frankfurter.dev/v1";
 const FALLBACK_DAILY_FX_ENDPOINT = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api";
 const FETCH_TIMEOUT_MS = 10_000;
+const LOOKUP_BUDGET_MS = 5_000; // per dailyBaseConverter call
 
 export type FxSnapshot = {
   amount: number;
@@ -46,13 +47,12 @@ export async function snapshotConversion(
     return { amount: convertAmount(amount, cached.rate), rate: cached.rate, rate_date: cached.rate_date, source: cached.source };
   }
 
-  const response = await fetch(
+  // A network error or timeout on the primary falls through to the fallback provider.
+  const data = await fetch(
     `${DAILY_FX_ENDPOINT}/${encodeURIComponent(date)}?base=${encodeURIComponent(from)}&symbols=${encodeURIComponent(to)}`,
     { cache: "no-store", signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) },
-  );
-  const data = response.ok
-    ? await response.json() as { date?: string; rates?: Record<string, number> }
-    : null;
+  ).then((response) => response.ok ? response.json() as Promise<{ date?: string; rates?: Record<string, number> }> : null)
+    .catch(() => null);
   const rate = data?.rates?.[to];
   const quote = Number.isFinite(rate) && rate && rate > 0 && data?.date
     ? { rate, rate_date: data.date, source: "frankfurter" }
@@ -70,7 +70,9 @@ export async function snapshotConversion(
  * Converter from an entered amount to the base currency at the rate on its own
  * date, so past totals never move with FX (ADR-0001). `pairs` must cover every
  * (currency, date) the converter will see. Future dates and failed lookups use
- * `fallback` (today's rate); failures are retried on the next call.
+ * `fallback` (today's rate); failures are retried on the next call. Lookups
+ * stop after LOOKUP_BUDGET_MS so a slow or failing provider can't stall a page;
+ * the remaining pairs use `fallback` and are looked up on later calls.
  */
 // ponytail: one dated lookup per missing pair, sequential; move to Frankfurter time-series if first loads get slow.
 export async function dailyBaseConverter(
@@ -79,11 +81,16 @@ export async function dailyBaseConverter(
   pairs: { currency: Currency | null; date: string }[],
 ): Promise<(amount: number, currency: Currency | null, date: string) => number> {
   const today = new Date().toISOString().slice(0, 10);
-  const rates = new Map<string, number>(); // 0 = lookup failed
+  const rates = new Map<string, number>(); // 0 = lookup failed or skipped
+  const deadline = Date.now() + LOOKUP_BUDGET_MS;
   for (const { currency, date } of pairs) {
     const key = `${currency}|${date}`;
     if (!currency || currency === base || date > today || rates.has(key))
       continue;
+    if (Date.now() > deadline) {
+      rates.set(key, 0);
+      continue;
+    }
     try {
       rates.set(key, (await snapshotConversion(1, currency, base, date)).rate);
     } catch {

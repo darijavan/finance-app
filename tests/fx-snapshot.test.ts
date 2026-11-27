@@ -6,6 +6,7 @@ vi.mock("@/lib/db", () => ({ getDb: () => mocks.db }));
 const { dailyBaseConverter, snapshotConversion } = await import("../lib/fx-historical.ts");
 
 afterEach(() => {
+  mocks.db.prepare.mockReset();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   vi.useRealTimers();
@@ -71,5 +72,40 @@ describe("dailyBaseConverter", () => {
     expect(toBaseAt(10, "ILS", "2026-07-21")).toBe(10);
     expect(toBaseAt(10, null, "2026-07-21")).toBe(10);
     expect(get).toHaveBeenCalledTimes(2); // duplicate pair and base/future pairs skip the lookup
+  });
+
+  it("stops looking up new pairs once the per-call time budget is spent", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-16T12:00:00Z"));
+    const get = vi.fn(() => {
+      vi.setSystemTime(Date.now() + 6_000); // this lookup alone exceeds the budget
+
+      return { rate: 3, rate_date: "2026-07-21", source: "frankfurter" };
+    });
+    mocks.db.prepare.mockReturnValue({ get });
+
+    const toBaseAt = await dailyBaseConverter("ILS", (amount) => amount * 4, [
+      { currency: "USD", date: "2026-07-21" },
+      { currency: "USD", date: "2026-07-22" },
+    ]);
+
+    expect(toBaseAt(10, "USD", "2026-07-21")).toBe(30);
+    expect(toBaseAt(10, "USD", "2026-07-22")).toBe(40); // skipped: today's rate
+    expect(get).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("snapshotConversion provider failures", () => {
+  it("falls back to Currency API when the primary request throws", async () => {
+    const run = vi.fn();
+    mocks.db.prepare.mockImplementation((sql: string) => (
+      sql.startsWith("SELECT") ? { get: () => undefined } : { run }
+    ));
+    vi.stubGlobal("fetch", vi.fn()
+      .mockRejectedValueOnce(new DOMException("timed out", "TimeoutError"))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ date: "2026-07-21", usd: { ils: 3.1 } }), { status: 200 })));
+
+    await expect(snapshotConversion(10, "USD", "ILS", "2026-07-21"))
+      .resolves.toEqual({ amount: 31, rate: 3.1, rate_date: "2026-07-21", source: "currency-api" });
   });
 });
